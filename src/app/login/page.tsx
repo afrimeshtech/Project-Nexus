@@ -34,7 +34,7 @@ export default async function LoginPage({
       <LoginForm next={next ?? '/'} referralCode={invite} />
       <p className="mt-4 text-center text-sm text-muted">
         New to AfriMesh?{' '}
-        <Link href={registerHref} className="font-medium text-accent-500 hover:underline">
+        <Link href={registerHref} className="font-medium text-accent-strong hover:underline">
           Create an account
         </Link>
       </p>

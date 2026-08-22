@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { Statement } from '@/components/commerce/Statement'
 import { TopUpForm, WithdrawForm } from '@/components/commerce/WalletForms'
-import { Card, SectionHeading, Stat } from '@/components/ui'
+import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getBalance, statement } from '@/modules/wallet/service'
@@ -22,7 +22,8 @@ export default async function PartnerWalletPage() {
   return (
     <PartnerShell active="/partner/wallet">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Wallet' }]}
           title="Business wallet"
           subtitle="Sales settle here. Escrow releases when the buyer confirms delivery."
         />

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Card, EmptyState, LinkButton, Rating, SectionHeading } from '@/components/ui'
+import { Card, EmptyState, LinkButton, PageHeader, Rating, SectionHeading } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { listFavourites } from '@/modules/favourites/service'
 
@@ -29,6 +29,12 @@ export default async function FavouritesPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-8">
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Favourites' }]}
+          title="Favourites"
+          subtitle="Products you buy often and shops you trust, kept together so restocking takes one tap."
+        />
+
         {products.length > 0 && (
           <section>
             <SectionHeading title="Saved products" />

@@ -5,7 +5,7 @@ import { ListProductForm } from '@/components/partner/InventoryForms'
 import { ProductImageUpload } from '@/components/media/ImageUpload'
 import { NewProductForm } from '@/components/partner/NewProductForm'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { catalogueForSeller, listCategories } from '@/modules/catalog/service'
 
@@ -48,7 +48,8 @@ export default async function CataloguePage({
   return (
     <PartnerShell active="/partner/catalogue">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Add products' }]}
           title="Add products to your inventory"
           subtitle="Pick from the master catalogue, set your quantity and your price — or add a product that is not listed yet."
         />

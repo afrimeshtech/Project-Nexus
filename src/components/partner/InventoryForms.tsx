@@ -105,7 +105,7 @@ export function ListProductForm({
       {(state.error || state.notice) && (
         <p
           role="status"
-          className={`w-full text-xs ${state.error ? 'text-coral-ink' : 'text-accent-500'}`}
+          className={`w-full text-xs ${state.error ? 'text-coral-ink' : 'text-accent-strong'}`}
         >
           {state.error ?? `${productName}: ${state.notice}`}
         </p>

@@ -1,7 +1,15 @@
 import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Badge, Card, EmptyState, LinkButton, SectionHeading, Thumb } from '@/components/ui'
+import {
+  Badge,
+  Card,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SectionHeading,
+  Thumb,
+} from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { threadsForBuyer, threadsForSeller, type ThreadSummary } from '@/modules/messaging/service'
 
@@ -37,6 +45,12 @@ export default async function MessagesPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-8">
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Messages' }]}
+          title="Messages"
+          subtitle="Every conversation stays attached to the order it is about."
+        />
+
         {asSeller.length > 0 && (
           <section>
             <SectionHeading

@@ -74,6 +74,12 @@
      now a light colour: 6.1:1 on #ff9500, where white would be 2.2:1. */
   --color-accent-ink: #1f3329;
   --color-accent-soft: color-mix(in srgb, #ff9500 16%, transparent);
+  /* The accent as TEXT on a light ground. #ff9500 is 2.2:1 on white — fine as
+     a fill behind dark ink, unreadable as small type. Eyebrows and stat labels
+     are 11px uppercase, which is exactly where that gap hurts most, so they
+     take the burnt orange the focus ring already uses: 4.97:1, same family, no
+     new colour introduced to the palette. */
+  --color-accent-strong: #c04a12;
 
   /* The keyboard focus ring is not styling — it is the only thing telling a
      keyboard user where they are, and a 2:1 ring is one a lot of people simply
@@ -101,6 +107,55 @@
   --color-info-ink: #1b3a5c;
   --color-success: #1a6b45;
   --color-success-ink: #14603f; /* 7.6:1 on white */
+
+  /* -- The image well ------------------------------------------------------
+     A product photo needs a ground of its own. Shot against white and dropped
+     straight onto a white card, the object floats with no edge and the card
+     loses its top boundary; every catalogue that looks resolved gives the
+     photo a tinted panel to sit in. This is the page ground one step warmer,
+     so the well reads as recessed into the card rather than as a second card.
+     --------------------------------------------------------------------- */
+  --color-well: #edf3ef;
+
+  /* -- Status pills ---------------------------------------------------------
+     Stock state is set as a solid chip laid over the photo, not as the tinted
+     badge used elsewhere in the app. A tint needs a known ground to be legible
+     against and a photograph is not one, so the chip carries its own: solid
+     fill, white label, each measured rather than assumed.
+
+     Note --color-pill-low is NOT --color-coral. White on #e74c3c is 3.82:1 and
+     fails AA; the darker coral ink already in the palette is 6.52:1 and reads
+     as the same signal.
+     --------------------------------------------------------------------- */
+  --color-pill-in: #14603f; /* 7.6:1 with white */
+  --color-pill-low: #b3271a; /* 6.5:1 with white */
+  --color-pill-out: #3d4f47; /* 8.7:1 with white */
+
+  /* -- Layers ---------------------------------------------------------------
+     One scale, written down, because the failure it prevents is invisible
+     until it happens: an overlay nested inside a positioned ancestor cannot
+     escape that ancestor's stacking context, however large its own z-index.
+     The drawer was z-60 inside a z-30 header and still rendered underneath the
+     z-30 footer, because 60 only ever ranked it against the header's other
+     children.
+
+     So the rule is not just "pick a bigger number" — anything at --z-overlay
+     or above must be portalled to the body, out of every local context.
+
+       content   page flow, no z-index at all
+       10        raised in-flow things: sticky table headers, floating labels
+       20        sticky page chrome inside a scroll region
+       30        the app bars — header, footer
+       40        fixed bottom navigation, which crosses the bars
+       50        popovers anchored to a bar: location picker, search suggestions
+       60        drawers, dialogs and their scrims — portalled, always on top
+     --------------------------------------------------------------------- */
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-bar: 30;
+  --z-bottom-nav: 40;
+  --z-popover: 50;
+  --z-overlay: 60;
 
   /* -- Lines: dark alpha now, not white alpha ----------------------------- */
   --color-line: color-mix(in srgb, #2d4a3a 18%, transparent);
@@ -162,6 +217,15 @@
   --text-heading--line-height: 1.2;
   --text-heading--letter-spacing: -0.018em;
   --text-heading--font-weight: 620;
+
+  /* The figure register. A stat tile's number is the only thing on the tile
+     anyone is scanning for, and it appears at 86 call sites — it earns a token
+     rather than three arbitrary utilities repeated at each one. Tight tracking
+     because a large figure set at default tracking reads loose. */
+  --text-stat: 1.5rem;
+  --text-stat--line-height: 1.15;
+  --text-stat--letter-spacing: -0.02em;
+  --text-stat--font-weight: 600;
 
   /* Body: 16px regular, a touch more leading than the old 1.6 — the measure
      on a dashboard is wide, and wide lines need air to stay trackable. */
@@ -323,7 +387,7 @@
      --------------------------------------------------------------------- */
   --color-stat-label: #5a6f66; /* the label is a caption, not the point */
   --color-stat-value: #16281f; /* 13.9:1 — the number carries the tile */
-  --color-stat-hint: #6b7f75;
+  --color-stat-hint: #63776d; /* 4.78:1 — the hint is 12px, so it needs AA */
   --color-stat-danger: #b3271a;
 
   /* -- Price -------------------------------------------------------------- */
@@ -423,15 +487,23 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Headings are bold and white by default, so a new one is correct without
-   remembering to set either. */
+/* A heading is dark, weighted and tightened by default, so a new one is
+   correct without remembering to set any of it.
+
+   620 rather than 700: the contrast that reads as deliberate is 620 against
+   the 400 of body copy, and 700 on every heading in the app is the setting
+   nobody chose. Anything using a text-display/text-heading utility overrides
+   this from the type scale anyway — this is the floor, not the intent. */
 h1,
 h2,
 h3,
 h4 {
   color: var(--color-ink);
-  font-weight: 700;
+  font-weight: 620;
   letter-spacing: -0.02em;
+  /* Balanced wrapping is a hint, not a promise: it is capped by the browser at
+     a handful of lines and falls back to normal wrapping. Headings are still
+     written to read correctly if it never applies. */
   text-wrap: balance;
 }
 
@@ -682,7 +754,9 @@ a[role='button'],
   height: 1rem;
   padding: 0 0.25rem;
   border-radius: 999px;
-  background: var(--color-coral);
+  /* coral-strong, not coral: white on #e74c3c is 3.82:1 and the count is
+     text. #c0392b is 5.44:1 and reads as the same signal. */
+  background: var(--color-coral-strong);
   color: #fff;
   font-size: 0.625rem;
   font-weight: 600;
@@ -704,7 +778,9 @@ a[role='button'],
   height: 1.25rem;
   padding: 0 0.375rem;
   border-radius: 999px;
-  background: var(--color-coral);
+  /* coral-strong, not coral: white on #e74c3c is 3.82:1 and the count is
+     text. #c0392b is 5.44:1 and reads as the same signal. */
+  background: var(--color-coral-strong);
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -1015,6 +1091,167 @@ a[role='button'],
 }
 @utility stat-card-hover {
   border-top-color: var(--color-accent-500);
+}
+
+/* -- Sidebar navigation ------------------------------------------------------
+   Two registers, because the eleven destinations are not eleven equal things.
+
+   The six places work happens are tiles on a two-column grid: icon over label,
+   a large target, and a shape distinct enough that it is found by position
+   after a day of use rather than re-read every time. The rest — wallet,
+   rewards, API keys, settings — are places you go occasionally and on purpose,
+   so they are a plain list underneath. Rendering all eleven identically is
+   what makes a sidebar into a wall of text.
+   --------------------------------------------------------------------------- */
+@utility nav-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  /* Clears the 44px touch minimum with room for a second label line where one
+     is needed. The rail as a whole has to fit a laptop viewport without
+     scrolling, so this is as tall as a tile can afford to be. */
+  min-height: 4.25rem;
+  padding: 0.5rem 0.375rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-brand);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  transition:
+    background-color var(--duration-hover) var(--ease-out),
+    border-color var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+@utility nav-tile-hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+/* The current tile is outlined rather than filled. A filled tile in a grid of
+   six reads as the primary action; this one is only saying "you are here". */
+@utility nav-tile-active {
+  border-color: color-mix(in srgb, var(--color-brand-deep) 45%, transparent);
+  background: var(--color-surface-muted);
+  color: var(--color-brand-deep);
+  font-weight: 600;
+}
+
+@utility nav-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: var(--radius-brand);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  transition:
+    background-color var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+@utility nav-row-hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+@utility nav-row-active {
+  background: var(--color-surface-muted);
+  color: var(--color-brand-deep);
+  font-weight: 600;
+}
+
+/* -- The item card ----------------------------------------------------------
+   The catalogue card, in the order a buyer actually reads it: what it looks
+   like, whether they can have it, what it is, the two numbers that decide the
+   purchase, and the way in.
+
+   Structure rather than decoration is what makes this read as engineered. The
+   card has one fill and one hairline; every division inside it is a rule, not
+   a shadow or a second background. That is also why the well and the footer
+   button can sit flush to the card edge — there is no inner padding to fight.
+   --------------------------------------------------------------------------- */
+@utility item-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-radius: var(--radius-brand);
+  transition: border-color var(--duration-hover) var(--ease-out);
+}
+@utility item-card-hover {
+  border-color: color-mix(in srgb, var(--color-brand-deep) 40%, transparent);
+}
+
+/* The photo's panel. Fixed aspect so a grid of cards keeps one baseline for
+   the name, whatever shape the individual photographs are.
+
+   16:10 rather than 4:3. Most of this catalogue has no photograph and falls
+   back to an illustration, and a taller panel just puts more empty ground
+   around it — the well should frame the artwork, not surround it. */
+@utility item-well {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--color-well);
+}
+
+/* The stock chip over the photo. Positioned by the well, not by the card, so
+   it keeps its inset if the well's aspect ratio ever changes. */
+@utility pill-status {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  color: #fff;
+  font-family: var(--font-technical);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* A label/value pair inside the card. The rule above each row is what gives
+   the block its structure; the last row needs no rule below it, so the border
+   goes on the top edge and the first row's is suppressed by the container. */
+@utility kv-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-line-soft);
+  font-size: 0.8125rem;
+}
+
+/* The card's way in. Full bleed to the card's edges and quiet: it is the only
+   control on the card, so it does not have to argue for attention. */
+@utility item-action {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  border-top: 1px solid var(--color-line-soft);
+  background: var(--color-surface-muted);
+  color: var(--color-muted);
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition:
+    background-color var(--duration-hover) var(--ease-out),
+    color var(--duration-hover) var(--ease-out);
+}
+@utility item-action-hover {
+  background: var(--color-surface-strong);
+  color: var(--color-ink);
 }
 
 /* The price on a card: its own warm ground, so the number being compared is

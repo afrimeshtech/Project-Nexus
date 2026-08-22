@@ -48,7 +48,7 @@ export function AreaSwitch({
           type="button"
           disabled={pending}
           onClick={() => pick(area)}
-          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:border-accent-500 hover:text-accent-500 disabled:opacity-60"
+          className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:border-accent-500 hover:text-accent-strong disabled:opacity-60"
         >
           {area.label}
         </button>

@@ -30,7 +30,7 @@ export async function AdminShell({
   const readOnly = user.role === 'auditor'
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen bg-page">
       <header className="bg-bar">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href="/admin" className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export async function AdminShell({
                   aria-current={active === item.href ? 'page' : undefined}
                   className={`flex items-center gap-2.5 rounded-brand px-3 py-2 text-sm transition-colors ${
                     active === item.href
-                      ? 'bg-accent-soft font-semibold text-accent-500'
+                      ? 'bg-accent-soft font-semibold text-accent-strong'
                       : 'text-muted hover:bg-surface-muted hover:text-ink'
                   }`}
                 >

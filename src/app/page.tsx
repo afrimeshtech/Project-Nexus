@@ -110,7 +110,7 @@ export default async function HomePage() {
             over a row of chips is the shape every generated homepage has. */}
         <section className="grid gap-x-10 gap-y-6 border-b border-line-soft pb-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <div>
-            <p className="font-technical text-eyebrow uppercase text-accent-500">
+            <p className="font-technical text-eyebrow uppercase text-accent-strong">
               {location.label}
             </p>
             <h1 className="mt-2 text-display-sm text-ink">{greeting}</h1>
@@ -128,7 +128,7 @@ export default async function HomePage() {
                   <li key={t.query}>
                     <Link
                       href={`/search?q=${encodeURIComponent(t.query)}`}
-                      className="group flex items-baseline justify-between gap-3 py-0.5 text-sm text-muted hover:text-accent-500"
+                      className="group flex items-baseline justify-between gap-3 py-0.5 text-sm text-muted hover:text-accent-strong"
                     >
                       <span className="truncate capitalize group-hover:underline">{t.query}</span>
                       <span className="shrink-0 font-technical text-xs tabular-nums opacity-60">
@@ -156,15 +156,18 @@ export default async function HomePage() {
             title="Popular nearby"
             subtitle="In stock right now, ranked by availability, distance and price"
             action={
-              <Link href="/search" className="text-sm font-medium text-accent-500 hover:underline">
+              <Link
+                href="/search"
+                className="text-sm font-medium text-accent-strong hover:underline"
+              >
                 See all
               </Link>
             }
           />
           {popular.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {popular.map((result, i) => (
-                <ProductResultCard key={result.product_id} result={result} index={i} />
+              {popular.map((result) => (
+                <ProductResultCard key={result.product_id} result={result} />
               ))}
             </div>
           ) : (
@@ -183,7 +186,7 @@ export default async function HomePage() {
                   <AreaSwitch areas={KNOWN_AREAS} current={location.label} />
                   <p className="text-xs text-muted">
                     Trade around here yourself?{' '}
-                    <Link href="/onboarding" className="font-medium text-accent-500 underline">
+                    <Link href="/onboarding" className="font-medium text-accent-strong underline">
                       Register your business
                     </Link>{' '}
                     and be the first.

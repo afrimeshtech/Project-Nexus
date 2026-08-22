@@ -24,10 +24,12 @@ export function ProductThumb({
   imageUrl?: string | null
   brandLogo?: string | null
   categorySlug?: string | null
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
 }) {
-  const box = { sm: 'size-12', md: 'size-16', lg: 'size-20' }[size]
-  const art = { sm: 38, md: 52, lg: 64 }[size]
+  // xl is the catalogue well, where the art is the subject rather than a
+  // marker beside a row of text.
+  const box = { sm: 'size-12', md: 'size-16', lg: 'size-20', xl: 'size-28' }[size]
+  const art = { sm: 38, md: 52, lg: 64, xl: 92 }[size]
 
   // A real photo fills the tile edge to edge — no green surround, because the
   // photo is the product and framing it would only shrink it.

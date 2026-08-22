@@ -44,7 +44,7 @@ export default async function OnboardingPage() {
             <ol className="mt-3 space-y-3 text-sm">
               {[{ tier: 'Retail outlet', supplies: 'Consumers' }].map((row, index) => (
                 <li key={row.tier} className="flex gap-3">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent-500">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-bold text-accent-strong">
                     {index + 1}
                   </span>
                   <span>

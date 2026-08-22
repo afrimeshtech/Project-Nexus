@@ -3,7 +3,7 @@ import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { CheckoutForm } from '@/components/commerce/CheckoutForm'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Alert, Badge, Card, EmptyState, LinkButton, SectionHeading } from '@/components/ui'
+import { Alert, Badge, Card, EmptyState, LinkButton, PageHeader } from '@/components/ui'
 import { clearCartAction, updateCartQtyAction } from '@/app/actions/cart'
 import { currentUser } from '@/lib/auth'
 import { hydrateCart } from '@/lib/cart'
@@ -44,10 +44,11 @@ export default async function CartPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Basket' }]}
           title="Your basket"
           subtitle={`${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'} from ${cart.seller.name}`}
-          action={
+          actions={
             <form action={clearCartAction}>
               <button type="submit" className="text-sm text-muted hover:text-coral-ink">
                 Clear
@@ -75,7 +76,7 @@ export default async function CartPage() {
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/shop/${cart.seller.slug}`}
-                  className="font-semibold text-ink hover:text-accent-400"
+                  className="font-semibold text-ink hover:text-accent-strong"
                 >
                   {cart.seller.name}
                 </Link>

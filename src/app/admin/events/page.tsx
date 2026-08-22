@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
-import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { eventCounts, recentEvents } from '@/modules/events/service'
 
@@ -28,7 +28,8 @@ export default async function EventsPage({
   return (
     <AdminShell active="/admin/events">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Events' }]}
           title="Event log"
           subtitle="Append-only. Every meaningful state change in the platform, in order."
         />

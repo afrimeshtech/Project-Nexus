@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { ProductResultCard } from '@/components/commerce/OfferCard'
-import { Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Card, EmptyState, PageHeader, SectionHeading } from '@/components/ui'
 import { currentUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { TIER } from '@/lib/tiers'
@@ -67,17 +67,20 @@ export default async function SearchPage({
   return (
     <ConsumerShell>
       <div className="space-y-7">
-        <div>
-          <h1 className="text-lg font-semibold text-ink sm:text-xl">
-            {params.q
+        <PageHeader
+          breadcrumb={[
+            { label: 'Home', href: '/' },
+            ...(activeCategory
+              ? [{ label: 'Categories', href: '/search' }, { label: activeCategory.name }]
+              : [{ label: params.q ? `Search: ${params.q}` : 'Search' }]),
+          ]}
+          title={
+            params.q
               ? `Results for “${params.q}”`
-              : (activeCategory?.name ?? 'Everything in stock nearby')}
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            {results.length} product{results.length === 1 ? '' : 's'} available within {radius} km
-            of {location.label} · found in {tookMs} ms
-          </p>
-        </div>
+              : (activeCategory?.name ?? 'Everything in stock nearby')
+          }
+          subtitle={`${results.length} product${results.length === 1 ? '' : 's'} available within ${radius} km of ${location.label} · found in ${tookMs} ms`}
+        />
 
         <Card className="space-y-3">
           <FilterRow label="Distance">
@@ -140,8 +143,8 @@ export default async function SearchPage({
 
         {results.length ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {results.map((result, i) => (
-              <ProductResultCard key={result.product_id} result={result} index={i} />
+            {results.map((result) => (
+              <ProductResultCard key={result.product_id} result={result} />
             ))}
           </div>
         ) : (
@@ -156,7 +159,7 @@ export default async function SearchPage({
             action={
               <Link
                 href={buildHref({ radius: '50' })}
-                className="text-sm font-semibold text-accent-500 hover:underline"
+                className="text-sm font-semibold text-accent-strong hover:underline"
               >
                 Search within 50 km instead
               </Link>
@@ -207,7 +210,7 @@ function FilterChip({
       className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
         active
           ? 'bg-accent-500 text-accent-ink'
-          : 'border border-line bg-surface text-muted hover:border-accent-500 hover:text-accent-400'
+          : 'border border-line bg-surface text-muted hover:border-accent-500 hover:text-accent-strong'
       }`}
     >
       {children}

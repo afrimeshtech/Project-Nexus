@@ -245,7 +245,7 @@ function inviteHeading(programme: Programme): string {
 function Step({ n, title, body }: { n: number; title: string; body: string }) {
   return (
     <li className="flex gap-3">
-      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft font-technical text-xs font-semibold text-accent-500">
+      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent-soft font-technical text-xs font-semibold text-accent-strong">
         {n}
       </span>
       <span>

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { OrderStatusBadge } from '@/components/commerce/OrderBits'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Card, EmptyState, LinkButton, SectionHeading, Stat } from '@/components/ui'
+import { Card, EmptyState, LinkButton, PageHeader, Stat } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { formatDistance } from '@/lib/geo'
@@ -19,7 +19,11 @@ export default async function OrdersPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-7">
-        <SectionHeading title="Your orders" subtitle="Everything you have bought on AfriMesh" />
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Orders' }]}
+          title="Your orders"
+          subtitle="Everything you have bought on AfriMesh"
+        />
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Stat label="Orders" value={kpis.orders} />

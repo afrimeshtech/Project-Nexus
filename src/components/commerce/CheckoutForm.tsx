@@ -39,7 +39,7 @@ export function CheckoutForm({
               key={option}
               className={`cursor-pointer rounded-brand border px-3 py-2.5 text-sm ${
                 fulfilment === option
-                  ? 'border-accent-500 bg-accent-soft font-semibold text-accent-500'
+                  ? 'border-accent-500 bg-accent-soft font-semibold text-accent-strong'
                   : 'border-line bg-surface text-ink'
               } ${option === 'pickup' && !pickupAvailable ? 'pointer-events-none opacity-50' : ''}`}
             >

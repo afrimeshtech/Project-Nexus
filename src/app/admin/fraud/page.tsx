@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/shell/AdminShell'
-import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader, SectionHeading } from '@/components/ui'
 import { resolveAlertAction, runSweepAction } from '@/app/actions/admin'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { listAlerts } from '@/modules/platform/service'
@@ -53,10 +53,11 @@ export default async function FraudPage({
   return (
     <AdminShell active="/admin/fraud">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Fraud' }]}
           title="Risk & fraud monitoring"
           subtitle="Rule-based signals over live transaction data"
-          action={
+          actions={
             readOnly ? null : (
               <form action={runSweepAction}>
                 <button

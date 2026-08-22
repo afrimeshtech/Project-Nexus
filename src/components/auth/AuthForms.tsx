@@ -276,7 +276,7 @@ export function RegisterForm({
           // is also a sign-up, and dropping the code here would silently lose
           // the referral for anyone who takes that route.
           href={referralCode ? `/login?ref=${encodeURIComponent(referralCode)}` : '/login'}
-          className="font-medium text-accent-500 hover:underline"
+          className="font-medium text-accent-strong hover:underline"
         >
           Sign in
         </Link>

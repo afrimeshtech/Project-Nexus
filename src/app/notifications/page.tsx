@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Icon } from '@/components/Icon'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
-import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { listNotifications, markAllRead } from '@/modules/notifications/service'
 
@@ -21,15 +21,16 @@ export default async function NotificationsPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-4">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Notifications' }]}
           title="Notifications"
           subtitle="Order updates, account changes and stock alerts"
-          action={
+          actions={
             notifications.some((n) => !n.read_at) ? (
               <form action={markRead}>
                 <button
                   type="submit"
-                  className="text-sm font-medium text-accent-500 hover:underline"
+                  className="text-sm font-medium text-accent-strong hover:underline"
                 >
                   Mark all read
                 </button>

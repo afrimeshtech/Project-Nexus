@@ -71,7 +71,7 @@ export function AddToCart({
       {(state.error || state.notice) && (
         <p
           role="status"
-          className={`mt-2 text-xs ${state.error ? 'text-coral-ink' : 'text-accent-500'}`}
+          className={`mt-2 text-xs ${state.error ? 'text-coral-ink' : 'text-accent-strong'}`}
         >
           {state.error ?? state.notice}
         </p>

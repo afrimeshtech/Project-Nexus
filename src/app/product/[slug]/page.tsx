@@ -100,7 +100,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 {dearest !== null && cheapest !== null && dearest > cheapest && (
                   <p className="text-sm text-muted">
                     up to {formatMoney(dearest, best.currency)} elsewhere &mdash;{' '}
-                    <span className="font-medium text-accent-500">
+                    <span className="font-medium text-accent-strong">
                       save {formatMoney(dearest - cheapest, best.currency)}
                     </span>
                   </p>

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { RewardsView } from '@/components/rewards/RewardsView'
-import { SectionHeading } from '@/components/ui'
+import { PageHeader } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
@@ -24,7 +24,8 @@ export default async function RewardsPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Rewards' }]}
           title="Rewards"
           subtitle="Invite people to shop where you shop. Earn points on every referral that buys, and turn them into cash."
         />

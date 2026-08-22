@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
-import { Badge, Card, LinkButton, SectionHeading, Stat, Thumb } from '@/components/ui'
+import { Breadcrumb, Badge, Card, LinkButton, Stat, Thumb, SectionHeading } from '@/components/ui'
 import { Icon, type IconName } from '@/components/Icon'
 import { logoutAction } from '@/app/actions/session'
 import { requireUser, currentOrganisation, ADMIN_ROLES } from '@/lib/auth'
@@ -60,10 +60,12 @@ export default async function AccountPage() {
             widget, which left the page with no title and no top edge — you
             landed straight on a row of numbers. Who the page is about is the
             heading, so it is set as one and separated by a rule. */}
+        <Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Account' }]} />
+
         <header className="flex items-center gap-4 border-b border-line-soft pb-6">
           <Thumb alt={user.full_name} size="lg" rounded="rounded-full" />
           <div className="min-w-0 flex-1">
-            <p className="font-technical text-eyebrow uppercase text-accent-500">Your account</p>
+            <p className="font-technical text-eyebrow uppercase text-accent-strong">Your account</p>
             <h1 className="mt-1 truncate text-display-sm text-ink">{user.full_name}</h1>
             <p className="mt-1 truncate text-sm text-muted">
               {[user.phone, user.email].filter(Boolean).join(' · ')}
@@ -112,7 +114,7 @@ export default async function AccountPage() {
                       place a touch of the brand orange earns its keep. */}
                   <span
                     aria-hidden
-                    className="grid size-10 shrink-0 place-items-center rounded-brand bg-accent-soft text-accent-500"
+                    className="grid size-10 shrink-0 place-items-center rounded-brand bg-accent-soft text-accent-strong"
                   >
                     <Icon name={link.icon} size={20} />
                   </span>

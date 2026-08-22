@@ -119,7 +119,7 @@ export function RateOrderForm({ orderId }: { orderId: string }) {
               aria-label={`${value} star${value === 1 ? '' : 's'}`}
               onClick={() => setStars(value)}
               className={`transition-transform hover:scale-110 ${
-                value <= stars ? 'text-accent-400' : 'text-surface-strong'
+                value <= stars ? 'text-accent-strong' : 'text-surface-strong'
               }`}
             >
               <Icon name={value <= stars ? 'star-filled' : 'star'} size={26} />

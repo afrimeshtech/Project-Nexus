@@ -3,6 +3,7 @@ import { PartnerShell } from '@/components/shell/PartnerShell'
 import { OrderStatusBadge } from '@/components/commerce/OrderBits'
 import { BarSeries } from '@/components/charts/BarSeries'
 import {
+  Breadcrumb,
   Alert,
   Badge,
   Card,
@@ -91,9 +92,10 @@ export default async function PartnerHome({
           </Alert>
         )}
 
-        <div>
-          <h1 className="text-xl font-semibold text-ink">{org.name}</h1>
-          <p className="text-sm text-muted">
+        <div className="border-b border-line-soft pb-5">
+          <Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Dashboard' }]} />
+          <h1 className="text-display-sm text-ink">{org.name}</h1>
+          <p className="mt-1 text-sm text-muted">
             {ORG_LABEL[org.type as OrgType]} · {org.city ?? '—'} · serves{' '}
             {Number(org.delivery_radius_km).toFixed(0)} km
           </p>
@@ -212,7 +214,7 @@ export default async function PartnerHome({
               action={
                 <Link
                   href="/partner/orders"
-                  className="text-sm font-medium text-accent-500 hover:underline"
+                  className="text-sm font-medium text-accent-strong hover:underline"
                 >
                   All orders
                 </Link>
@@ -273,7 +275,7 @@ export default async function PartnerHome({
                     <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
                       <Link
                         href={`/partner/inventory/${item.id}`}
-                        className="truncate text-ink hover:text-accent-400"
+                        className="truncate text-ink hover:text-accent-strong"
                       >
                         {item.product_name}
                       </Link>

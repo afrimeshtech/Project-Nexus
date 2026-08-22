@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { IssueKeyForm, RevokeKeyButton } from '@/components/partner/ApiKeyForms'
-import { Badge, Card, EmptyState, SectionHeading, Stat } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { listKeys, keyUsage, API_SCOPES, SCOPE_LABEL } from '@/modules/api/service'
 
@@ -31,7 +31,8 @@ export default async function PartnerApiPage() {
   return (
     <PartnerShell active="/partner/api">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'API access' }]}
           title="API access"
           subtitle={`Connect ${org.name} to your own systems — an ERP, a till, a stock sheet or a mobile app. Keys act only for this business and only within the scopes you grant.`}
         />

@@ -1,6 +1,6 @@
 import { AdminShell } from '@/components/shell/AdminShell'
 import { ReferralPointsForm } from '@/components/admin/AdminForms'
-import { Alert, Badge, Card, EmptyState, SectionHeading, Stat } from '@/components/ui'
+import { Alert, Badge, Card, EmptyState, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { currencySymbol, formatMoney } from '@/lib/money'
 import {
@@ -40,7 +40,8 @@ export default async function AdminRewardsPage() {
   return (
     <AdminShell active="/admin/rewards">
       <div className="space-y-8">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Rewards' }]}
           title="Referral programme"
           subtitle="Members invite their own tier: shoppers bring shoppers, outlets bring outlets, merchants bring merchants. Rewards are paid in points against a ledger liability, and cost the platform cash only on conversion."
         />

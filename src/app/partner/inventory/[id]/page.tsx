@@ -3,7 +3,7 @@ import { PartnerShell } from '@/components/shell/PartnerShell'
 import { AddBatchForm, AdjustStockForm, PricingForm } from '@/components/partner/InventoryForms'
 import { ProductImageUpload } from '@/components/media/ImageUpload'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Badge, Card, SectionHeading, Stat } from '@/components/ui'
+import { Breadcrumb, Badge, Card, SectionHeading, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getInventoryItem, inventoryLedger, listBatches } from '@/modules/inventory/service'
@@ -40,6 +40,14 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
   return (
     <PartnerShell active="/partner/inventory">
       <div className="space-y-7">
+        <Breadcrumb
+          trail={[
+            { label: 'Dashboard', href: '/partner' },
+            { label: 'Inventory', href: '/partner/inventory' },
+            { label: item.product_name },
+          ]}
+        />
+
         <Card className="flex items-center gap-4">
           <ProductThumb
             name={item.product_name}
@@ -49,7 +57,7 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
             size="lg"
           />
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold text-ink">{item.product_name}</h1>
+            <h1 className="text-display-sm text-ink">{item.product_name}</h1>
             <p className="text-sm text-muted">
               {[item.brand_name, item.category_name, item.pack_size].filter(Boolean).join(' · ')}
             </p>
@@ -165,7 +173,7 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
                     </td>
                     <td
                       className={`py-2.5 pr-3 text-right font-medium ${
-                        row.qty_delta > 0 ? 'text-accent-500' : 'text-ink'
+                        row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
                       }`}
                     >
                       {row.qty_delta > 0 ? '+' : ''}

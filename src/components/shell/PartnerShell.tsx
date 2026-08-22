@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/Icon'
 import { Wordmark } from '@/components/brand/Logo'
-import { Badge } from '@/components/ui'
+import { Badge, Thumb, inputWithIconClass } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentOrganisation, currentUser } from '@/lib/auth'
 import { ORG_LABEL, type OrgType } from '@/lib/tiers'
@@ -10,6 +10,19 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { audienceForSeller } from '@/modules/territory/service'
+
+type NavItem = {
+  href: string
+  label: string
+  /**
+   * The tile face, where one line has to be enough. The full `label` stays as
+   * the accessible name and the tooltip, and it always begins with this text —
+   * so what is read aloud still matches what is on screen.
+   */
+  short?: string
+  icon: IconName
+  badge?: number
+}
 
 /**
  * Dashboard shell for a selling organisation.
@@ -70,118 +83,209 @@ export async function PartnerShell({
           ? 'merchants'
           : 'dealer warehouses'
 
-  const nav: { href: string; label: string; icon: IconName; badge?: number }[] = [
+  /*
+   * Two registers, not one flat list.
+   *
+   * `work` is where the day is spent — those get the tile grid. `account` is
+   * where you go on purpose and rarely, so it stays a plain list below the
+   * rule. Splitting them is what stops eleven identical rows reading as a wall.
+   */
+  const work: NavItem[] = [
     { href: '/partner', label: 'Overview', icon: 'chart' },
-    { href: '/partner/orders', label: `Orders from ${sellsTo}`, icon: 'inbox' },
+    { href: '/partner/orders', label: `Orders from ${sellsTo}`, short: 'Orders', icon: 'inbox' },
     { href: '/partner/inventory', label: 'Inventory', icon: 'box' },
-    // Shown only where there is a tier below to read demand from — a delivery
-    // partner organisation sells to nobody, so the page would be empty.
+    { href: '/partner/catalogue', label: 'Add products', icon: 'plus' },
     ...(audienceForSeller(org.type)
       ? [{ href: '/partner/locations', label: 'Buyer locations', icon: 'pin' as const }]
       : []),
-    { href: '/partner/catalogue', label: 'Add products', icon: 'plus' },
-    // FUTURE-DASHBOARD: one-tap restocking from the tier above. /partner/source
-    // and the restock services are untouched and still build — this link is
-    // hidden only because there is no supplier tier to source from yet.
-    //
-    // ...(supplier
-    //   ? [
-    //       {
-    //         href: '/partner/source',
-    //         label: `Source from ${ORG_LABEL[supplier].toLowerCase()}s`,
-    //         // Annotated because the spread of this conditional array would
-    //         // otherwise widen `icon` to `string` for the whole literal.
-    //         icon: 'refresh' as IconName,
-    //         badge: basket,
-    //       },
-    //     ]
-    //   : []),
     { href: '/messages', label: 'Messages', icon: 'chat', badge: unreadMessages },
+  ]
+
+  // FUTURE-DASHBOARD: one-tap restocking from the tier above. /partner/source
+  // and the restock services are untouched and still build — this entry is
+  // hidden only because there is no supplier tier to source from yet.
+  //
+  // ...(supplier
+  //   ? [
+  //       {
+  //         href: '/partner/source',
+  //         label: `Source from ${ORG_LABEL[supplier].toLowerCase()}s`,
+  //         icon: 'refresh' as IconName,
+  //         badge: basket,
+  //       },
+  //     ]
+  //   : []),
+
+  const account: NavItem[] = [
     { href: '/partner/wallet', label: 'Wallet', icon: 'wallet' },
     { href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' },
     { href: '/partner/api', label: 'API access', icon: 'lock' },
     { href: '/partner/settings', label: 'Settings', icon: 'settings' },
   ]
 
+  const nav = [...work, ...account]
+
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="bg-bar">
-        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/partner">
+    <div className="flex min-h-screen bg-page">
+      {/*
+       * The rail is its own scroll context and does not move with the page:
+       * on a dashboard you navigate from wherever you have scrolled to, and a
+       * sidebar that has to be scrolled back to is a sidebar you stop using.
+       */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line-soft bg-surface lg:flex">
+        {/*
+         * The supplied logo crops are baked onto the artwork's own #021614
+         * ground, so the mark gets a plate of that colour rather than being
+         * pasted onto white as a dark rectangle. It is sized to the content
+         * header opposite it, so the top of the app reads as one band.
+         */}
+        <div className="flex h-16 shrink-0 items-center bg-surface-deep px-4">
+          <Link href="/partner" className="rounded-brand">
             <Wordmark size="sm" priority />
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-white">{org.name}</p>
-              <p className="text-xs text-white/70">
+        </div>
+
+        <div className="shrink-0 border-b border-line-soft px-3 py-2.5">
+          <form action="/partner/inventory" className="field-with-icon">
+            <Icon name="search" size={16} className="field-icon" />
+            <input
+              type="search"
+              name="q"
+              placeholder="Search inventory"
+              aria-label="Search inventory"
+              className={inputWithIconClass}
+            />
+          </form>
+        </div>
+
+        <nav aria-label="Dashboard" className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
+          <ul className="grid grid-cols-2 gap-2">
+            {work.map((item) => {
+              const current = active === item.href
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={current ? 'page' : undefined}
+                    title={item.label}
+                    aria-label={item.short ? item.label : undefined}
+                    className={`nav-tile ${current ? 'nav-tile-active' : 'hover:nav-tile-hover'}`}
+                  >
+                    <Icon name={item.icon} size={20} />
+                    <span className="line-clamp-2">{item.short ?? item.label}</span>
+                    {!!item.badge && item.badge > 0 && (
+                      <span className="pill-notify-sm absolute right-1.5 top-1.5">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+
+          <hr className="my-2.5 border-line-soft" />
+
+          <ul className="space-y-0.5">
+            {account.map((item) => {
+              const current = active === item.href
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={current ? 'page' : undefined}
+                    className={`nav-row ${current ? 'nav-row-active' : 'hover:nav-row-hover'}`}
+                  >
+                    <Icon name={item.icon} size={17} />
+                    <span className="flex-1">{item.label}</span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Who is signed in, and the way out. Pinned to the foot of the rail
+            because it is the one thing here that is not navigation. */}
+        <div className="shrink-0 border-t border-line-soft px-3 py-2.5">
+          <div className="flex items-center gap-2.5">
+            <Thumb src={null} alt={org.name} size="sm" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-ink">{org.name}</p>
+              <p className="truncate text-xs text-muted">
                 {ORG_LABEL[org.type as OrgType]} · tier {org.tier_level}
               </p>
             </div>
+          </div>
+          <form action={logoutAction} className="mt-2">
+            <button type="submit" className="nav-row w-full hover:nav-row-hover">
+              <Icon name="arrow-left" size={17} />
+              <span>Sign out</span>
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header
+          className="sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line-soft bg-surface px-4 sm:px-6"
+          style={{ zIndex: 'var(--z-sticky)' }}
+        >
+          <Link href="/partner" className="lg:hidden">
+            <span className="sr-only">AfriMesh partner dashboard</span>
+            <Icon name="chart" size={22} className="text-brand-deep" />
+          </Link>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {org.verification === 'verified' ? (
-              <Badge tone="brand">Verified</Badge>
+              <Badge tone="success">Verified</Badge>
             ) : (
               <Badge tone="warning">Pending review</Badge>
             )}
             <Link
+              href="/messages"
+              className="icon-button hover:icon-button-hover relative"
+              aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
+            >
+              <Icon name="chat" size={18} />
+              {unreadMessages > 0 && (
+                <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
+              )}
+            </Link>
+            <Link
               href="/"
-              className="rounded-brand px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10"
+              className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
             >
               Storefront
             </Link>
-            <form action={logoutAction}>
+            <form action={logoutAction} className="lg:hidden">
               <button
                 type="submit"
-                className="rounded-brand px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10"
+                className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
               >
                 Sign out
               </button>
             </form>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {org.verification !== 'verified' && (
-        <div className="border-b border-warning/40 bg-warning/15 px-4 py-2.5 text-center text-sm text-warning-ink">
-          Your business is awaiting verification. You can add inventory now — listings become
-          discoverable to buyers once an administrator approves you.
-        </div>
-      )}
+        {org.verification !== 'verified' && (
+          <div className="border-b border-warning/40 bg-warning/15 px-4 py-2.5 text-center text-sm text-warning-ink sm:px-6">
+            Your business is awaiting verification. You can add inventory now — listings become
+            discoverable to buyers once an administrator approves you.
+          </div>
+        )}
 
-      <div className="mx-auto flex w-full max-w-7xl gap-8 px-4 py-8">
-        <nav aria-label="Dashboard" className="hidden w-56 shrink-0 lg:block">
-          <ul className="space-y-1">
-            {nav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={active === item.href ? 'page' : undefined}
-                  className={`flex items-center gap-2.5 rounded-brand px-3 py-2 text-sm transition-colors ${
-                    active === item.href
-                      ? 'bg-accent-soft font-semibold text-accent-500'
-                      : 'text-muted hover:bg-surface-muted hover:text-ink'
-                  }`}
-                >
-                  <Icon name={item.icon} size={18} />
-                  <span className="flex-1">{item.label}</span>
-                  {!!item.badge && item.badge > 0 && (
-                    <span className="pill-notify">{item.badge}</span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <main className="min-w-0 flex-1">
-          <nav aria-label="Dashboard" className="scroll-x mb-4 lg:hidden">
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+          <nav aria-label="Dashboard" className="scroll-x mb-5 lg:hidden">
             <ul className="flex gap-2">
               {nav.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    aria-current={active === item.href ? 'page' : undefined}
                     className={`block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
                       active === item.href
-                        ? 'bg-accent-500 text-accent-ink'
+                        ? 'bg-brand-deep text-white'
                         : 'border border-line bg-surface text-muted'
                     }`}
                   >

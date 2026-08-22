@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { OrderStatusBadge } from '@/components/commerce/OrderBits'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Card, EmptyState, SectionHeading, Stat } from '@/components/ui'
+import { Card, EmptyState, PageHeader, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { ordersForBuyerOrg, ordersForSeller, type OrderStatus } from '@/modules/orders/service'
@@ -44,7 +44,8 @@ export default async function PartnerOrdersPage({
   return (
     <PartnerShell active="/partner/orders">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Orders' }]}
           title={showPurchases ? 'Your purchases' : 'Incoming orders'}
           subtitle={
             showPurchases

@@ -38,7 +38,13 @@
   --color-surface: #ffffff; /* cards and panels, lifted off the ground */
   --color-surface-muted: #f4f7f5; /* hover, subtle fills */
   --color-surface-strong: #e5ebe7; /* stronger fills, empty states */
-  --color-surface-deep: #021614; /* deliberate dark chrome — the logo ground */
+  /* The logo ground, and therefore every dark bar in the app: the supplied
+     crops are opaque, so a bar of any other colour shows the crop as a
+     rectangle. Was #021614, which is the artwork's original ground and at 5%
+     lightness reads as black rather than as the brand's green. The crops have
+     been regrounded onto this value — same hue and saturation as the logo's
+     own green (149deg, 50%), taken down to bar weight. White is 13.0:1 on it. */
+  --color-surface-deep: #123824;
 
   /* -- Accent: vivid orange -----------------------------------------------
      #ff9500 throughout, as a deliberate product decision: the brighter orange
@@ -88,8 +94,27 @@
   --color-focus-ring: #c04a12;
 
   /* -- Type --------------------------------------------------------------- */
-  --color-ink: #2d4a3a; /* PRIMARY TEXT, deep forest green — 8.1:1 on white */
-  --color-muted: #5a6f66; /* secondary text — 5.3:1 on white */
+  /* -- Text ----------------------------------------------------------------
+     Two levels, and the distance between them is the point.
+
+     Measured against the reference: its titles are 20.6:1 and its captions
+     3.7:1 — a gap of 5.6x. This app was running 9.8:1 against 5.4:1, a gap of
+     1.8x, which is why every screen read as soft. Nothing was failing contrast
+     against the background; the levels simply were not separating from each
+     other, so no line of text could lead.
+
+     So the ink goes to near-black and the secondary text goes neutral. The
+     brand green does not disappear — it still carries the bar, the buttons,
+     the category tiles and the mesh — it just stops being the colour that
+     prose is set in, which is the one job a mid-tone green cannot do.
+
+     Landed at 12.3:1 after trying both ends: 9.8:1 read as soft, 15.5:1 read
+     as too heavy and hard. The gap does not reach the reference's 5.6x, and
+     is not meant to — that figure depends on captions at 2.7:1, which fail
+     AA. 2.3x with a near-neutral caption is the readable version of it.
+     --------------------------------------------------------------------- */
+  --color-ink: #203a2d; /* PRIMARY TEXT — 12.3:1 on white, 10.9:1 on the page */
+  --color-muted: #636e6a; /* secondary — 5.3:1, and 5% saturation, not 10% */
 
   /* -- Inputs ------------------------------------------------------------- */
   --color-field: #f5f5f5;
@@ -276,7 +301,7 @@
      graphics, but neither is legible as small UI text. The lighter pair below
      is used where a bar element needs those hues and has to be readable.
      --------------------------------------------------------------------- */
-  --color-bar: #021614; /* logo ground */
+  --color-bar: #123824; /* the logo ground — see --color-surface-deep */
   --color-bar-ink: #ffffff; /* logo white — 18.6:1 */
   --color-bar-muted: color-mix(in srgb, #ffffff 72%, transparent);
   --color-bar-line: color-mix(in srgb, #ffffff 16%, transparent);
@@ -385,9 +410,9 @@
      were doing the scanning job with decoration rather than with hierarchy,
      and reading as a template while they did it.
      --------------------------------------------------------------------- */
-  --color-stat-label: #5a6f66; /* the label is a caption, not the point */
-  --color-stat-value: #16281f; /* 13.9:1 — the number carries the tile */
-  --color-stat-hint: #63776d; /* 4.78:1 — the hint is 12px, so it needs AA */
+  --color-stat-label: var(--color-muted); /* a caption, not the point */
+  --color-stat-value: var(--color-ink); /* the number carries the tile */
+  --color-stat-hint: var(--color-muted);
   --color-stat-danger: #b3271a;
 
   /* -- Price -------------------------------------------------------------- */

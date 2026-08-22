@@ -282,10 +282,18 @@ export function ItemCard({
       </Link>
 
       <div className="flex flex-1 flex-col p-3">
+        {/* Plain small text, not the eyebrow register. An eyebrow is a short
+            classifier; this is an identifier — a brand, a pack size and a
+            13-digit barcode — and setting that uppercase at 0.13em tracking
+            made it wider than the product name, wrapped it onto two lines and
+            left it competing with the thing it is supposed to qualify. One
+            line, truncated, out of the way. */}
         {identifier && (
-          <p className="font-technical text-eyebrow uppercase text-muted">{identifier}</p>
+          <p className="truncate font-technical text-xs text-muted" title={identifier}>
+            {identifier}
+          </p>
         )}
-        <h3 className="mt-0.5 line-clamp-2 text-sm font-semibold text-ink">
+        <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-ink">
           <Link href={href} className="hover:underline">
             {name}
           </Link>

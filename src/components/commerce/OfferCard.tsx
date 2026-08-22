@@ -40,7 +40,7 @@ export function OfferCard({
 
   return (
     <article
-      className="group sheen card card-interactive rise-in relative flex flex-col gap-3 overflow-hidden p-4 hover:card-interactive-hover sm:flex-row sm:items-center"
+      className="group card card-interactive rise-in relative flex flex-col gap-3 overflow-hidden p-4 hover:card-interactive-hover sm:flex-row sm:items-center"
       style={{ animationDelay: `${Math.min(index, 9) * 80}ms` }}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -158,7 +158,7 @@ export function ProductResultCard({
   return (
     <Link
       href={`/product/${result.top_offer.product_id}`}
-      className="group sheen product-card card-interactive press rise-in flex gap-4 p-4 hover:card-interactive-hover hover:product-card-hover active:press-active"
+      className="group product-card card-interactive press rise-in flex gap-4 p-4 hover:card-interactive-hover hover:product-card-hover active:press-active"
       // Staggered arrival, capped at the tenth card: past about 600ms the last
       // card in a long grid is still fading in while the reader is already
       // scrolling, which reads as lag rather than polish.

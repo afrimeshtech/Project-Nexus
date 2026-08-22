@@ -75,16 +75,22 @@ export default async function PartnerOrdersPage({
           >
             Sales
           </Link>
-          <Link
-            href="/partner/orders?view=purchases"
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              showPurchases
-                ? 'bg-accent-500 text-accent-ink'
-                : 'border border-line bg-surface text-muted'
-            }`}
-          >
-            Purchases
-          </Link>
+          {/* FUTURE-DASHBOARD: the purchases side of the ledger. A retail outlet
+              buys from merchants, and that tier is not open yet, so this tab can
+              only ever be empty. Everything behind it — the ?view=purchases
+              branch below, the queries, the order service — is untouched.
+
+              <Link
+                href="/partner/orders?view=purchases"
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  showPurchases
+                    ? 'bg-accent-500 text-accent-ink'
+                    : 'border border-line bg-surface text-muted'
+                }`}
+              >
+                Purchases
+              </Link>
+          */}
 
           {!showPurchases && (
             <>

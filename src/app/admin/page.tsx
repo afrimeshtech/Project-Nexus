@@ -123,7 +123,12 @@ export default async function AdminHome() {
               title="GMV, last 14 days"
               subtitle={`Total ${formatMoneyCompact(kpis.gmv)} settled through the platform`}
             />
-            <BarSeries data={series} valueKey="gmv" caption="Daily gross merchandise value" />
+            <BarSeries
+              data={series}
+              valueKey="gmv"
+              caption="Daily gross merchandise value"
+              emptyLabel="No paid orders in the last 14 days"
+            />
           </Card>
 
           <Card>

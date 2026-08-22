@@ -122,26 +122,64 @@
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, Arial, sans-serif;
   --font-technical: var(--font-plex), ui-sans-serif, system-ui, Arial, sans-serif;
 
-  /* Display: the 72–80px specified heading size. */
+  /* Type scale.
+     ------------------------------------------------------------------------
+     The brand specifies Inter, and Inter set at its defaults is the single
+     most recognisable signature of a generated interface. The way out is not
+     a different family — it is using the range this one actually has.
+
+     Three things do the work:
+
+     1. Tracking that changes with size. Inter is drawn for text; at display
+        sizes it needs to be pulled in hard (-0.045em) or it reads loose and
+        unset. At caption size it needs opening back up.
+     2. Weight contrast instead of size contrast. 620 against 400 reads as
+        deliberate; 700 everywhere reads as a default.
+     3. A second voice for the small register. The brand names two faces and
+        the app was only using one, so every heading, label and column header
+        sounded identical. Eyebrows, stat labels and table headers now take
+        IBM Plex Sans — uppercase and letterspaced — which is a genuinely
+        different family rather than Inter at a smaller size.
+
+        (Differentiating display by character set was the first attempt and
+        does not work here: `cv11` and friends are already switched on for the
+        whole document in the body rule, so headings and body share them.)
+     ------------------------------------------------------------------------ */
+
   --text-display: clamp(2.5rem, 7vw, 5rem); /* 40 → 80px */
-  --text-display--line-height: 1.04;
-  --text-display--letter-spacing: -0.03em;
-  --text-display--font-weight: 700;
+  --text-display--line-height: 0.98;
+  --text-display--letter-spacing: -0.045em;
+  --text-display--font-weight: 620;
 
-  --text-display-sm: clamp(2rem, 5vw, 3.25rem); /* 32 → 52px */
-  --text-display-sm--line-height: 1.1;
-  --text-display-sm--letter-spacing: -0.02em;
-  --text-display-sm--font-weight: 700;
+  --text-display-sm: clamp(1.9rem, 5vw, 3rem); /* 30 → 48px */
+  --text-display-sm--line-height: 1.06;
+  --text-display-sm--letter-spacing: -0.035em;
+  --text-display-sm--font-weight: 620;
 
-  /* Body: 16px regular. */
+  /* Section headings. Previously these borrowed body styling and left the
+     page with no middle register at all — a jump from 80px straight to 16px. */
+  --text-heading: clamp(1.15rem, 2vw, 1.4rem);
+  --text-heading--line-height: 1.2;
+  --text-heading--letter-spacing: -0.018em;
+  --text-heading--font-weight: 620;
+
+  /* Body: 16px regular, a touch more leading than the old 1.6 — the measure
+     on a dashboard is wide, and wide lines need air to stay trackable. */
   --text-body: 1rem;
-  --text-body--line-height: 1.6;
+  --text-body--line-height: 1.65;
   --text-body--font-weight: 400;
 
   /* UI labels: 14px medium. */
   --text-label: 0.875rem;
   --text-label--line-height: 1.45;
   --text-label--font-weight: 500;
+
+  /* Eyebrows and column headers: small, spaced, set in the technical face so
+     the register is obviously different from prose rather than just smaller. */
+  --text-eyebrow: 0.7rem;
+  --text-eyebrow--line-height: 1.3;
+  --text-eyebrow--letter-spacing: 0.13em;
+  --text-eyebrow--font-weight: 500;
 
   /* The brand's green tile. One token for both the category cards and the
      product thumbnails, so the two genuinely match rather than being two values
@@ -250,8 +288,7 @@
     0 4px 8px color-mix(in srgb, #2d4a3a 10%, transparent),
     0 12px 32px -8px color-mix(in srgb, #2d4a3a 24%, transparent);
 
-  /* Named for what they are attached to; both resolve to the scale above. */
-  --shadow-card: var(--shadow-medium);
+  /* Named for what it is attached to; resolves to the scale above. */
   --shadow-raised: var(--shadow-strong);
 
   /* Input fields: subtler than a card, because a field should sit just off the
@@ -278,18 +315,16 @@
   --duration-enter: 460ms;
 
   /* -- Metric cards -------------------------------------------------------
-     The one place in the app where a card is dark. A dashboard is read by
-     scanning for the number, and a grid of dark tiles on the light page turns
-     that scan into one movement instead of eight. Text on them is specified
-     below rather than reusing --color-ink, which is a colour for light grounds
-     and would be invisible here.
+     A dashboard is read by scanning for the number, so the number gets the
+     contrast and everything around it gets out of the way. The tile sits on
+     the same light ground as the rest of the page: eight dark gradient tiles
+     were doing the scanning job with decoration rather than with hierarchy,
+     and reading as a template while they did it.
      --------------------------------------------------------------------- */
-  --color-stat-label: #d0d8d0; /* 5.4:1 on the card's lighter end */
-  --color-stat-value: #ffffff; /* 7.9:1 — the number carries the card */
-  --color-stat-hint: #a0b0a0; /* sits low, where the gradient is darkest */
-  /* The danger hint needs to survive a dark ground: the usual #b3271a is a
-     dark red on dark green and disappears. This is the same signal, lifted. */
-  --color-stat-danger: #ffb3a7;
+  --color-stat-label: #5a6f66; /* the label is a caption, not the point */
+  --color-stat-value: #16281f; /* 13.9:1 — the number carries the tile */
+  --color-stat-hint: #6b7f75;
+  --color-stat-danger: #b3271a;
 
   /* -- Price -------------------------------------------------------------- */
   /* A warm sand behind a price, so the number a shopper is comparing has its
@@ -324,17 +359,6 @@
   to {
     opacity: 1;
     transform: scale(1);
-  }
-}
-
-/* A highlight travelling diagonally across a card. Used on hover, so it fires
-   on the pointer rather than running forever in the corner of the eye. */
-@keyframes sheen {
-  from {
-    transform: translateX(-120%) skewX(-18deg);
-  }
-  to {
-    transform: translateX(320%) skewX(-18deg);
   }
 }
 
@@ -541,24 +565,23 @@ a[role='button'],
   .press:active {
     transform: none !important;
   }
-
-  /* The travelling highlight is pure motion with nothing behind it. */
-  .sheen::after,
-  .sheen:hover::after {
-    display: none !important;
-  }
 }
 
 /* ---------------------------------------------------------------------------
    Utilities
    --------------------------------------------------------------------------- */
 
-/* Cards: 24px corners, soft shadow, generous internal space. */
+/* Cards sit on the page rather than float above it.
+   A drop shadow says "this is nearer to you than the page". On a dashboard
+   where nine of them are stacked in a column, none is nearer than any other,
+   so the shadow states something untrue nine times and the screen reads as
+   decorated. A hairline states the boundary, which is the only thing that was
+   ever being communicated. Elevation is kept for things that genuinely float —
+   menus and dialogs. */
 @utility card {
   background: var(--color-surface);
-  border: 1px solid var(--color-line-soft);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
 }
 
 /* A card that responds to the pointer — lifts rather than just tinting. */
@@ -759,25 +782,43 @@ a[role='button'],
 }
 
 @utility mesh-surface {
-  /* The mesh motif — interconnected businesses — on the deepest surface. */
+  /* The mesh motif — interconnected businesses — on the deepest surface.
+     ------------------------------------------------------------------------
+     This used to be three blurred radial blobs. A soft colour wash is the most
+     generic hero treatment there is, and worse, it said nothing: the brand's
+     motif is a *mesh* — nodes joined by edges — and a gradient has neither.
+
+     So the mesh is now actually drawn. Two sets of hairlines crossing at 60°
+     make the lattice, and a dot grid on the same pitch puts a node at the
+     intersections. Both are held far below the text contrast so the artwork
+     stays underneath the words rather than competing with them.
+     ------------------------------------------------------------------------ */
   color: #fff;
   background-color: var(--color-surface-deep);
   background-image:
+    /* nodes */
     radial-gradient(
-      circle at 18% 22%,
-      color-mix(in srgb, #436953 55%, transparent) 0,
-      transparent 42%
+      circle at center,
+      color-mix(in srgb, #3f9c68 55%, transparent) 1.4px,
+      transparent 1.5px
     ),
-    radial-gradient(
-      circle at 82% 12%,
-      color-mix(in srgb, #e8763a 22%, transparent) 0,
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at 60% 88%,
-      color-mix(in srgb, #2d4a3a 70%, transparent) 0,
-      transparent 45%
-    );
+    /* edges, leaning right */
+      repeating-linear-gradient(
+        60deg,
+        color-mix(in srgb, #3f9c68 13%, transparent) 0 1px,
+        transparent 1px 74px
+      ),
+    /* edges, leaning left */
+      repeating-linear-gradient(
+        -60deg,
+        color-mix(in srgb, #c08a52 10%, transparent) 0 1px,
+        transparent 1px 74px
+      );
+  background-size:
+    74px 128px,
+    auto,
+    auto;
+  background-position: center, center, center;
 }
 
 /* The deep blue banner. */
@@ -950,67 +991,30 @@ a[role='button'],
     var(--shadow-strong);
 }
 
-/* The travelling highlight. A plain class rather than a Tailwind utility
-   because it needs a pseudo-element, and it lives in the stylesheet either
-   way — nothing here depends on the class scanner finding it. */
-.sheen::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 45%;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, #ffffff 75%, transparent),
-    transparent
-  );
-  opacity: 0;
-  transform: translateX(-120%) skewX(-18deg);
-}
-.sheen:hover::after {
-  opacity: 1;
-  animation: sheen 700ms var(--ease-out);
-}
-/* On the dark tiles the sweep has to be warm rather than white, or it reads as
-   a scratch across the green instead of a reflection. */
-.sheen-warm::after {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--color-accent-500) 40%, transparent),
-    transparent
-  );
-}
+/* A metric tile.
 
-/* A metric card: forest green, gradient to a deeper green at the bottom, with
-   a 2px accent line along the top.
+   Previously this carried a gradient, an inset accent bar, a drop shadow, a
+   coloured glow, a hover lift and a travelling sheen — six effects on a box
+   whose whole job is to show one number, repeated seventeen times across the
+   dashboards. That stack is what makes a screen read as decorated rather than
+   designed.
 
-   The accent line is an inset box-shadow rather than a border, so it follows
-   the corner radius and costs no layout — a real border-top would push every
-   card down 2px and break the grid rhythm against anything beside it.
+   What is left is what a figure actually needs: one flat ground, a hairline,
+   and the number set large enough to be the only thing competing for
+   attention. The accent is spent on the rule above the label, not on the
+   whole edge.
 
    16px corners rather than the 24px a content card uses: these are small, and
    at 96px tall a 24px radius starts eating the number. */
 @utility stat-card {
-  background: linear-gradient(165deg, var(--color-brand-deep), var(--color-brand-deepest));
+  background: var(--color-surface);
+  border: 1px solid var(--color-line-soft);
+  border-top: 2px solid var(--color-line);
   border-radius: var(--radius-brand);
-  box-shadow:
-    inset 0 2px 0 var(--color-accent-500),
-    var(--shadow-medium),
-    0 8px 20px -10px var(--color-brand-glow);
-  transition:
-    transform var(--duration-hover) var(--ease-out),
-    box-shadow var(--duration-hover) var(--ease-out);
+  transition: border-top-color var(--duration-hover) var(--ease-out);
 }
 @utility stat-card-hover {
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 2px 0 var(--color-accent-500),
-    var(--shadow-strong),
-    0 14px 28px -10px var(--color-brand-glow);
+  border-top-color: var(--color-accent-500);
 }
 
 /* The price on a card: its own warm ground, so the number being compared is

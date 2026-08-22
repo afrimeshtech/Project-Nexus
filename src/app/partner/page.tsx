@@ -7,7 +7,7 @@ import {
   Badge,
   Card,
   EmptyState,
-  LinkButton,
+  // FUTURE-DASHBOARD: LinkButton, for the sourcing shortcut below.
   Rating,
   SectionHeading,
   Stat,
@@ -15,7 +15,8 @@ import {
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatMoney } from '@/lib/money'
-import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
+import { ORG_LABEL, type OrgType } from '@/lib/tiers'
+// FUTURE-DASHBOARD: import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import {
   sellerKpis,
   sellerSalesSeries,
@@ -62,8 +63,23 @@ export default async function PartnerHome({
       referralSummary(user.id),
     ])
 
-  const supplier = supplierTypeFor(org.tier_level)
+  // FUTURE-DASHBOARD: which tier this organisation restocks from. A retail
+  // outlet sources from merchants, and that tier is not open yet, so there is
+  // nowhere for the "Source now" action below to lead.
+  // const supplier = supplierTypeFor(org.tier_level)
   const audience = audienceForSeller(org.type)
+
+  /* Headline figures for the sales panel.
+     Summed from the series already fetched rather than queried again — the
+     rows carry both revenue and order count, so a second round trip would be
+     asking the database something it has already answered. */
+  const sales14d = series.reduce(
+    (total, row) => ({
+      orders: total.orders + Number(row.orders),
+      revenue: total.revenue + Number(row.revenue),
+    }),
+    { orders: 0, revenue: 0 },
+  )
 
   return (
     <PartnerShell active="/partner">
@@ -121,10 +137,32 @@ export default async function PartnerHome({
         <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
           <Card>
             <SectionHeading title="Sales, last 14 days" subtitle="Net of platform fees" />
+            {/* The period totals, above the chart.
+                A bar chart answers "which days" well and "how much altogether"
+                not at all — the reader was left estimating a fortnight's takings
+                by eye. These are the two numbers they were estimating. No trend
+                arrow: that needs the previous fortnight to compare against, and
+                an arrow drawn without one would be decoration asserting a fact
+                nothing here has checked. */}
+            <div className="mb-5 flex flex-wrap gap-x-10 gap-y-3 border-b border-line-soft pb-4">
+              <div>
+                <p className="font-technical text-eyebrow uppercase text-muted">Orders</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                  {sales14d.orders}
+                </p>
+              </div>
+              <div>
+                <p className="font-technical text-eyebrow uppercase text-muted">Revenue</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                  {formatMoney(sales14d.revenue)}
+                </p>
+              </div>
+            </div>
             <BarSeries
               data={series}
               valueKey="revenue"
               caption="Daily revenue over the last 14 days"
+              emptyLabel="No sales in the last 14 days"
             />
           </Card>
 
@@ -219,13 +257,15 @@ export default async function PartnerHome({
               <SectionHeading
                 title="Needs restocking"
                 subtitle="At or below your reorder level"
-                action={
-                  supplier ? (
-                    <LinkButton href="/partner/source" variant="ghost">
-                      Source now
-                    </LinkButton>
-                  ) : null
-                }
+                // FUTURE-DASHBOARD: the sourcing shortcut, restored with the
+                // merchant tier —
+                //   action={
+                //     supplier ? (
+                //       <LinkButton href="/partner/source" variant="ghost">
+                //         Source now
+                //       </LinkButton>
+                //     ) : null
+                //   }
               />
               {lowStock.length ? (
                 <ul className="space-y-1.5">

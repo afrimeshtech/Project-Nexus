@@ -4,15 +4,21 @@ import { Wordmark } from '@/components/brand/Logo'
 import { Badge } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentOrganisation, currentUser } from '@/lib/auth'
-import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
-import { cartCount } from '@/lib/cart'
+import { ORG_LABEL, type OrgType } from '@/lib/tiers'
+// FUTURE-DASHBOARD: both of these fed the sourcing nav entry only.
+// import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
+// import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { audienceForSeller } from '@/modules/territory/service'
 
 /**
- * Dashboard shell for every business tier. The navigation adapts to the
- * organisation's position in the supply chain, but the modules are the same:
- * you sell downstream, you source upstream, you hold a wallet.
+ * Dashboard shell for a selling organisation.
+ *
+ * Written to adapt to the organisation's position in the supply chain — you
+ * sell downstream, you source upstream, you hold a wallet. At launch only the
+ * retail outlet tier exists, so the downstream half is all that is wired up;
+ * see the FUTURE-DASHBOARD notes below for what comes back with the upper
+ * tiers.
  */
 export async function PartnerShell({
   children,
@@ -21,12 +27,40 @@ export async function PartnerShell({
   children: React.ReactNode
   active: string
 }) {
-  const [user, org, basket] = await Promise.all([currentUser(), currentOrganisation(), cartCount()])
+  // FUTURE-DASHBOARD: `basket` was the sourcing cart's badge count.
+  // const [user, org, basket] = await Promise.all([
+  //   currentUser(),
+  //   currentOrganisation(),
+  //   cartCount(),
+  // ])
+  const [user, org] = await Promise.all([currentUser(), currentOrganisation()])
   if (!org || !user) return null
 
   const unreadMessages = await unreadMessageCount(user.id, org.id)
 
-  const supplier = supplierTypeFor(org.tier_level)
+  /*
+   * FUTURE-DASHBOARD: which tier this organisation restocks from.
+   *
+   * Registration is closed above the retail outlet tier, and an outlet sources
+   * from merchants — so for anyone who can sign up today the sourcing nav below
+   * would point at a page that can only ever be empty.
+   *
+   * const supplier = supplierTypeFor(org.tier_level)
+   */
+
+  /*
+   * `sellsTo` is deliberately NOT collapsed to a constant.
+   *
+   * Closing registration does not delete the organisations that already exist —
+   * a deployment seeded before the tiers were switched off, or one that has
+   * been running, still has merchant and warehouse accounts, and they still
+   * authenticate. They land here. Hardcoding 'consumers' would label a
+   * merchant's inbox "Orders from consumers", which is simply wrong: a merchant
+   * sells to retail outlets.
+   *
+   * The org's own type is the honest answer whatever is open for registration,
+   * so it stays the source of truth.
+   */
   const sellsTo =
     org.type === 'outlet'
       ? 'consumers'
@@ -46,21 +80,26 @@ export async function PartnerShell({
       ? [{ href: '/partner/locations', label: 'Buyer locations', icon: 'pin' as const }]
       : []),
     { href: '/partner/catalogue', label: 'Add products', icon: 'plus' },
-    ...(supplier
-      ? [
-          {
-            href: '/partner/source',
-            label: `Source from ${ORG_LABEL[supplier].toLowerCase()}s`,
-            // Annotated because the spread of this conditional array would
-            // otherwise widen `icon` to `string` for the whole literal.
-            icon: 'refresh' as IconName,
-            badge: basket,
-          },
-        ]
-      : []),
+    // FUTURE-DASHBOARD: one-tap restocking from the tier above. /partner/source
+    // and the restock services are untouched and still build — this link is
+    // hidden only because there is no supplier tier to source from yet.
+    //
+    // ...(supplier
+    //   ? [
+    //       {
+    //         href: '/partner/source',
+    //         label: `Source from ${ORG_LABEL[supplier].toLowerCase()}s`,
+    //         // Annotated because the spread of this conditional array would
+    //         // otherwise widen `icon` to `string` for the whole literal.
+    //         icon: 'refresh' as IconName,
+    //         badge: basket,
+    //       },
+    //     ]
+    //   : []),
     { href: '/messages', label: 'Messages', icon: 'chat', badge: unreadMessages },
     { href: '/partner/wallet', label: 'Wallet', icon: 'wallet' },
     { href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' },
+    { href: '/partner/api', label: 'API access', icon: 'lock' },
     { href: '/partner/settings', label: 'Settings', icon: 'settings' },
   ]
 

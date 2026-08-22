@@ -25,20 +25,39 @@ export function Card({
   return <Tag className={`card p-5 sm:p-7 ${className}`}>{children}</Tag>
 }
 
+/**
+ * A section heading.
+ *
+ * Three registers rather than one: an optional eyebrow set in the technical
+ * face, the title in Inter pulled in tight, and the subtitle as prose held to
+ * a readable measure. The brand specifies both faces — using only the primary
+ * one left every heading in the app sounding identical, which is most of why
+ * the pages read as generated.
+ *
+ * The subtitle is capped at ~74 characters. A dashboard is wide, and a line of
+ * explanatory prose running the full width of a 1280px screen is unreadable
+ * however well it is set.
+ */
 export function SectionHeading({
   title,
   subtitle,
+  eyebrow,
   action,
 }: {
   title: string
   subtitle?: string
+  /** Short classifier — the tier, the module, the period being shown. */
+  eyebrow?: string
   action?: ReactNode
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="text-base font-semibold text-ink sm:text-lg">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="mb-1 font-technical text-eyebrow uppercase text-accent-500">{eyebrow}</p>
+        )}
+        <h2 className="text-heading text-ink">{title}</h2>
+        {subtitle && <p className="mt-1 max-w-[74ch] text-sm text-muted">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -198,12 +217,16 @@ export function Stat({
   icon?: IconName
 }) {
   return (
-    <div className="stat-card sheen sheen-warm relative overflow-hidden p-4 hover:stat-card-hover">
-      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-stat-label">
-        <Icon name={icon ?? iconForStat(label)} size={14} />
+    <div className="stat-card p-4 hover:stat-card-hover">
+      <p className="flex items-center gap-1.5 font-technical text-[0.7rem] font-medium uppercase tracking-[0.12em] text-stat-label">
+        <Icon name={icon ?? iconForStat(label)} size={13} />
         {label}
       </p>
-      <p className="mt-1.5 text-xl font-bold text-stat-value sm:text-2xl">{value}</p>
+      {/* Tabular figures so a column of numbers lines up, and tight tracking
+          so a large figure does not read as loose at display size. */}
+      <p className="mt-2 text-2xl font-semibold tracking-[-0.02em] tabular-nums text-stat-value sm:text-[1.75rem]">
+        {value}
+      </p>
       {hint && (
         <p
           className={`mt-1 text-xs ${

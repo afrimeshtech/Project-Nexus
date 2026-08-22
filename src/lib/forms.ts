@@ -113,9 +113,31 @@ export const fulfilment = z.enum(['delivery', 'pickup'], {
   message: 'Choose delivery or collection.',
 })
 
-export const orgType = z.enum(['outlet', 'merchant', 'warehouse', 'manufacturer', 'logistics'], {
-  message: 'Choose the kind of business you run.',
-})
+/**
+ * FUTURE-DASHBOARD: the network launches with the retail outlet tier only.
+ *
+ * Merchant, dealer warehouse, manufacturer and delivery partner each have a
+ * working dashboard behind them — the pages, services and schema are all still
+ * here and still compile. What is switched off is the way in: this enum is what
+ * the registration form posts against, so narrowing it is what makes those
+ * tiers unregisterable rather than merely hidden.
+ *
+ * To bring one back, add its value here and uncomment its entry in
+ * components/partner/BusinessForm.tsx. `grep -rn FUTURE-DASHBOARD src` lists
+ * every switch that has to move together.
+ */
+export const orgType = z.enum(
+  [
+    'outlet',
+    // 'merchant',
+    // 'warehouse',
+    // 'manufacturer',
+    // 'logistics',
+  ],
+  {
+    message: 'Choose the kind of business you run.',
+  },
+)
 
 /**
  * A rewards invitation code, on the two paths that create an account.

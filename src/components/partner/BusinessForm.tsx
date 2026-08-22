@@ -8,32 +8,43 @@ import {
 } from '@/app/actions/onboarding'
 import { Alert, Field, inputClass } from '@/components/ui'
 
+/**
+ * FUTURE-DASHBOARD: only the retail outlet tier is offered at launch.
+ *
+ * The upper supply tiers and the delivery partner are commented out rather
+ * than removed — each still has a complete dashboard behind it. Restoring one
+ * means uncommenting its entry here *and* its value in the `orgType` enum in
+ * lib/forms.ts, which is what the server actually validates against.
+ *
+ * The outlet hint no longer mentions buying from merchants, because with that
+ * tier switched off there is nobody upstream to buy from yet.
+ */
 const TYPES = [
   {
     value: 'outlet',
     label: 'Retail outlet',
-    hint: 'A neighbourhood shop selling to consumers. You buy from merchants.',
+    hint: 'A neighbourhood shop selling to consumers.',
   },
-  {
-    value: 'merchant',
-    label: 'Merchant / wholesaler',
-    hint: 'You supply retail outlets in bulk and buy from dealer warehouses.',
-  },
-  {
-    value: 'warehouse',
-    label: 'Dealer warehouse',
-    hint: 'A regional hub supplying merchants, sourcing from manufacturers.',
-  },
-  {
-    value: 'manufacturer',
-    label: 'Manufacturer',
-    hint: 'You produce goods and supply dealer warehouses.',
-  },
-  {
-    value: 'logistics',
-    label: 'Delivery partner',
-    hint: 'You move goods between participants in the network.',
-  },
+  // {
+  //   value: 'merchant',
+  //   label: 'Merchant / wholesaler',
+  //   hint: 'You supply retail outlets in bulk and buy from dealer warehouses.',
+  // },
+  // {
+  //   value: 'warehouse',
+  //   label: 'Dealer warehouse',
+  //   hint: 'A regional hub supplying merchants, sourcing from manufacturers.',
+  // },
+  // {
+  //   value: 'manufacturer',
+  //   label: 'Manufacturer',
+  //   hint: 'You produce goods and supply dealer warehouses.',
+  // },
+  // {
+  //   value: 'logistics',
+  //   label: 'Delivery partner',
+  //   hint: 'You move goods between participants in the network.',
+  // },
 ] as const
 
 /** Location capture. Distance decides who finds you, so it is not optional. */

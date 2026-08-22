@@ -33,7 +33,8 @@ export async function ConsumerShell({
     ? await Promise.all([unreadCount(user.id), unreadMessageCount(user.id, org?.id ?? null)])
     : [0, 0]
   const isAdmin = user ? ADMIN_ROLES.includes(user.role) : false
-  const isRider = user?.role === 'delivery_partner'
+  // FUTURE-DASHBOARD: delivery partner.
+  // const isRider = user?.role === 'delivery_partner'
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -69,9 +70,12 @@ export async function ConsumerShell({
                     badge: unread,
                   },
                   ...(org ? [{ href: '/partner', label: org.name, icon: 'store' as const }] : []),
-                  ...(isRider
-                    ? [{ href: '/rider', label: 'Deliveries', icon: 'scooter' as const }]
-                    : []),
+                  // FUTURE-DASHBOARD: the delivery partner's own surface. The
+                  // /rider routes still exist and still guard on the role — this
+                  // is the only link that ever led anyone to them.
+                  // ...(isRider
+                  //   ? [{ href: '/rider', label: 'Deliveries', icon: 'scooter' as const }]
+                  //   : []),
                   ...(isAdmin
                     ? [{ href: '/admin', label: 'Platform console', icon: 'settings' as const }]
                     : []),

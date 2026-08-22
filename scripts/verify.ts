@@ -27,6 +27,7 @@ import { openJobs, acceptJob, markPickedUp, completeDelivery } from '@/modules/l
 import { sendMessage, readThread } from '@/modules/messaging/service'
 import { authenticateWithOtp, requestOtp } from '@/modules/identity/service'
 import { activeLocations, audienceForSeller, territorySummary } from '@/modules/territory/service'
+import { authenticate, issueKey, recordRequest, revokeKey } from '@/modules/api/service'
 import {
   attachReferral,
   qualifyReferral,
@@ -899,6 +900,83 @@ check(
   narrow.length <= wide.length &&
     narrow.every((cell) => (cell.distance_km ?? 0) <= (wide.at(-1)?.distance_km ?? Infinity) + 500),
   `${wide.length} area(s) within 500 km, ${narrow.length} within 1 km`,
+)
+
+// ---------------------------------------------------------------------------
+console.log('\nCIM Volume III §9 — API-first platform')
+// ---------------------------------------------------------------------------
+
+const apiKey = await issueKey({
+  name: 'verification',
+  organisationId: grace.id,
+  createdByUserId: graceOwner.id,
+  scopes: ['inventory:read'],
+})
+check(
+  'A key is returned once and stored only as a hash',
+  apiKey.secret.startsWith('am_live_') &&
+    !(await sql.one(`SELECT id FROM api_keys WHERE key_hash = $1`, [apiKey.secret])),
+  'the plaintext secret does not appear in the table',
+)
+
+const granted = await authenticate(`Bearer ${apiKey.secret}`, 'inventory:read')
+check(
+  'A valid key authenticates for a scope it was granted',
+  granted.ok && granted.organisationId === grace.id,
+  granted.ok ? `acting for ${grace.name}` : granted.reason,
+)
+
+const ungranted = await authenticate(`Bearer ${apiKey.secret}`, 'orders:read')
+check(
+  'The same key is refused a scope it was not granted',
+  !ungranted.ok && ungranted.reason === 'insufficient_scope',
+)
+
+check(
+  'An unrecognised key authenticates as nothing',
+  !(await authenticate('Bearer am_live_not_a_real_key', 'inventory:read')).ok,
+)
+check('A request with no credentials is refused', !(await authenticate(null, 'inventory:read')).ok)
+
+// Rate limiting: a key with a ceiling of one call must refuse the second.
+const throttled = await issueKey({
+  name: 'verification rate limit',
+  organisationId: grace.id,
+  createdByUserId: graceOwner.id,
+  scopes: ['inventory:read'],
+  rateLimitPerMin: 1,
+})
+await recordRequest({
+  apiKeyId: throttled.record.id,
+  requestId: 'verify-1',
+  method: 'GET',
+  path: '/api/v1/inventory',
+  status: 200,
+  durationMs: 1,
+})
+const limited = await authenticate(`Bearer ${throttled.secret}`, 'inventory:read')
+check(
+  'A key over its rate limit is refused',
+  !limited.ok && limited.reason === 'rate_limited',
+  !limited.ok ? `retry after ${limited.retryAfter}s` : 'was allowed through',
+)
+
+// Revocation must be immediate, not on next expiry.
+await revokeKey(apiKey.record.id, grace.id)
+const revoked = await authenticate(`Bearer ${apiKey.secret}`, 'inventory:read')
+check('A revoked key stops working immediately', !revoked.ok && revoked.reason === 'revoked')
+
+check(
+  'One business cannot revoke another business’s key',
+  (await revokeKey(throttled.record.id, mushin.id)) === false,
+  'revocation is scoped to the owning organisation',
+)
+
+// Cleanup: the keys and their request rows are verification residue.
+await sql.query(`DELETE FROM api_keys WHERE name LIKE 'verification%'`)
+check(
+  'The verification run left no API keys behind',
+  !(await sql.one(`SELECT id FROM api_keys WHERE name LIKE 'verification%'`)),
 )
 
 // ---------------------------------------------------------------------------

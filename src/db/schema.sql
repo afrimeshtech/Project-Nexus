@@ -722,6 +722,67 @@ CREATE UNIQUE INDEX favourites_product_uidx ON favourites (user_id, product_id) 
 CREATE UNIQUE INDEX favourites_org_uidx     ON favourites (user_id, organisation_id) WHERE organisation_id IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
+-- MODULE: api - the public platform API
+--
+-- "AfriMesh will be API-first ... API licensing is expected to become a
+-- strategic revenue stream." - CIM Volume III §9, API Platform Strategy.
+--
+-- Machine clients authenticate with a key rather than a session: a Flutter
+-- app, a bank integration or a manufacturer's ERP has no browser, no cookie
+-- jar and no person to re-authenticate it. Keys are stored hashed for the same
+-- reason session tokens are - a database dump must not be replayable.
+--
+-- Every key is bound to one organisation and carries explicit scopes, so an
+-- integration built for stock levels cannot read anybody's orders.
+-- ---------------------------------------------------------------------------
+
+CREATE TYPE api_key_status AS ENUM ('active', 'revoked');
+
+CREATE TABLE api_keys (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name               TEXT NOT NULL,
+  -- Shown in the UI and carried in the key itself, so a key can be identified
+  -- in a log or a support conversation without ever revealing the secret.
+  prefix             TEXT NOT NULL UNIQUE,
+  key_hash           TEXT NOT NULL UNIQUE,
+
+  organisation_id    UUID REFERENCES organisations(id) ON DELETE CASCADE,
+  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+
+  -- Least privilege by default: a key with no scopes can read nothing.
+  scopes             TEXT[] NOT NULL DEFAULT '{}',
+  status             api_key_status NOT NULL DEFAULT 'active',
+  -- Per-key ceiling, so one noisy integration cannot exhaust the platform for
+  -- everybody else (SAD/CIM §10, secure API authentication).
+  rate_limit_per_min INTEGER NOT NULL DEFAULT 120 CHECK (rate_limit_per_min > 0),
+
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_used_at       TIMESTAMPTZ,
+  expires_at         TIMESTAMPTZ,
+  revoked_at         TIMESTAMPTZ
+);
+
+CREATE INDEX api_keys_org_idx    ON api_keys (organisation_id);
+CREATE INDEX api_keys_active_idx ON api_keys (key_hash) WHERE status = 'active';
+
+-- Append-only request log. Serves three purposes at once: the rate-limit
+-- window, the audit trail the CIM's security section requires, and the usage
+-- record any future metered billing would be computed from.
+CREATE TABLE api_requests (
+  id          BIGSERIAL PRIMARY KEY,
+  api_key_id  UUID REFERENCES api_keys(id) ON DELETE CASCADE,
+  request_id  TEXT NOT NULL,
+  method      TEXT NOT NULL,
+  path        TEXT NOT NULL,
+  status      INTEGER NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX api_requests_key_idx  ON api_requests (api_key_id, created_at DESC);
+CREATE INDEX api_requests_time_idx ON api_requests (created_at DESC);
+
+-- ---------------------------------------------------------------------------
 -- MODULE: platform - event log, configuration, fraud
 -- ---------------------------------------------------------------------------
 

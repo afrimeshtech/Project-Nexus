@@ -76,6 +76,10 @@ export const EVENT = {
   ProductViewed: 'product.viewed',
   RatingSubmitted: 'rating.submitted',
 
+  // public API (CIM Volume III §9)
+  ApiKeyIssued: 'api_key.issued',
+  ApiKeyRevoked: 'api_key.revoked',
+
   // risk
   FraudSignal: 'fraud.signal',
 } as const

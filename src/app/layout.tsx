@@ -42,7 +42,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#2d4a3a',
+  // The colour a mobile browser tints its own chrome with, so it should be
+  // the app's bar rather than its text: those were the same value until the
+  // bars were greened, and this was left pointing at the old ink.
+  themeColor: '#123824',
   width: 'device-width',
   initialScale: 1,
 }

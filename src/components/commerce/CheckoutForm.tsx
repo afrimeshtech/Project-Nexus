@@ -34,26 +34,37 @@ export function CheckoutForm({
       <fieldset>
         <legend className="mb-1.5 text-sm font-medium text-ink">How do you want it?</legend>
         <div className="grid grid-cols-2 gap-2">
-          {(['delivery', 'pickup'] as const).map((option) => (
-            <label
-              key={option}
-              className={`cursor-pointer rounded-brand border px-3 py-2.5 text-sm ${
-                fulfilment === option
-                  ? 'border-accent-500 bg-accent-soft font-semibold text-accent-strong'
-                  : 'border-line bg-surface text-ink'
-              } ${option === 'pickup' && !pickupAvailable ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              <input
-                type="radio"
-                name="fulfilment"
-                value={option}
-                checked={fulfilment === option}
-                onChange={() => setFulfilment(option)}
-                className="sr-only"
-              />
-              {option === 'delivery' ? 'Deliver to me' : 'I will collect'}
-            </label>
-          ))}
+          {(['delivery', 'pickup'] as const).map((option) => {
+            /*
+             * `pointer-events-none` only stops a mouse. The radio underneath it
+             * stayed focusable and arrow-selectable, so a keyboard user could
+             * choose collection from a seller that does not offer it and submit
+             * the order. Unavailability has to be on the control itself.
+             */
+            const unavailable = option === 'pickup' && !pickupAvailable
+            return (
+              <label
+                key={option}
+                className={`rounded-brand border px-3 py-2.5 text-sm ${
+                  fulfilment === option
+                    ? 'border-accent-500 bg-accent-soft font-semibold text-accent-strong'
+                    : 'border-line bg-surface text-ink'
+                } ${unavailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+              >
+                <input
+                  type="radio"
+                  name="fulfilment"
+                  value={option}
+                  checked={fulfilment === option}
+                  disabled={unavailable}
+                  onChange={() => setFulfilment(option)}
+                  className="sr-only"
+                />
+                {option === 'delivery' ? 'Deliver to me' : 'I will collect'}
+                {unavailable && <span className="sr-only"> — not offered by this seller</span>}
+              </label>
+            )
+          })}
         </div>
       </fieldset>
 
@@ -78,9 +89,9 @@ export function CheckoutForm({
               return (
                 <label
                   key={key}
-                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-brand border px-3 py-2.5 text-sm ${
+                  className={`flex items-center justify-between gap-3 rounded-brand border px-3 py-2.5 text-sm ${
                     method === key ? 'border-accent-500 bg-accent-soft' : 'border-line bg-surface'
-                  } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+                  } ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 >
                   <span className="flex items-center gap-2">
                     <input
@@ -88,6 +99,7 @@ export function CheckoutForm({
                       name="method"
                       value={key}
                       checked={method === key}
+                      disabled={disabled}
                       onChange={() => setMethod(key)}
                       className="accent-accent-500"
                     />

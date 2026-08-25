@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { ProductResultCard } from '@/components/commerce/OfferCard'
@@ -25,6 +26,32 @@ interface SearchParams {
  * client-side form so the whole results page stays server-rendered, shareable
  * and fast on a mid-range Android phone over 3G.
  */
+/**
+ * The query belongs in the title: a results page for "rice" and one for
+ * "cement" are different pages, and a shared link should say which.
+ *
+ * Results are personal to the searcher's location and change by the minute, so
+ * the page asks not to be indexed — a crawler would file a snapshot of one
+ * person's nearby stock as though it were the page's permanent content.
+ */
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}): Promise<Metadata> {
+  const params = await searchParams
+  const q = params.q?.trim()
+  const title = q ? `“${q}”` : 'Search nearby stock'
+
+  return {
+    title,
+    description: q
+      ? `Sellers near you with ${q} in stock right now, ranked by availability, distance, price and delivery time.`
+      : 'Search real stock held by verified sellers near you on AfriMesh.',
+    robots: { index: false, follow: true },
+  }
+}
+
 export default async function SearchPage({
   searchParams,
 }: {

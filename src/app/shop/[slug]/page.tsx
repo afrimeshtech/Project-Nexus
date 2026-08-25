@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
@@ -15,6 +16,33 @@ import { offersFromSeller } from '@/modules/search/service'
 export const dynamic = 'force-dynamic'
 
 /** A seller's shopfront: everything they physically have, plus their record. */
+/**
+ * A shop page is a seller's front door — the link they share and the page a
+ * search for their business name should reach. It was inheriting the generic
+ * site description, which named neither the seller nor where they are.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const org = await getOrganisation(decodeURIComponent(slug))
+  if (!org) return { title: 'Shop not found' }
+
+  // Lagos city sits in Lagos state, and "Lagos, Lagos" reads as a mistake.
+  const where = [...new Set([org.city, org.state].filter(Boolean))].join(', ')
+  const title = where ? `${org.name} — ${where}` : org.name
+  const description = `Buy from ${org.name}${where ? ` in ${where}` : ''} on AfriMesh. See what they have in stock right now, what it costs, and how quickly it can reach you.`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/shop/${org.slug}` },
+    openGraph: { title, description, type: 'website' },
+  }
+}
+
 export default async function ShopPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const org = await getOrganisation(decodeURIComponent(slug))

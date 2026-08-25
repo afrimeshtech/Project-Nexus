@@ -591,10 +591,27 @@ export const inputWithIconClass = inputClass.replace('px-3', 'pl-10 pr-3')
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A star rating, or an honest statement that there isn't one yet.
+ *
+ * A seller with no reviews has `rating = 0`, and rendering that as five empty
+ * stars and "0.0" made a brand-new seller look like one customers had rated
+ * zero out of five. Those are opposite meanings sharing a presentation, and
+ * the platform was carrying the cost twice: it misleads the shopper, and it
+ * penalises exactly the new sellers it is trying to recruit.
+ *
+ * No reviews is not a low score, so it is not drawn on the same scale.
+ */
 export function Rating({ value, count }: { value: number; count?: number }) {
+  if (count === 0) {
+    return <span className="text-xs font-medium text-muted">New seller</span>
+  }
+
   const rounded = Math.round(Number(value) * 2) / 2
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted">
+      {/* The stars are decoration: the figure beside them carries the value,
+          so a screen reader reads "4.5 (12)" rather than five icon names. */}
       <span className="flex items-center gap-0.5 text-accent-400" aria-hidden>
         {[1, 2, 3, 4, 5].map((step) => (
           <Icon key={step} name={step <= rounded ? 'star-filled' : 'star'} size={12} />

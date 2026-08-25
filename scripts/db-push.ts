@@ -6,13 +6,30 @@
  */
 import { readFileSync } from 'node:fs'
 import { getSql } from '../src/db/client.ts'
+import {
+  assertDestructiveAllowed,
+  describeTarget,
+  DestructiveGuardError,
+} from '../src/lib/destructive-guard.ts'
 
 const RESET = process.argv.includes('--reset')
 
 async function main() {
+  /*
+   * Before the connection, not after.
+   *
+   * The guard was originally placed next to the DROP it protects, which read
+   * well and did nothing: `getSql()` runs first, so pointing DATABASE_URL at
+   * an unreachable production host failed on DNS and never reached the check.
+   * Worse, against a host that *does* resolve, the script would connect and
+   * query a live database before deciding whether it was allowed to.
+   *
+   * A refusal has to be reachable without touching the target at all.
+   */
+  if (RESET) assertDestructiveAllowed('drop and recreate the schema')
+
+  console.log(`> target: ${describeTarget()}`)
   const sql = await getSql()
-  const driver = process.env.DATABASE_URL ? 'PostgreSQL server' : 'PGlite (embedded, ./.pgdata)'
-  console.log(`> target: ${driver}`)
 
   const existing = await sql.one<{ exists: boolean }>(
     `SELECT EXISTS (
@@ -27,6 +44,7 @@ async function main() {
   }
 
   if (RESET) {
+    // Already gated at the top of main(), before any connection was opened.
     console.log('> dropping schema public')
     await sql.exec('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
   }
@@ -46,6 +64,14 @@ async function main() {
 }
 
 main().catch((err) => {
+  // A refusal is a decision, not a crash: print the reason on its own rather
+  // than burying it in a stack trace the reader has to decode.
+  if (err instanceof DestructiveGuardError) {
+    console.error(`
+! ${err.message}
+`)
+    process.exit(1)
+  }
   console.error(err)
   process.exit(1)
 })

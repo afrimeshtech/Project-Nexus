@@ -25,23 +25,298 @@ export function Card({
   return <Tag className={`card p-5 sm:p-7 ${className}`}>{children}</Tag>
 }
 
+/**
+ * A section heading.
+ *
+ * Three registers rather than one: an optional eyebrow set in the technical
+ * face, the title in Inter pulled in tight, and the subtitle as prose held to
+ * a readable measure. The brand specifies both faces — using only the primary
+ * one left every heading in the app sounding identical, which is most of why
+ * the pages read as generated.
+ *
+ * The subtitle is capped at ~74 characters. A dashboard is wide, and a line of
+ * explanatory prose running the full width of a 1280px screen is unreadable
+ * however well it is set.
+ *
+ * `as` sets the heading level, which is a real decision and not styling: a
+ * screen reader navigates by the heading outline, so a section nested inside
+ * another section needs h3 even though it looks identical. The component used
+ * to hard-code h2 at every one of its call sites, which produced a flat and
+ * partly wrong outline on any page with more than one level. Level and size
+ * are independent here — changing `as` does not change how it looks.
+ */
 export function SectionHeading({
   title,
   subtitle,
+  eyebrow,
   action,
+  as: Heading = 'h2',
 }: {
   title: string
   subtitle?: string
+  /** Short classifier — the tier, the module, the period being shown. */
+  eyebrow?: string
   action?: ReactNode
+  /** Heading level. Follow the page outline, not the visual weight. */
+  as?: 'h2' | 'h3' | 'h4'
 }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-4">
-      <div>
-        <h2 className="text-base font-semibold text-ink sm:text-lg">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="mb-1 font-technical text-eyebrow uppercase text-accent-strong">{eyebrow}</p>
+        )}
+        <Heading className="text-heading text-ink">{title}</Heading>
+        {subtitle && <p className="mt-1 max-w-[74ch] text-sm text-muted">{subtitle}</p>}
       </div>
       {action}
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+export type Crumb = { label: string; href?: string }
+
+/**
+ * Where you are, above the page title.
+ *
+ * Its own component because three pages build a bespoke masthead — a person, a
+ * business, a product — and those need the orientation without giving up the
+ * layout that makes them worth having.
+ *
+ * The last crumb is the current page: rendered as text and marked
+ * aria-current, never as a link to where you already are.
+ */
+export function Breadcrumb({ trail, className = '' }: { trail: Crumb[]; className?: string }) {
+  return (
+    <nav aria-label="Breadcrumb" className={`mb-2 ${className}`}>
+      <ol className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+        {trail.map((crumb, i) => {
+          const last = i === trail.length - 1
+          return (
+            <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
+              {i > 0 && (
+                <span aria-hidden="true" className="text-line">
+                  /
+                </span>
+              )}
+              {crumb.href && !last ? (
+                <Link href={crumb.href} className="hover:text-ink hover:underline">
+                  {crumb.label}
+                </Link>
+              ) : (
+                <span aria-current={last ? 'page' : undefined}>{crumb.label}</span>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
+  )
+}
+
+/**
+ * The top of a page.
+ *
+ * Four registers, in the order they are read: where you are (breadcrumb), what
+ * this is (title), what it does (subtitle), and what you can do to it
+ * (actions). Every dashboard page in the app opened with a bare heading and no
+ * orientation before this — on a sidebar app with eleven destinations, "where
+ * am I" is a question the page should answer without being asked.
+ *
+ * The title is an h1. There is one per page and it names the page, which is
+ * what an h1 is for; `SectionHeading` starts at h2 beneath it, so the outline
+ * comes out right without any call site having to think about it.
+ */
+export function PageHeader({
+  title,
+  subtitle,
+  breadcrumb,
+  actions,
+}: {
+  title: string
+  subtitle?: string
+  /**
+   * Trail from the section root. The last entry is the current page and is
+   * rendered as plain text — a link to where you already are is noise.
+   */
+  breadcrumb?: Crumb[]
+  actions?: ReactNode
+}) {
+  return (
+    <div className="mb-6">
+      {breadcrumb && breadcrumb.length > 0 && <Breadcrumb trail={breadcrumb} />}
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-display-sm text-ink">{title}</h1>
+          {subtitle && <p className="mt-1.5 max-w-[74ch] text-sm text-muted">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The controls that act on the list below: search on the left, switches and
+ * secondary actions on the right, and — where the collection has totals worth
+ * stating — a summary line beneath both.
+ *
+ * A panel rather than a loose row, because it belongs to the list and not to
+ * the page: scrolling should carry it away together with the thing it filters.
+ */
+export function Toolbar({
+  children,
+  meta,
+  className = '',
+}: {
+  children?: ReactNode
+  /** Label/value pairs summarising the collection. */
+  meta?: { label: string; value: ReactNode }[]
+  className?: string
+}) {
+  return (
+    <div className={`card mb-5 p-3 sm:p-4 ${className}`}>
+      {children && (
+        <div className="flex flex-wrap items-center justify-between gap-3">{children}</div>
+      )}
+      {meta && meta.length > 0 && (
+        <dl
+          className={`flex flex-wrap items-baseline gap-x-6 gap-y-1.5 text-sm ${
+            children ? 'mt-3 border-t border-line-soft pt-3' : ''
+          }`}
+        >
+          {meta.map((m) => (
+            <div key={m.label} className="flex items-baseline gap-1.5">
+              <dt className="font-technical text-eyebrow uppercase text-muted">{m.label}</dt>
+              <dd className="font-semibold tabular-nums text-ink">{m.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+
+export type StockState = 'in' | 'low' | 'out'
+
+const STOCK_PILL: Record<StockState, { className: string; label: string }> = {
+  in: { className: 'bg-pill-in', label: 'In stock' },
+  low: { className: 'bg-pill-low', label: 'Low stock' },
+  out: { className: 'bg-pill-out', label: 'Out of stock' },
+}
+
+/**
+ * Stock state, derived in one place so every surface agrees.
+ *
+ * "Low" is a threshold, and a threshold stated once cannot drift between the
+ * partner's inventory table and the buyer's product page.
+ */
+export function stockState(qty: number, lowAt = 5): StockState {
+  if (qty <= 0) return 'out'
+  return qty <= lowAt ? 'low' : 'in'
+}
+
+/** The solid chip laid over a product photo. */
+export function StatusPill({ state, children }: { state: StockState; children?: ReactNode }) {
+  const pill = STOCK_PILL[state]
+  return <span className={`pill-status ${pill.className}`}>{children ?? pill.label}</span>
+}
+
+/**
+ * A catalogue card.
+ *
+ * The anatomy is fixed so a grid of them scans the way a table does: photo
+ * well with the stock chip, the identifier in the technical face, the name,
+ * the label/value rows carrying the numbers, then one way in. Because every
+ * card puts the same thing in the same place, the eye can compare down a
+ * column instead of re-reading each card from the top.
+ *
+ * The photo and the name both link, and the footer repeats the target as the
+ * visible affordance — it takes `tabIndex={-1}` so keyboard users get one stop
+ * per card rather than three to the same place.
+ */
+export function ItemCard({
+  name,
+  href,
+  image,
+  media,
+  identifier,
+  state,
+  rows,
+  action = 'View details',
+  footer,
+}: {
+  name: string
+  href: string
+  image?: string | null
+  /**
+   * Artwork for the well, where a plain image URL is not enough — the product
+   * thumbnails fall back through brand logo and category illustration, and
+   * that resolution belongs to the caller rather than here.
+   */
+  media?: ReactNode
+  /** SKU, code, or whatever names this item in the operator's own system. */
+  identifier?: string
+  state?: StockState
+  rows?: { label: string; value: ReactNode }[]
+  action?: string
+  footer?: ReactNode
+}) {
+  return (
+    <article className="item-card group hover:item-card-hover">
+      <Link href={href} className="block" tabIndex={-1} aria-hidden="true">
+        <span className="item-well">
+          {media ??
+            (image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image} alt="" className="h-full w-full object-cover" loading="lazy" />
+            ) : (
+              <Icon name="box" size={40} className="text-line" />
+            ))}
+          {state && <StatusPill state={state} />}
+        </span>
+      </Link>
+
+      <div className="flex flex-1 flex-col p-3">
+        {/* Plain small text, not the eyebrow register. An eyebrow is a short
+            classifier; this is an identifier — a brand, a pack size and a
+            13-digit barcode — and setting that uppercase at 0.13em tracking
+            made it wider than the product name, wrapped it onto two lines and
+            left it competing with the thing it is supposed to qualify. One
+            line, truncated, out of the way. */}
+        {identifier && (
+          <p className="truncate font-technical text-xs text-muted" title={identifier}>
+            {identifier}
+          </p>
+        )}
+        <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-ink">
+          <Link href={href} className="hover:underline">
+            {name}
+          </Link>
+        </h3>
+
+        {rows && rows.length > 0 && (
+          <dl className="mt-2.5">
+            {rows.map((row) => (
+              <div key={row.label} className="kv-row">
+                <dt className="text-muted">{row.label}</dt>
+                <dd className="font-semibold tabular-nums text-ink">{row.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+
+        {footer}
+      </div>
+
+      <Link href={href} className="item-action hover:item-action-hover" tabIndex={-1}>
+        {action}
+      </Link>
+    </article>
   )
 }
 
@@ -52,7 +327,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 const BUTTON_STYLES: Record<ButtonVariant, string> = {
   primary: 'bg-accent-500 text-accent-ink hover:bg-accent-600 disabled:bg-accent-soft',
   secondary: 'bg-surface text-ink border border-line hover:bg-surface-muted',
-  ghost: 'text-accent-500 hover:bg-accent-soft',
+  ghost: 'text-accent-strong hover:bg-accent-soft',
   danger: 'bg-coral-strong text-white hover:opacity-90',
 }
 
@@ -177,11 +452,10 @@ function iconForStat(label: string): IconName {
 /**
  * A metric card: a number, what it measures, and optionally what qualifies it.
  *
- * Dark green, unlike every other card in the app. A dashboard is read by
- * scanning for figures, and a grid of dark tiles on the light page makes that
- * one movement rather than eight separate reads. It also means the value can
- * be plain white — the strongest contrast available — without the card having
- * to compete with the content below it.
+ * A dashboard is read by scanning for figures, so the figure gets the contrast
+ * and everything around it gets out of the way: one flat ground, a hairline,
+ * the label in the small technical register and the number large enough to be
+ * the only thing on the tile competing for attention.
  */
 export function Stat({
   label,
@@ -198,19 +472,24 @@ export function Stat({
   icon?: IconName
 }) {
   return (
-    <div className="stat-card sheen sheen-warm relative overflow-hidden p-4 hover:stat-card-hover">
-      <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-stat-label">
-        <Icon name={icon ?? iconForStat(label)} size={14} />
+    <div className="stat-card p-4 hover:stat-card-hover">
+      {/* The eyebrow register, from the type scale rather than three arbitrary
+          values that happen to land near it — the token exists precisely so
+          stat labels, column headers and eyebrows stay in step. */}
+      <p className="flex items-center gap-1.5 font-technical text-eyebrow uppercase text-stat-label">
+        <Icon name={icon ?? iconForStat(label)} size={13} />
         {label}
       </p>
-      <p className="mt-1.5 text-xl font-bold text-stat-value sm:text-2xl">{value}</p>
+      {/* Tabular figures so a column of numbers lines up, and tight tracking
+          so a large figure does not read as loose at display size. */}
+      <p className="mt-2 text-stat tabular-nums text-stat-value">{value}</p>
       {hint && (
         <p
           className={`mt-1 text-xs ${
             tone === 'danger'
               ? 'text-stat-danger'
               : tone === 'brand'
-                ? 'text-accent-500'
+                ? 'text-accent-strong'
                 : 'text-stat-hint'
           }`}
         >
@@ -248,6 +527,15 @@ export function EmptyState({
   )
 }
 
+/**
+ * A banner, announced to a screen reader according to how much it matters.
+ *
+ * Every tone used to be `role="status"`, which is polite: the reader finishes
+ * whatever it is saying first, and a failed payment waits its turn behind the
+ * rest of the page. An error takes `role="alert"` instead, which interrupts.
+ * Success and information stay polite — interrupting someone to say a thing
+ * worked is its own kind of rude.
+ */
 export function Alert({
   children,
   tone = 'danger',
@@ -261,9 +549,37 @@ export function Alert({
     info: 'border-info-ink/30 bg-info/40 text-info-ink',
     warning: 'border-warning/40 bg-warning/15 text-warning-ink',
   }[tone]
+  const urgent = tone === 'danger' || tone === 'warning'
   return (
-    <div role="status" className={`rounded-brand border px-3.5 py-2.5 text-sm ${styles}`}>
+    <div
+      role={urgent ? 'alert' : 'status'}
+      className={`rounded-brand border px-3.5 py-2.5 text-sm ${styles}`}
+    >
       {children}
+    </div>
+  )
+}
+
+/**
+ * The place a form puts what went wrong.
+ *
+ * The region is rendered whether or not there is an error, which is the part
+ * that actually makes it work: a live region only announces changes that
+ * happen *inside* it, and one inserted into the page at the same instant as
+ * its text is announced inconsistently — reliably by some screen readers,
+ * silently by others. Mounting it empty means the message arriving is a change
+ * to existing content, which is the case every reader handles.
+ *
+ * Empty it takes no space, so nothing shifts when an error appears.
+ */
+export function FormError({ children }: { children?: ReactNode }) {
+  return (
+    <div role="alert" aria-live="assertive" aria-atomic="true">
+      {children ? (
+        <div className="rounded-brand border border-coral/40 bg-coral/15 px-3.5 py-2.5 text-sm text-coral-ink">
+          {children}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -290,15 +606,49 @@ export function Field({
   )
 }
 
+/* The focus border takes --color-focus-ring rather than the vivid accent: a
+   focus indicator is held to 3:1 against what surrounds it, and #ff9500 on the
+   field is 2.2:1 — a ring a keyboard user cannot find is not an indicator. */
 export const inputClass =
-  'w-full rounded-brand border border-line bg-field px-3 py-2.5 text-sm text-field-ink placeholder:text-field-muted focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/30'
+  'w-full rounded-brand border border-line bg-field px-3 py-2.5 text-sm text-field-ink placeholder:text-field-muted focus:border-focus-ring focus:outline-none focus:ring-2 focus:ring-focus-ring/30'
+
+/**
+ * `inputClass` for a field that shares its box with a `field-icon`.
+ *
+ * The icon is absolutely positioned at 0.875rem, so the control has to make
+ * room for it. Without this the placeholder starts at 0.75rem and renders
+ * underneath the glyph — which is exactly what the sidebar search did.
+ *
+ * Written as a substitution rather than a second literal so the two cannot
+ * drift apart, and as an explicit pl-* rather than an extra class at the call
+ * site so it is not left to Tailwind's conflict resolution between px-3 and a
+ * padding-left added afterwards.
+ */
+export const inputWithIconClass = inputClass.replace('px-3', 'pl-10 pr-3')
 
 // ---------------------------------------------------------------------------
 
+/**
+ * A star rating, or an honest statement that there isn't one yet.
+ *
+ * A seller with no reviews has `rating = 0`, and rendering that as five empty
+ * stars and "0.0" made a brand-new seller look like one customers had rated
+ * zero out of five. Those are opposite meanings sharing a presentation, and
+ * the platform was carrying the cost twice: it misleads the shopper, and it
+ * penalises exactly the new sellers it is trying to recruit.
+ *
+ * No reviews is not a low score, so it is not drawn on the same scale.
+ */
 export function Rating({ value, count }: { value: number; count?: number }) {
+  if (count === 0) {
+    return <span className="text-xs font-medium text-muted">New seller</span>
+  }
+
   const rounded = Math.round(Number(value) * 2) / 2
   return (
     <span className="inline-flex items-center gap-1 text-xs text-muted">
+      {/* The stars are decoration: the figure beside them carries the value,
+          so a screen reader reads "4.5 (12)" rather than five icon names. */}
       <span className="flex items-center gap-0.5 text-accent-400" aria-hidden>
         {[1, 2, 3, 4, 5].map((step) => (
           <Icon key={step} name={step <= rounded ? 'star-filled' : 'star'} size={12} />
@@ -396,7 +746,7 @@ export function Thumb({
   return (
     <span
       aria-hidden
-      className={`${dims} ${rounded} grid shrink-0 place-items-center bg-accent-soft font-semibold text-accent-500`}
+      className={`${dims} ${rounded} grid shrink-0 place-items-center bg-accent-soft font-semibold text-accent-strong`}
     >
       {initials || '?'}
     </span>

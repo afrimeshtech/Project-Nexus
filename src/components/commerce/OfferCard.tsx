@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { Icon } from '@/components/Icon'
-import { Badge, Rating, ScoreBar } from '@/components/ui'
+import { Badge, ItemCard, Rating, ScoreBar } from '@/components/ui'
 import { AddToCart } from '@/components/commerce/AddToCart'
 import { formatMoney } from '@/lib/money'
 import { formatDistance, formatEta } from '@/lib/geo'
@@ -40,7 +40,7 @@ export function OfferCard({
 
   return (
     <article
-      className="group sheen card card-interactive rise-in relative flex flex-col gap-3 overflow-hidden p-4 hover:card-interactive-hover sm:flex-row sm:items-center"
+      className="group card card-interactive rise-in relative flex flex-col gap-3 overflow-hidden p-4 hover:card-interactive-hover sm:flex-row sm:items-center"
       style={{ animationDelay: `${Math.min(index, 9) * 80}ms` }}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -76,14 +76,14 @@ export function OfferCard({
             {leadsWithProduct ? (
               <Link
                 href={`/product/${offer.product_id}`}
-                className="truncate font-semibold text-ink hover:text-accent-400"
+                className="truncate font-semibold text-ink hover:text-accent-strong"
               >
                 {offer.product_name}
               </Link>
             ) : (
               <Link
                 href={`/shop/${offer.seller_slug}`}
-                className="truncate font-semibold text-ink hover:text-accent-400"
+                className="truncate font-semibold text-ink hover:text-accent-strong"
               >
                 {offer.seller_name}
               </Link>
@@ -145,66 +145,63 @@ export function OfferCard({
  * A product summarised across every nearby seller. Leads with the cheapest
  * price and how many shops have it, because that is the comparison the BRS
  * says consumers currently cannot make.
+ *
+ * Same anatomy as the partner's inventory card — photo well, name, label/value
+ * rows, one way in — so a grid of results is scanned by position rather than
+ * re-read card by card. The three rows are the three questions a shopper is
+ * actually asking: what does it cost, who near me has it, how far is that.
  */
-export function ProductResultCard({
-  result,
-  index = 0,
-}: {
-  result: ProductResult
-  index?: number
-}) {
+export function ProductResultCard({ result }: { result: ProductResult }) {
   const spread = result.highest_price - result.best_price
 
   return (
-    <Link
+    <ItemCard
+      name={result.product_name}
       href={`/product/${result.top_offer.product_id}`}
-      className="group sheen product-card card-interactive press rise-in flex gap-4 p-4 hover:card-interactive-hover hover:product-card-hover active:press-active"
-      // Staggered arrival, capped at the tenth card: past about 600ms the last
-      // card in a long grid is still fading in while the reader is already
-      // scrolling, which reads as lag rather than polish.
-      style={{ animationDelay: `${Math.min(index, 9) * 80}ms` }}
-    >
-      <ProductThumb
-        name={result.product_name}
-        imageUrl={result.image_url}
-        brandLogo={result.brand_logo}
-        categorySlug={result.category_slug}
-        size="lg"
-      />
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-ink transition-colors group-hover:text-accent-500">
-          {result.product_name}
-        </p>
-        <p className="truncate text-xs text-muted">
-          {[result.brand_name, result.pack_size].filter(Boolean).join(' · ') ||
-            result.unit_of_measure}
-        </p>
-
-        <p className="mt-1.5 text-base font-bold text-ink">
-          <span className="price-tag group-hover:price-tag-glow">
-            from {formatMoney(result.best_price, result.currency)}
-          </span>
-        </p>
-
-        {/* Shop count and distance are the two things that make a nearby
-            listing worth tapping, so they carry the accent rather than sitting
-            in the same grey as the pack size. */}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-accent-500">
-          <span className="accent-attention">
-            {result.seller_count} {result.seller_count === 1 ? 'shop' : 'shops'} nearby
-          </span>
-          <span aria-hidden>·</span>
-          <span>{formatDistance(result.nearest_km)} away</span>
-          <span aria-hidden>·</span>
-          <span>{formatEta(result.fastest_eta)}</span>
-        </div>
-
-        {spread > 0 && (
-          <p className="mt-1 text-xs text-accent-500">
-            Save up to {formatMoney(spread, result.currency)} by comparing
+      identifier={
+        [result.brand_name, result.pack_size].filter(Boolean).join(' · ') ||
+        result.unit_of_measure ||
+        undefined
+      }
+      media={
+        <ProductThumb
+          name={result.product_name}
+          imageUrl={result.image_url}
+          brandLogo={result.brand_logo}
+          categorySlug={result.category_slug}
+          size="xl"
+        />
+      }
+      rows={[
+        {
+          label: 'From',
+          value: (
+            <span className="text-accent-strong">
+              {formatMoney(result.best_price, result.currency)}
+            </span>
+          ),
+        },
+        {
+          label: 'Shops nearby',
+          value: result.seller_count,
+        },
+        {
+          label: 'Nearest',
+          value: `${formatDistance(result.nearest_km)} · ${formatEta(result.fastest_eta)}`,
+        },
+      ]}
+      footer={
+        spread > 0 ? (
+          <p className="mt-2.5 text-xs text-muted">
+            Save up to{' '}
+            <span className="font-semibold text-accent-strong">
+              {formatMoney(spread, result.currency)}
+            </span>{' '}
+            by comparing
           </p>
-        )}
-      </div>
-    </Link>
+        ) : undefined
+      }
+      action={`Compare ${result.seller_count} ${result.seller_count === 1 ? 'shop' : 'shops'}`}
+    />
   )
 }

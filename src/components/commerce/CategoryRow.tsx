@@ -43,7 +43,7 @@ export function CategoryRow({
           key={category.id}
           href={`/search?category=${category.id}`}
           role="listitem"
-          className="category-card sheen sheen-warm press pop-in group relative snap-start overflow-hidden hover:category-card-hover active:press-active"
+          className="category-card press pop-in group relative snap-start overflow-hidden hover:category-card-hover active:press-active"
           style={{ animationDelay: `${i * 80}ms` }}
         >
           <span className="category-art group-hover:category-art-hover">
@@ -68,7 +68,7 @@ export function CategoryRow({
       <Link
         href={moreHref}
         role="listitem"
-        className="category-card sheen sheen-warm press pop-in group relative snap-start overflow-hidden hover:category-card-hover active:press-active"
+        className="category-card press pop-in group relative snap-start overflow-hidden hover:category-card-hover active:press-active"
         style={{ animationDelay: `${shown.length * 80}ms` }}
       >
         <span className="category-art grid size-[72px] place-items-center text-white/70 transition-colors group-hover:category-art-hover group-hover:text-accent-400">

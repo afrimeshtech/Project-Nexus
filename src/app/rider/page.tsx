@@ -2,7 +2,15 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RiderShell } from '@/components/shell/RiderShell'
 import { AcceptJobButton, CompleteDeliveryForm, PickUpButton } from '@/components/rider/JobActions'
-import { Badge, Card, EmptyState, LinkButton, SectionHeading, Stat } from '@/components/ui'
+import {
+  Badge,
+  Card,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  SectionHeading,
+  Stat,
+} from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { formatMoney } from '@/lib/money'
@@ -51,6 +59,12 @@ export default async function RiderPage({
   return (
     <RiderShell name={user.full_name} locationLabel={location.label} active="/rider">
       <div className="space-y-8">
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Deliveries' }]}
+          title="Deliveries"
+          subtitle={`Open jobs, your active runs and what you have earned around ${location.label}.`}
+        />
+
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat label="Wallet" value={formatMoney(wallet.available)} />
           <Stat label="Earned (30 days)" value={formatMoney(stats.earned_30d)} />
@@ -183,7 +197,7 @@ export default async function RiderPage({
                         {job.order_number} · {formatDistance(Number(job.distance_km))}
                       </span>
                     </span>
-                    <span className="shrink-0 text-sm font-semibold text-accent-500">
+                    <span className="shrink-0 text-sm font-semibold text-accent-strong">
                       +{formatMoney(job.rider_fee)}
                     </span>
                   </li>
@@ -219,7 +233,7 @@ function JobCard({ job, mode }: { job: DeliveryJob; mode: 'open' | 'active' }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold text-accent-500">{formatMoney(job.rider_fee)}</p>
+          <p className="text-lg font-bold text-accent-strong">{formatMoney(job.rider_fee)}</p>
           <p className="text-xs text-muted">you earn</p>
         </div>
       </div>
@@ -267,7 +281,10 @@ function Leg({
       <p className="mt-0.5 truncate font-medium text-ink">{name}</p>
       <p className="truncate text-xs text-muted">{detail ?? '—'}</p>
       {phone && (
-        <a href={`tel:${phone}`} className="mt-1 inline-block text-xs font-medium text-accent-500">
+        <a
+          href={`tel:${phone}`}
+          className="mt-1 inline-block text-xs font-medium text-accent-strong"
+        >
           Call {phone}
         </a>
       )}

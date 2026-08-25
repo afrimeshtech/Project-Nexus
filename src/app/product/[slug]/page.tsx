@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Icon } from '@/components/Icon'
 import Link from 'next/link'
@@ -21,6 +22,41 @@ export const dynamic = 'force-dynamic'
  * problem statement directly: which nearby seller has it, at what price, how
  * far away, and can they be trusted.
  */
+/**
+ * Each product describes itself, rather than inheriting the site-wide default.
+ * These are the pages that bring strangers in from search and shared links, so
+ * the title carries the thing itself, the brand and the pack size, and the
+ * description says the one thing that distinguishes this platform: the stock
+ * is real, held by verified sellers nearby, right now.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const product = await getProduct(decodeURIComponent(slug))
+  if (!product) return { title: 'Product not found' }
+
+  const qualifiers = [product.brand_name, product.pack_size].filter(Boolean).join(' · ')
+  const title = qualifiers ? `${product.name} — ${qualifiers}` : product.name
+  const description =
+    product.description?.trim() ||
+    `Compare prices for ${product.name} from verified sellers near you on AfriMesh. Real stock, held right now — see who has it, how far away they are, and what they charge.`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/product/${product.slug}` },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: product.image_url ? [{ url: product.image_url }] : undefined,
+    },
+  }
+}
+
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const product = await getProduct(decodeURIComponent(slug))
@@ -100,7 +136,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 {dearest !== null && cheapest !== null && dearest > cheapest && (
                   <p className="text-sm text-muted">
                     up to {formatMoney(dearest, best.currency)} elsewhere &mdash;{' '}
-                    <span className="font-medium text-accent-500">
+                    <span className="font-medium text-accent-strong">
                       save {formatMoney(dearest - cheapest, best.currency)}
                     </span>
                   </p>

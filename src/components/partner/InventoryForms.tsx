@@ -8,7 +8,7 @@ import {
   updatePricingAction,
   type InventoryActionState,
 } from '@/app/actions/inventory'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /** List a catalogue product, or top up an existing listing after a delivery. */
 export function ListProductForm({
@@ -105,7 +105,7 @@ export function ListProductForm({
       {(state.error || state.notice) && (
         <p
           role="status"
-          className={`w-full text-xs ${state.error ? 'text-coral-ink' : 'text-accent-500'}`}
+          className={`w-full text-xs ${state.error ? 'text-coral-ink' : 'text-accent-strong'}`}
         >
           {state.error ?? `${productName}: ${state.notice}`}
         </p>
@@ -123,7 +123,7 @@ export function AdjustStockForm({ itemId, current }: { itemId: string; current: 
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="itemId" value={itemId} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field label="Counted quantity" hint={`Currently recorded: ${current}`} htmlFor="adj-qty">
@@ -184,7 +184,7 @@ export function PricingForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="itemId" value={itemId} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field label={priceLabel} htmlFor="price">
@@ -258,7 +258,7 @@ export function AddBatchForm({ itemId }: { itemId: string }) {
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="itemId" value={itemId} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field label="Batch number" htmlFor="batch-no">

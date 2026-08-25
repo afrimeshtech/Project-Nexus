@@ -2,7 +2,18 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Badge, Card, EmptyState, LinkButton, SectionHeading, Stat } from '@/components/ui'
+import { Icon } from '@/components/Icon'
+import {
+  Badge,
+  EmptyState,
+  ItemCard,
+  LinkButton,
+  PageHeader,
+  Stat,
+  Toolbar,
+  inputWithIconClass,
+  stockState,
+} from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { inventoryStats, listInventory } from '@/modules/inventory/service'
@@ -14,6 +25,12 @@ export const metadata = { title: 'Inventory' }
  * The seller's view of their own stock. Available, reserved and sold are shown
  * separately, because "20 units" means something different when 8 of them are
  * already spoken for by a paid order.
+ *
+ * A card grid rather than a table: stock is judged one product at a time — is
+ * this one running out, is it priced right — and a card puts the photo, the
+ * state and the two numbers that answer that in one place. The four figures
+ * are kept as label/value rows so the grid still reads down a column the way
+ * the table did, rather than losing information to the layout.
  */
 export default async function InventoryPage({
   searchParams,
@@ -32,163 +49,149 @@ export default async function InventoryPage({
 
   const isRetail = org.type === 'outlet'
   const priceLabel = isRetail ? 'Retail price' : 'Wholesale price'
+  const lowOnly = params.filter === 'low'
 
   return (
     <PartnerShell active="/partner/inventory">
-      <div className="space-y-7">
-        <SectionHeading
-          title="Inventory"
-          subtitle="Your stock, published live to the network"
-          action={<LinkButton href="/partner/catalogue">Add products</LinkButton>}
+      <PageHeader
+        breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Inventory' }]}
+        title="Inventory"
+        subtitle="Your stock, published live to the network."
+        actions={
+          <>
+            <LinkButton href="/partner/catalogue" variant="secondary">
+              Browse catalogue
+            </LinkButton>
+            <LinkButton href="/partner/catalogue">Add products</LinkButton>
+          </>
+        }
+      />
+
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <Stat label="Products" value={stats.skus} />
+        <Stat label="Available" value={stats.units_available.toLocaleString()} />
+        <Stat
+          label="Reserved"
+          value={stats.units_reserved.toLocaleString()}
+          hint="Held on live orders"
         />
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-          <Stat label="Products" value={stats.skus} />
-          <Stat label="Available" value={stats.units_available.toLocaleString()} />
-          <Stat
-            label="Reserved"
-            value={stats.units_reserved.toLocaleString()}
-            hint="Held on live orders"
-          />
-          <Stat
-            label="Low stock"
-            value={stats.low_stock}
-            tone={stats.low_stock ? 'danger' : 'neutral'}
-          />
-          <Stat label="Stock value" value={formatMoney(stats.stock_value)} />
-        </div>
-
-        <Card>
-          <form className="flex flex-wrap items-end gap-2" action="/partner/inventory">
-            <div className="min-w-52 flex-1">
-              <label className="mb-1 block text-xs font-medium text-ink" htmlFor="inv-q">
-                Search your stock
-              </label>
-              <input
-                id="inv-q"
-                name="q"
-                defaultValue={params.q ?? ''}
-                placeholder="Product name or barcode"
-                className="w-full rounded-brand border border-line px-3 py-2 text-sm"
-              />
-            </div>
-            <button
-              type="submit"
-              className="rounded-brand bg-accent-500 px-4 py-2 text-sm font-semibold text-accent-ink"
-            >
-              Search
-            </button>
-            <Link
-              href={
-                params.filter === 'low' ? '/partner/inventory' : '/partner/inventory?filter=low'
-              }
-              className={`rounded-brand border px-4 py-2 text-sm font-medium ${
-                params.filter === 'low'
-                  ? 'border-accent-500 bg-accent-soft text-accent-500'
-                  : 'border-line bg-surface text-ink'
-              }`}
-            >
-              Needs restocking
-            </Link>
-          </form>
-        </Card>
-
-        {items.length ? (
-          <Card className="p-0">
-            <div className="scroll-x">
-              <table className="w-full min-w-[46rem] text-sm">
-                <caption className="sr-only">Your inventory</caption>
-                <thead>
-                  <tr className="border-b border-line-soft text-left text-xs uppercase tracking-wide text-muted">
-                    <th className="px-4 py-3 font-medium">Product</th>
-                    <th className="px-3 py-3 text-right font-medium">Available</th>
-                    <th className="px-3 py-3 text-right font-medium">Reserved</th>
-                    <th className="px-3 py-3 text-right font-medium">Sold</th>
-                    <th className="px-3 py-3 text-right font-medium">{priceLabel}</th>
-                    <th className="px-4 py-3 text-right font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => {
-                    const price = isRetail ? item.retail_price : item.wholesale_price
-                    const low = item.qty_available <= item.reorder_level
-                    return (
-                      <tr
-                        key={item.id}
-                        className="border-b border-line-soft last:border-0 hover:bg-surface"
-                      >
-                        <td className="px-4 py-3">
-                          <Link
-                            href={`/partner/inventory/${item.id}`}
-                            className="flex items-center gap-3"
-                          >
-                            <ProductThumb
-                              name={item.product_name}
-                              imageUrl={item.product_image}
-                              brandLogo={item.brand_logo}
-                              categorySlug={item.category_slug}
-                              size="sm"
-                            />
-                            <span className="min-w-0">
-                              <span className="block truncate font-medium text-ink">
-                                {item.product_name}
-                              </span>
-                              <span className="block font-technical text-xs text-muted">
-                                {[item.brand_name, item.pack_size, item.gtin]
-                                  .filter(Boolean)
-                                  .join(' · ')}
-                              </span>
-                            </span>
-                          </Link>
-                        </td>
-                        <td
-                          className={`px-3 py-3 text-right font-medium ${low ? 'text-warning-ink' : ''}`}
-                        >
-                          {item.qty_available}
-                        </td>
-                        <td className="px-3 py-3 text-right text-muted">{item.qty_reserved}</td>
-                        <td className="px-3 py-3 text-right text-muted">{item.qty_sold}</td>
-                        <td className="px-3 py-3 text-right">
-                          {item.promo_price ? (
-                            <span>
-                              <span className="font-medium text-accent-500">
-                                {formatMoney(item.promo_price)}
-                              </span>
-                              <span className="ml-1 text-xs text-muted line-through">
-                                {formatMoney(price)}
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="font-medium">{formatMoney(price)}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {!item.is_listed ? (
-                            <Badge tone="neutral">Hidden</Badge>
-                          ) : item.qty_available === 0 ? (
-                            <Badge tone="danger">Out of stock</Badge>
-                          ) : low ? (
-                            <Badge tone="warning">Low</Badge>
-                          ) : (
-                            <Badge tone="brand">Live</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        ) : (
-          <EmptyState
-            icon="box"
-            title={params.q ? 'Nothing matched that search' : 'No stock listed yet'}
-            body="List a product from the master catalogue and it becomes discoverable to buyers near you."
-            action={<LinkButton href="/partner/catalogue">Browse the catalogue</LinkButton>}
-          />
-        )}
+        <Stat
+          label="Low stock"
+          value={stats.low_stock}
+          tone={stats.low_stock ? 'danger' : 'neutral'}
+        />
+        <Stat label="Stock value" value={formatMoney(stats.stock_value)} />
       </div>
+
+      <Toolbar
+        meta={[
+          { label: 'Products', value: stats.skus },
+          { label: 'Available', value: stats.units_available.toLocaleString() },
+          { label: 'Reserved', value: stats.units_reserved.toLocaleString() },
+          { label: 'Stock value', value: formatMoney(stats.stock_value) },
+        ]}
+      >
+        <form className="flex min-w-0 flex-1 items-center gap-2" action="/partner/inventory">
+          <div className="field-with-icon min-w-0 flex-1 sm:max-w-md">
+            <Icon name="search" size={16} className="field-icon" />
+            <label className="sr-only" htmlFor="inv-q">
+              Search your stock
+            </label>
+            <input
+              id="inv-q"
+              name="q"
+              type="search"
+              defaultValue={params.q ?? ''}
+              placeholder="Product name or barcode"
+              className={inputWithIconClass}
+            />
+          </div>
+          <button
+            type="submit"
+            className="shrink-0 rounded-brand bg-brand-deep px-4 py-2 text-sm font-semibold text-white"
+          >
+            Search
+          </button>
+        </form>
+
+        <Link
+          href={lowOnly ? '/partner/inventory' : '/partner/inventory?filter=low'}
+          aria-pressed={lowOnly}
+          className={`shrink-0 rounded-brand border px-3.5 py-2 text-sm font-medium ${
+            lowOnly
+              ? 'border-brand-deep bg-surface-muted text-brand-deep'
+              : 'border-line bg-surface text-muted hover:text-ink'
+          }`}
+        >
+          Needs restocking
+        </Link>
+      </Toolbar>
+
+      {items.length ? (
+        <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+          {items.map((item) => {
+            const price = isRetail ? item.retail_price : item.wholesale_price
+            const state = stockState(item.qty_available, item.reorder_level)
+            return (
+              <li key={item.id} className="flex">
+                <ItemCard
+                  name={item.product_name}
+                  href={`/partner/inventory/${item.id}`}
+                  identifier={
+                    [item.brand_name, item.pack_size, item.gtin].filter(Boolean).join(' · ') ||
+                    undefined
+                  }
+                  media={
+                    <ProductThumb
+                      name={item.product_name}
+                      imageUrl={item.product_image}
+                      brandLogo={item.brand_logo}
+                      categorySlug={item.category_slug}
+                      size="xl"
+                    />
+                  }
+                  state={state}
+                  rows={[
+                    { label: 'Available', value: item.qty_available },
+                    { label: 'Reserved', value: item.qty_reserved },
+                    { label: 'Sold', value: item.qty_sold },
+                    {
+                      label: priceLabel,
+                      value: item.promo_price ? (
+                        <>
+                          <span className="text-accent-strong">
+                            {formatMoney(item.promo_price)}
+                          </span>
+                          <span className="ml-1.5 font-normal text-muted line-through">
+                            {formatMoney(price)}
+                          </span>
+                        </>
+                      ) : (
+                        formatMoney(price)
+                      ),
+                    },
+                  ]}
+                  footer={
+                    !item.is_listed ? (
+                      <p className="mt-2.5">
+                        <Badge tone="neutral">Hidden from buyers</Badge>
+                      </p>
+                    ) : undefined
+                  }
+                  action="Manage stock"
+                />
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <EmptyState
+          icon="box"
+          title={params.q ? 'Nothing matched that search' : 'No stock listed yet'}
+          body="List a product from the master catalogue and it becomes discoverable to buyers near you."
+          action={<LinkButton href="/partner/catalogue">Browse the catalogue</LinkButton>}
+        />
+      )}
     </PartnerShell>
   )
 }

@@ -116,7 +116,7 @@ export async function ActivityPanel({
             {moreHref && (
               <Link
                 href={moreHref}
-                className="whitespace-nowrap text-sm font-medium text-accent-500 hover:underline"
+                className="whitespace-nowrap text-sm font-medium text-accent-strong hover:underline"
               >
                 All areas
               </Link>

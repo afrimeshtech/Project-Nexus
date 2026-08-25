@@ -130,7 +130,10 @@ export async function RiderNetworkView({
               title="Delivery points waiting"
               subtitle="Unclaimed drops, nearest first"
               action={
-                <Link href="/rider" className="text-sm font-medium text-accent-500 hover:underline">
+                <Link
+                  href="/rider"
+                  className="text-sm font-medium text-accent-strong hover:underline"
+                >
                   Accept jobs
                 </Link>
               }
@@ -192,7 +195,7 @@ function PinList({ pins, tone }: { pins: MapPin[]; tone: 'success' | 'danger' })
           <span className="flex shrink-0 items-center gap-2">
             <Badge tone={tone}>{formatDistance(Number(pin.distance_km))}</Badge>
             {pin.value ? (
-              <span className="font-semibold text-accent-500">
+              <span className="font-semibold text-accent-strong">
                 {formatMoney(Number(pin.value))}
               </span>
             ) : null}

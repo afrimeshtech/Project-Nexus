@@ -3,10 +3,12 @@ import { CategoryRow } from '@/components/commerce/CategoryRow'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { ProductResultCard } from '@/components/commerce/OfferCard'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { RiderNetworkView, riderRadius } from '@/components/rider/NetworkView'
+import { AreaSwitch } from '@/components/commerce/AreaSwitch'
+// FUTURE-DASHBOARD: import { RiderNetworkView, riderRadius } from '@/components/rider/NetworkView'
 import { Badge, Card, EmptyState, LinkButton, Rating, SectionHeading } from '@/components/ui'
 import { currentUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
+import { KNOWN_AREAS } from '@/lib/areas'
 import { TIER } from '@/lib/tiers'
 import { formatDistance, formatEta } from '@/lib/geo'
 import { listCategories } from '@/modules/catalog/service'
@@ -24,49 +26,62 @@ export const dynamic = 'force-dynamic'
  * popular item that turns out to be unavailable is the exact failure the BRS
  * describes.
  */
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ radius?: string; shop?: string }>
-}) {
-  const [user, location, params] = await Promise.all([currentUser(), buyerLocation(), searchParams])
+// FUTURE-DASHBOARD: `searchParams` existed only for the delivery partner branch
+// below — `?radius=` sized the map and `?shop=1` escaped back to the storefront.
+// Restore the parameter and the `params` binding along with that branch:
+//
+//   export default async function HomePage({
+//     searchParams,
+//   }: {
+//     searchParams: Promise<{ radius?: string; shop?: string }>
+//   }) {
+//     const [user, location, params] = await Promise.all([
+//       currentUser(),
+//       buyerLocation(),
+//       searchParams,
+//     ])
+export default async function HomePage() {
+  const [user, location] = await Promise.all([currentUser(), buyerLocation()])
 
-  /**
-   * For a delivery partner the storefront *is* the map.
+  /*
+   * FUTURE-DASHBOARD: the delivery partner's storefront.
    *
-   * A rider never buys stock, so a wall of product categories tells them
-   * nothing they can act on; the shops, warehouses and waiting drop points
-   * are the whole job. `?shop=1` still opens the ordinary storefront, because
-   * a rider is also a person who can buy things — this changes the default,
-   * it does not take the shop away.
+   * For a delivery partner the storefront *is* the map — a rider never buys
+   * stock, so a wall of product categories tells them nothing they can act on,
+   * and `?shop=1` opened the ordinary storefront for when they do want to buy
+   * something. With the tier switched off nobody holds the role, so this branch
+   * would never be taken; it is kept whole so restoring it is one uncomment.
+   *
+   * RiderNetworkView, riderRadius and the /rider routes are all still live.
+   *
+   * if (user?.role === 'delivery_partner' && !params.shop) {
+   *   return (
+   *     <ConsumerShell search={false}>
+   *       <div className="space-y-6">
+   *         <RiderNetworkView
+   *           userId={user.id}
+   *           origin={{ lat: location.lat, lng: location.lng }}
+   *           locationLabel={location.label}
+   *           radiusKm={riderRadius(params.radius)}
+   *           basePath="/"
+   *         />
+   *         <Card className="flex flex-wrap items-center justify-between gap-3">
+   *           <div>
+   *             <p className="font-medium text-ink">Looking to buy something yourself?</p>
+   *             <p className="text-xs text-muted">
+   *               The ordinary storefront is still here — this page just leads with the map,
+   *               because that is what a delivery partner needs first.
+   *             </p>
+   *           </div>
+   *           <LinkButton href="/?shop=1" variant="secondary">
+   *             Browse the shop
+   *           </LinkButton>
+   *         </Card>
+   *       </div>
+   *     </ConsumerShell>
+   *   )
+   * }
    */
-  if (user?.role === 'delivery_partner' && !params.shop) {
-    return (
-      <ConsumerShell search={false}>
-        <div className="space-y-6">
-          <RiderNetworkView
-            userId={user.id}
-            origin={{ lat: location.lat, lng: location.lng }}
-            locationLabel={location.label}
-            radiusKm={riderRadius(params.radius)}
-            basePath="/"
-          />
-          <Card className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-medium text-ink">Looking to buy something yourself?</p>
-              <p className="text-xs text-muted">
-                The ordinary storefront is still here — this page just leads with the map, because
-                that is what a delivery partner needs first.
-              </p>
-            </div>
-            <LinkButton href="/?shop=1" variant="secondary">
-              Browse the shop
-            </LinkButton>
-          </Card>
-        </div>
-      </ConsumerShell>
-    )
-  }
 
   const ctx = {
     lat: location.lat,
@@ -87,24 +102,43 @@ export default async function HomePage({
   return (
     <ConsumerShell>
       <div className="space-y-8">
-        <section>
-          <h1 className="text-display-sm">{greeting}</h1>
-          <p className="hero-lede">
-            One search. Real inventory, nearby. Pay. Delivered. Restocked. Everything below is stock
-            a verified seller around {location.label} physically has right now.
-          </p>
+        {/* An asymmetric masthead rather than a centred stack.
+            The greeting and the promise hold a narrow measure on the left;
+            what people near you are actually searching for sits in its own
+            rail on the right. Two unequal columns give the page a top edge
+            with structure — a full-width heading over a full-width paragraph
+            over a row of chips is the shape every generated homepage has. */}
+        <section className="grid gap-x-10 gap-y-6 border-b border-line-soft pb-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
+          <div>
+            <p className="font-technical text-eyebrow uppercase text-accent-strong">
+              {location.label}
+            </p>
+            <h1 className="mt-2 text-display-sm text-ink">{greeting}</h1>
+            <p className="mt-3 max-w-[46ch] text-base text-muted">
+              One search. Real inventory, nearby. Pay. Delivered. Restocked. Everything below is
+              stock a verified seller around you physically has right now.
+            </p>
+          </div>
+
           {trending.length > 0 && (
-            <div className="mt-7 flex flex-wrap gap-2">
-              {trending.map((t) => (
-                <Link
-                  key={t.query}
-                  href={`/search?q=${encodeURIComponent(t.query)}`}
-                  className="rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-muted hover:border-accent-500 hover:text-accent-400"
-                >
-                  {t.query}
-                </Link>
-              ))}
-            </div>
+            <aside className="lg:border-l lg:border-line-soft lg:pl-6">
+              <p className="font-technical text-eyebrow uppercase text-muted">Searched nearby</p>
+              <ul className="mt-2.5 space-y-1">
+                {trending.map((t) => (
+                  <li key={t.query}>
+                    <Link
+                      href={`/search?q=${encodeURIComponent(t.query)}`}
+                      className="group flex items-baseline justify-between gap-3 py-0.5 text-sm text-muted hover:text-accent-strong"
+                    >
+                      <span className="truncate capitalize group-hover:underline">{t.query}</span>
+                      <span className="shrink-0 font-technical text-xs tabular-nums opacity-60">
+                        {t.hits}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </aside>
           )}
         </section>
 
@@ -122,23 +156,43 @@ export default async function HomePage({
             title="Popular nearby"
             subtitle="In stock right now, ranked by availability, distance and price"
             action={
-              <Link href="/search" className="text-sm font-medium text-accent-500 hover:underline">
+              <Link
+                href="/search"
+                className="text-sm font-medium text-accent-strong hover:underline"
+              >
                 See all
               </Link>
             }
           />
           {popular.length ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {popular.map((result, i) => (
-                <ProductResultCard key={result.product_id} result={result} index={i} />
+              {popular.map((result) => (
+                <ProductResultCard key={result.product_id} result={result} />
               ))}
             </div>
           ) : (
+            /* The action here used to be "Register a business", which answers a
+               question a shopper did not ask: they came to buy, were told the
+               problem is their area, and were then offered a trader's task as
+               the only way forward. Changing area is the fix for what actually
+               went wrong, so that is the primary action now; registering is
+               kept, demoted to the aside it always was. */
             <EmptyState
               icon="pin"
               title="Nothing in stock around here yet"
-              body={`No verified sellers have listed stock within range of ${location.label}. Try another area, or register your business to be the first.`}
-              action={<LinkButton href="/onboarding">Register a business</LinkButton>}
+              body={`No verified seller has listed stock within range of ${location.label} yet. Try one of these areas instead.`}
+              action={
+                <div className="space-y-3">
+                  <AreaSwitch areas={KNOWN_AREAS} current={location.label} />
+                  <p className="text-xs text-muted">
+                    Trade around here yourself?{' '}
+                    <Link href="/onboarding" className="font-medium text-accent-strong underline">
+                      Register your business
+                    </Link>{' '}
+                    and be the first.
+                  </p>
+                </div>
+              }
             />
           )}
         </section>
@@ -180,8 +234,7 @@ export default async function HomePage({
             Sell on <span className="accent-word">AfriMesh</span>
           </h2>
           <p className="hero-lede">
-            Neighbourhood shops, merchants and dealer warehouses: list what you have, get discovered
-            by buyers close to you, and restock from the tier above you in the same place.
+            Neighbourhood shops: list what you have and get discovered by buyers close to you.
           </p>
           <div className="hero-actions">
             <LinkButton href="/onboarding" variant="secondary">

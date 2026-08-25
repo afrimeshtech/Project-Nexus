@@ -80,8 +80,11 @@ export default async function AboutPage() {
                 body: 'Listings reflect live inventory that a verified seller physically holds. Units reserved for someone else are invisible, so what you see is what you can buy.',
               },
               {
+                // FUTURE-DASHBOARD: the full chain, for when the upper tiers open —
+                // 'Consumers buy from retail outlets. Outlets buy from merchants.
+                //  Merchants buy from dealer warehouses. Warehouses supply merchants only.'
                 title: 'One tier at a time',
-                body: 'Consumers buy from retail outlets. Outlets buy from merchants. Merchants buy from dealer warehouses. Warehouses supply merchants only.',
+                body: 'Consumers buy from retail outlets, and only from retail outlets. The wholesale tiers above them open as the network grows.',
               },
               {
                 title: 'Money is held in escrow',

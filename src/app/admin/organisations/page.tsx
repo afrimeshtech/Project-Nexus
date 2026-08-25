@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
 import { RejectBusinessForm } from '@/components/admin/AdminForms'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Badge, Card, EmptyState, Rating, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader, Rating } from '@/components/ui'
 import { toggleSuspensionAction, verifyOrganisationAction } from '@/app/actions/admin'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { ORG_LABEL, type OrgType } from '@/lib/tiers'
@@ -45,7 +45,8 @@ export default async function AdminOrganisationsPage({
   return (
     <AdminShell active="/admin/organisations">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Organisations' }]}
           title="Businesses"
           subtitle="Verification gates discoverability — an unverified business cannot be recommended to buyers."
         />
@@ -112,7 +113,7 @@ export default async function AdminOrganisationsPage({
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/shop/${org.slug}`}
-                      className="font-semibold text-ink hover:text-accent-400"
+                      className="font-semibold text-ink hover:text-accent-strong"
                     >
                       {org.name}
                     </Link>

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
-import { Card, SectionHeading, Stat } from '@/components/ui'
+import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import {
@@ -47,10 +47,11 @@ export default async function AdminLocationsPage({
   return (
     <AdminShell active="/admin/locations">
       <div className="space-y-8">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Locations' }]}
           title="Demand map"
           subtitle="Where each tier of the network is active. The platform's whole premise is that stock, buyers and delivery capacity should sit close together — this is where you see whether they do."
-          action={
+          actions={
             <div className="flex gap-1.5">
               {[30, 90, 180].map((option) => (
                 <Link

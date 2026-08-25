@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
 import { BarSeries } from '@/components/charts/BarSeries'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
-import { Alert, Badge, Card, SectionHeading, Stat } from '@/components/ui'
+import { Alert, Badge, Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { formatMoney, formatMoneyCompact } from '@/lib/money'
 import { gmvSeries, platformKpis } from '@/modules/analytics/service'
@@ -33,7 +33,8 @@ export default async function AdminHome() {
   return (
     <AdminShell active="/admin">
       <div className="space-y-8">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Admin' }]}
           title="Platform overview"
           subtitle="Live commerce, payment and inventory health across the network"
         />
@@ -123,7 +124,12 @@ export default async function AdminHome() {
               title="GMV, last 14 days"
               subtitle={`Total ${formatMoneyCompact(kpis.gmv)} settled through the platform`}
             />
-            <BarSeries data={series} valueKey="gmv" caption="Daily gross merchandise value" />
+            <BarSeries
+              data={series}
+              valueKey="gmv"
+              caption="Daily gross merchandise value"
+              emptyLabel="No paid orders in the last 14 days"
+            />
           </Card>
 
           <Card>
@@ -192,7 +198,7 @@ export default async function AdminHome() {
                 action={
                   <Link
                     href="/admin/fraud"
-                    className="text-sm font-medium text-accent-500 hover:underline"
+                    className="text-sm font-medium text-accent-strong hover:underline"
                   >
                     Review
                   </Link>

@@ -1,6 +1,6 @@
 import { AdminShell } from '@/components/shell/AdminShell'
 import { RankingWeightsForm } from '@/components/admin/AdminForms'
-import { Card, SectionHeading } from '@/components/ui'
+import { Card, PageHeader, SectionHeading } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { DEFAULT_WEIGHTS, getWeights, type RankingScope } from '@/modules/recommendation/service'
 
@@ -41,7 +41,8 @@ export default async function RankingPage() {
   return (
     <AdminShell active="/admin/ranking">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Ranking' }]}
           title="Recommendation engine"
           subtitle="The weighted model that decides which seller a buyer sees first. Changes take effect on the next search — no deployment required."
         />

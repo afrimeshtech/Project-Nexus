@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { redeemPointsAction, type RewardsActionState } from '@/app/actions/rewards'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /**
  * The invitation card.
@@ -33,7 +33,7 @@ export function InviteCard({ code, path = '/register' }: { code: string; path?: 
     <div className="space-y-3">
       <div className="rounded-brand border border-dashed border-accent-500/60 bg-accent-soft px-4 py-4 text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-muted">Your invite code</p>
-        <p className="mt-1 font-technical text-2xl font-bold tracking-[0.3em] text-accent-500">
+        <p className="mt-1 font-technical text-2xl font-bold tracking-[0.3em] text-accent-strong">
           {code}
         </p>
       </div>
@@ -86,7 +86,7 @@ export function RedeemPointsForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="scope" value={scope} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field

@@ -33,15 +33,22 @@ export async function ConsumerShell({
     ? await Promise.all([unreadCount(user.id), unreadMessageCount(user.id, org?.id ?? null)])
     : [0, 0]
   const isAdmin = user ? ADMIN_ROLES.includes(user.role) : false
-  const isRider = user?.role === 'delivery_partner'
+  // FUTURE-DASHBOARD: delivery partner.
+  // const isRider = user?.role === 'delivery_partner'
 
   return (
-    <div className="flex min-h-screen flex-col">
+    /* The tinted ground, not white. Cards carry a hairline and no shadow now,
+       and a white card on a white page has nothing to be a card against — the
+       ground is what makes the boundary legible rather than the border alone. */
+    <div className="flex min-h-screen flex-col bg-page">
       {/* The bar carries the logo artwork's own background, so the lockup sits
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
           layers — chrome, content, chrome — rather than three flat bands. */}
-      <header className="bar-depth relative z-30 border-b border-bar-line bg-bar">
+      <header
+        className="bar-depth relative border-b border-bar-line bg-bar"
+        style={{ zIndex: 'var(--z-bar)' }}
+      >
         <div className="mx-auto w-full max-w-6xl px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Menu leads on the left, then the lockup. */}
@@ -69,9 +76,12 @@ export async function ConsumerShell({
                     badge: unread,
                   },
                   ...(org ? [{ href: '/partner', label: org.name, icon: 'store' as const }] : []),
-                  ...(isRider
-                    ? [{ href: '/rider', label: 'Deliveries', icon: 'scooter' as const }]
-                    : []),
+                  // FUTURE-DASHBOARD: the delivery partner's own surface. The
+                  // /rider routes still exist and still guard on the role — this
+                  // is the only link that ever led anyone to them.
+                  // ...(isRider
+                  //   ? [{ href: '/rider', label: 'Deliveries', icon: 'scooter' as const }]
+                  //   : []),
                   ...(isAdmin
                     ? [{ href: '/admin', label: 'Platform console', icon: 'settings' as const }]
                     : []),
@@ -181,7 +191,8 @@ function BottomNav({ messages }: { messages: number }) {
   return (
     <nav
       aria-label="Primary"
-      className="bar-depth-top fixed inset-x-0 bottom-0 z-40 border-t border-bar-line bg-bar sm:hidden"
+      className="bar-depth-top fixed inset-x-0 bottom-0 border-t border-bar-line bg-bar sm:hidden"
+      style={{ zIndex: 'var(--z-bottom-nav)' }}
     >
       <ul className="mx-auto flex max-w-6xl">
         {items.map((item) => (
@@ -206,7 +217,10 @@ function BottomNav({ messages }: { messages: number }) {
 function SiteFooter() {
   return (
     // Same ground as the header, so the page is bracketed by the brand.
-    <footer className="bar-depth-top relative z-30 mt-auto hidden bg-bar sm:block">
+    <footer
+      className="bar-depth-top relative mt-auto hidden bg-bar sm:block"
+      style={{ zIndex: 'var(--z-bar)' }}
+    >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-4 py-8 text-sm text-bar-muted">
         <Wordmark size="sm" orientation="stacked" />
         <p className="font-technical text-xs">

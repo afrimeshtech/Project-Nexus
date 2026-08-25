@@ -4,7 +4,7 @@ import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { Thread } from '@/components/messaging/Thread'
 import { OrderStatusBadge } from '@/components/commerce/OrderBits'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Card, SectionHeading, Thumb } from '@/components/ui'
+import { SectionHeading, Breadcrumb, Card, Thumb } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getOrder } from '@/modules/orders/service'
@@ -36,9 +36,13 @@ export default async function ThreadPage({ params }: { params: Promise<{ orderId
   return (
     <ConsumerShell search={false}>
       <div className="space-y-4">
-        <Link href="/messages" className="text-sm font-medium text-accent-500 hover:underline">
-          ← All messages
-        </Link>
+        <Breadcrumb
+          trail={[
+            { label: 'Home', href: '/' },
+            { label: 'Messages', href: '/messages' },
+            { label: counterpart },
+          ]}
+        />
 
         <Card className="flex flex-wrap items-center gap-3">
           {thread.side === 'buyer' ? (

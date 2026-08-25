@@ -4,7 +4,16 @@ import { PartnerShell } from '@/components/shell/PartnerShell'
 import { OfferCard } from '@/components/commerce/OfferCard'
 import { RestockButton } from '@/components/partner/RestockButton'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
-import { Alert, Badge, Card, EmptyState, LinkButton, Rating, SectionHeading } from '@/components/ui'
+import {
+  Alert,
+  Badge,
+  Card,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  Rating,
+  SectionHeading,
+} from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { sourcingContext } from '@/lib/viewer'
 import { ORG_LABEL, supplierTypeFor } from '@/lib/tiers'
@@ -64,7 +73,8 @@ export default async function SourcePage({
   return (
     <PartnerShell active="/partner/source">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Sourcing' }]}
           title={`Source from ${ORG_LABEL[supplier].toLowerCase()}s`}
           subtitle={`Wholesale prices, ranked by stock depth, distance, price and dispatch reliability. Delivered to ${ctx.address ?? ctx.orgName}.`}
         />

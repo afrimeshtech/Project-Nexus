@@ -12,6 +12,7 @@
  * Market: Lagos, matching the BRS short-term objective of launching in one
  * metropolitan area.
  */
+import { assertDestructiveAllowed, DestructiveGuardError } from '../src/lib/destructive-guard.ts'
 import { getSql } from '@/db/client'
 import { registerUser } from '@/modules/identity/service'
 import { createProduct } from '@/modules/catalog/service'
@@ -628,6 +629,11 @@ const ORGS: SeedOrg[] = [
 // ---------------------------------------------------------------------------
 
 async function main() {
+  // Seeding installs the demo accounts, including an administrator whose
+  // password is committed to this repository. Harmless locally, a full
+  // compromise anywhere else, so it is gated on the same check as the drop.
+  assertDestructiveAllowed('seed demo data')
+
   const sql = await getSql()
   const log = (msg: string) => console.log(`  ${msg}`)
 
@@ -1313,6 +1319,13 @@ async function main() {
 }
 
 main().catch((err) => {
+  // A refusal is a decision, not a crash — print the reason, not a stack.
+  if (err instanceof DestructiveGuardError) {
+    console.error(`
+! ${err.message}
+`)
+    process.exit(1)
+  }
   console.error(err)
   process.exit(1)
 })

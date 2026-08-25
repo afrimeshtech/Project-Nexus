@@ -1,7 +1,7 @@
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { Statement } from '@/components/commerce/Statement'
 import { TopUpForm, WithdrawForm } from '@/components/commerce/WalletForms'
-import { Card, SectionHeading, Stat } from '@/components/ui'
+import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getBalance, statement } from '@/modules/wallet/service'
@@ -17,7 +17,8 @@ export default async function WalletPage() {
   return (
     <ConsumerShell search={false}>
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Home', href: '/' }, { label: 'Wallet' }]}
           title="Your wallet"
           subtitle="One balance for paying, refunds and rewards across the network"
         />

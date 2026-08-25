@@ -179,12 +179,12 @@ export async function OrderDetailView({
               </div>
             </dl>
             {['confirmed', 'preparing', 'dispatched', 'delivered'].includes(order.status) && (
-              <p className="mt-3 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-500">
+              <p className="mt-3 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
                 Held in escrow. Released to the seller when the buyer confirms delivery.
               </p>
             )}
             {viewer.isBuyer && pendingCashback > 0 && order.status !== 'completed' && (
-              <p className="mt-2 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-500">
+              <p className="mt-2 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
                 Earn {formatMoney(pendingCashback, order.currency)} cashback when you confirm
                 receipt.
               </p>
@@ -216,7 +216,7 @@ export async function OrderDetailView({
                 <div className="min-w-0">
                   <Link
                     href={`/shop/${order.seller_slug}`}
-                    className="block truncate font-medium text-ink hover:text-accent-400"
+                    className="block truncate font-medium text-ink hover:text-accent-strong"
                   >
                     {order.seller_name}
                   </Link>
@@ -224,7 +224,7 @@ export async function OrderDetailView({
                   {order.seller_phone && (
                     <a
                       href={`tel:${order.seller_phone}`}
-                      className="text-xs font-medium text-accent-500"
+                      className="text-xs font-medium text-accent-strong"
                     >
                       {order.seller_phone}
                     </a>
@@ -237,7 +237,7 @@ export async function OrderDetailView({
                 {order.buyer_phone && (
                   <a
                     href={`tel:${order.buyer_phone}`}
-                    className="text-xs font-medium text-accent-500"
+                    className="text-xs font-medium text-accent-strong"
                   >
                     {order.buyer_phone}
                   </a>

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
+import { Badge, Card, EmptyState, PageHeader } from '@/components/ui'
 import { moderateProductAction } from '@/app/actions/admin'
 import { ProductImageUpload } from '@/components/media/ImageUpload'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
@@ -91,7 +91,8 @@ export default async function AdminProductsPage({
   return (
     <AdminShell active="/admin/products">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Products' }]}
           title="Master product catalogue"
           subtitle="One record per product, shared by every seller — this is what makes cross-seller price comparison possible."
         />
@@ -174,7 +175,7 @@ export default async function AdminProductsPage({
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
                       href={`/product/${product.slug}`}
-                      className="font-medium text-ink hover:text-accent-400"
+                      className="font-medium text-ink hover:text-accent-strong"
                     >
                       {product.name}
                     </Link>

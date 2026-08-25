@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { OrderStatusBadge } from '@/components/commerce/OrderBits'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
-import { Card, EmptyState, SectionHeading, Stat } from '@/components/ui'
+import { Card, EmptyState, PageHeader, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { ordersForBuyerOrg, ordersForSeller, type OrderStatus } from '@/modules/orders/service'
@@ -44,7 +44,8 @@ export default async function PartnerOrdersPage({
   return (
     <PartnerShell active="/partner/orders">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Orders' }]}
           title={showPurchases ? 'Your purchases' : 'Incoming orders'}
           subtitle={
             showPurchases
@@ -75,16 +76,22 @@ export default async function PartnerOrdersPage({
           >
             Sales
           </Link>
-          <Link
-            href="/partner/orders?view=purchases"
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-              showPurchases
-                ? 'bg-accent-500 text-accent-ink'
-                : 'border border-line bg-surface text-muted'
-            }`}
-          >
-            Purchases
-          </Link>
+          {/* FUTURE-DASHBOARD: the purchases side of the ledger. A retail outlet
+              buys from merchants, and that tier is not open yet, so this tab can
+              only ever be empty. Everything behind it — the ?view=purchases
+              branch below, the queries, the order service — is untouched.
+
+              <Link
+                href="/partner/orders?view=purchases"
+                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  showPurchases
+                    ? 'bg-accent-500 text-accent-ink'
+                    : 'border border-line bg-surface text-muted'
+                }`}
+              >
+                Purchases
+              </Link>
+          */}
 
           {!showPurchases && (
             <>

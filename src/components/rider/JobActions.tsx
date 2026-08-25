@@ -7,7 +7,7 @@ import {
   pickUpAction,
   type DeliveryActionState,
 } from '@/app/actions/logistics'
-import { Alert, inputClass } from '@/components/ui'
+import { FormError, Alert, inputClass } from '@/components/ui'
 
 export function AcceptJobButton({ deliveryId }: { deliveryId: string }) {
   const [state, formAction, pending] = useActionState<DeliveryActionState, FormData>(
@@ -104,7 +104,7 @@ export function CompleteDeliveryForm({ deliveryId }: { deliveryId: string }) {
           Cancel
         </button>
       </div>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
     </form>
   )
 }

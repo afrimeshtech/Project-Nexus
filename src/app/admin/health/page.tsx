@@ -1,5 +1,5 @@
 import { AdminShell } from '@/components/shell/AdminShell'
-import { Alert, Badge, Card, SectionHeading, Stat } from '@/components/ui'
+import { Alert, Badge, Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { runMaintenanceAction } from '@/app/actions/admin'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { systemHealth } from '@/modules/platform/service'
@@ -63,10 +63,11 @@ export default async function HealthPage() {
   return (
     <AdminShell active="/admin/health">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Health' }]}
           title="System health"
           subtitle="Live checks against the non-functional requirements"
-          action={
+          actions={
             readOnly ? null : (
               <form action={runMaintenanceAction}>
                 <button

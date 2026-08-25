@@ -29,12 +29,19 @@ export default async function LoginPage({
     <AuthLayout
       title={invite ? 'You have been invited' : 'Welcome back'}
       subtitle="Sign in to shop, sell and track your orders."
-      footnote="Sessions are opaque tokens stored hashed, so a database dump cannot be replayed into a live session and revocation is immediate."
+      /*
+       * The engineering was accurate and the audience was wrong. A shopper
+       * signing in does not know what an opaque token is, and a line about
+       * database dumps at the moment of entering a password reads as a warning
+       * rather than as reassurance. Same fact, said to the person who is
+       * actually here: their session is theirs, and it can be ended.
+       */
+      footnote="Your sign-in is kept secure, and you can sign out from any device at any time."
     >
       <LoginForm next={next ?? '/'} referralCode={invite} />
       <p className="mt-4 text-center text-sm text-muted">
         New to AfriMesh?{' '}
-        <Link href={registerHref} className="font-medium text-accent-500 hover:underline">
+        <Link href={registerHref} className="font-medium text-accent-strong hover:underline">
           Create an account
         </Link>
       </p>

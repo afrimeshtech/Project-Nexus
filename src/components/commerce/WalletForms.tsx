@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { topUpAction, withdrawAction, type WalletActionState } from '@/app/actions/wallet'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
 
 export function TopUpForm({ scope = 'user' }: { scope?: 'user' | 'organisation' }) {
@@ -11,7 +11,7 @@ export function TopUpForm({ scope = 'user' }: { scope?: 'user' | 'organisation' 
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="scope" value={scope} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field label="Amount (₦)" htmlFor="topup-amount">
@@ -57,7 +57,7 @@ export function WithdrawForm({ scope = 'user' }: { scope?: 'user' | 'organisatio
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="scope" value={scope} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field

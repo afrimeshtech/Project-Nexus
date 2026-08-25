@@ -11,3 +11,10 @@ next-env.d.ts
 
 # Locally stored uploads and generated seed imagery
 public/uploads/
+
+# Corrupt data directory preserved after a hard kill (2026-08-22).
+# A real PostgreSQL 16 install can attempt pg_resetwal recovery on it.
+.pgdata.corrupt-*/
+
+# Word lock files, created while a .docx is open
+~$*

@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { EditBusinessForm } from '@/components/partner/BusinessForm'
 import { LogoUpload } from '@/components/media/ImageUpload'
-import { Badge, Card, Rating, SectionHeading } from '@/components/ui'
+import { Badge, Card, PageHeader, Rating, SectionHeading } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
@@ -34,7 +34,8 @@ export default async function PartnerSettingsPage() {
   return (
     <PartnerShell active="/partner/settings">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Settings' }]}
           title="Business settings"
           subtitle="Your location and dispatch time directly affect where you rank with buyers."
         />

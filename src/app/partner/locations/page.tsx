@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
-import { Card, SectionHeading, Stat } from '@/components/ui'
+import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import {
@@ -59,10 +59,11 @@ export default async function PartnerLocationsPage({
   return (
     <PartnerShell active="/partner/locations">
       <div className="space-y-7">
-        <SectionHeading
+        <PageHeader
+          breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Buyer locations' }]}
           title="Buyer locations"
           subtitle={`Where the ${noun} you sell to are actually buying, within ${radiusKm} km of ${org.name}. Stock for the areas that are moving, not the ones that used to.`}
-          action={
+          actions={
             <div className="flex gap-1.5">
               {[30, 90, 180].map((option) => (
                 <Link

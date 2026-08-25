@@ -74,7 +74,7 @@ export function Statement({
               </td>
               <td
                 className={`whitespace-nowrap py-2.5 pr-3 text-right font-medium ${
-                  line.direction === 'credit' ? 'text-accent-500' : 'text-ink'
+                  line.direction === 'credit' ? 'text-accent-strong' : 'text-ink'
                 }`}
               >
                 {line.direction === 'credit' ? '+' : '−'}

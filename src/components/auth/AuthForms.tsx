@@ -9,7 +9,7 @@ import {
   verifyOtpAction,
   type FormState,
 } from '@/app/actions/session'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /**
  * Sign-in supports both methods the SAD lists for launch: email/password and
@@ -72,7 +72,7 @@ function PasswordLogin({ next }: { next: string }) {
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="next" value={next} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       <Field label="Phone or email" htmlFor="identifier">
         <input
@@ -204,7 +204,7 @@ export function RegisterForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="next" value={next} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       {referralCode && (
         <Alert tone="success">
@@ -276,7 +276,7 @@ export function RegisterForm({
           // is also a sign-up, and dropping the code here would silently lose
           // the referral for anyone who takes that route.
           href={referralCode ? `/login?ref=${encodeURIComponent(referralCode)}` : '/login'}
-          className="font-medium text-accent-500 hover:underline"
+          className="font-medium text-accent-strong hover:underline"
         >
           Sign in
         </Link>

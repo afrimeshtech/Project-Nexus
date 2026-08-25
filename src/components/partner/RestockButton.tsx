@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { buildRestockBasketAction, type RestockState } from '@/app/actions/restock'
-import { Alert } from '@/components/ui'
+import { FormError, Alert } from '@/components/ui'
 
 export function RestockButton({ lowCount }: { lowCount: number }) {
   const [state, formAction, pending] = useActionState<RestockState, FormData>(
@@ -25,7 +25,7 @@ export function RestockButton({ lowCount }: { lowCount: number }) {
               : `Build a restock basket for ${lowCount} item${lowCount === 1 ? '' : 's'}`}
         </button>
       </form>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="info">{state.notice}</Alert>}
       <p className="text-xs text-muted">
         We pick the supplier that covers the most of your shortfall and fill a basket at wholesale

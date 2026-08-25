@@ -211,10 +211,19 @@ export default async function SearchPage({
   )
 }
 
+/**
+ * A labelled set of filter options.
+ *
+ * The label is tied to the group rather than merely sitting beside it, so a
+ * screen reader announces "Distance, group" before reading the options. Read
+ * without that association, the four chips are just "5 km, 10 km, 25 km,
+ * 50 km" arriving from nowhere.
+ */
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = `filter-${label.toLowerCase().replace(/\s+/g, '-')}`
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="w-24 shrink-0 text-xs font-medium uppercase tracking-wide text-muted">
+    <div role="group" aria-labelledby={id} className="flex flex-wrap items-center gap-2">
+      <span id={id} className="w-24 shrink-0 font-technical text-eyebrow uppercase text-muted">
         {label}
       </span>
       <div className="flex flex-wrap gap-1.5">{children}</div>
@@ -234,7 +243,13 @@ function FilterChip({
   return (
     <Link
       href={href}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      // Which filter is applied was carried by colour alone, so it did not
+      // exist for anyone using a screen reader — and colour alone is not a
+      // state anyone should have to rely on. aria-current says it outright.
+      aria-current={active ? 'true' : undefined}
+      // py-1.5 rather than py-1: at the smaller padding the chip is a hair
+      // under the 24px minimum a pointer target has to clear.
+      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
         active
           ? 'bg-accent-500 text-accent-ink'
           : 'border border-line bg-surface text-muted hover:border-accent-500 hover:text-accent-strong'

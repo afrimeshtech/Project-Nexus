@@ -6,7 +6,7 @@ import {
   uploadOrgLogoAction,
   type MediaActionState,
 } from '@/app/actions/media'
-import { Alert } from '@/components/ui'
+import { FormError, Alert } from '@/components/ui'
 
 const MAX_MB = 2
 
@@ -113,7 +113,7 @@ function Picker({
       </div>
 
       {localError && <p className="text-xs text-coral-ink">{localError}</p>}
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
     </form>
   )

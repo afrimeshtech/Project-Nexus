@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react'
 import { sendMessageAction, type MessageActionState } from '@/app/actions/messaging'
-import { Alert } from '@/components/ui'
+import { FormError } from '@/components/ui'
 import type { Message } from '@/modules/messaging/service'
 
 export function Thread({
@@ -66,7 +66,7 @@ export function Thread({
         <div ref={endRef} />
       </div>
 
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       <form ref={formRef} action={formAction} className="flex items-end gap-2">
         <input type="hidden" name="orderId" value={orderId} />

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { redeemPointsAction, type RewardsActionState } from '@/app/actions/rewards'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /**
  * The invitation card.
@@ -86,7 +86,7 @@ export function RedeemPointsForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="scope" value={scope} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field

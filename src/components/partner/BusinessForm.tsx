@@ -6,7 +6,7 @@ import {
   updateBusinessAction,
   type OnboardingState,
 } from '@/app/actions/onboarding'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /**
  * FUTURE-DASHBOARD: only the retail outlet tier is offered at launch.
@@ -122,7 +122,7 @@ export function RegisterBusinessForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       <fieldset>
         <legend className="mb-1.5 text-sm font-medium text-ink">
@@ -231,7 +231,7 @@ export function EditBusinessForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       <Field label="Business name" htmlFor="edit-name">

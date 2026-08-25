@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { checkoutAction, type CartActionState } from '@/app/actions/cart'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Field, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
 
 /**
@@ -29,7 +29,7 @@ export function CheckoutForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       <fieldset>
         <legend className="mb-1.5 text-sm font-medium text-ink">How do you want it?</legend>

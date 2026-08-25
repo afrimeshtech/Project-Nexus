@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { issueKeyAction, revokeKeyAction, type ApiKeyActionState } from '@/app/actions/api-keys'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 /**
  * Issuing a key. The secret comes back once and is never retrievable again, so
@@ -49,7 +49,7 @@ export function IssueKeyForm({ scopes }: { scopes: { value: string; label: strin
 
   return (
     <form action={formAction} className="space-y-3">
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       <Field
         label="What is this key for?"

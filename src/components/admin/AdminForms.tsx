@@ -7,7 +7,7 @@ import {
   updateWeightsAction,
   type AdminActionState,
 } from '@/app/actions/admin'
-import { Alert, inputClass } from '@/components/ui'
+import { FormError, Alert, inputClass } from '@/components/ui'
 
 export function RejectBusinessForm({ organisationId }: { organisationId: string }) {
   const [state, formAction, pending] = useActionState<AdminActionState, FormData>(
@@ -53,7 +53,7 @@ export function RejectBusinessForm({ organisationId }: { organisationId: string 
           Cancel
         </button>
       </div>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
     </form>
   )
 }
@@ -85,7 +85,7 @@ export function ReferralPointsForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       {Object.entries(values).map(([programme, value]) => (
@@ -162,7 +162,7 @@ export function RankingWeightsForm({
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="scope" value={scope} />
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
 
       {Object.entries(values).map(([factor, value]) => (

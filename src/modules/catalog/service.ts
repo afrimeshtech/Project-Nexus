@@ -167,6 +167,27 @@ export async function getProductByBarcode(gtin: string): Promise<ProductDetail |
   )
 }
 
+/**
+ * Slugs of every product worth putting in the sitemap.
+ *
+ * Only products a seller actually has listed: a catalogue entry nobody stocks
+ * resolves to a page that tells the visitor no one nearby has it, and sending
+ * a crawler to a thousand of those earns the site nothing.
+ */
+export async function listProductSlugs(
+  limit = 5_000,
+): Promise<{ slug: string; created_at: Date }[]> {
+  const sql = await getSql()
+  return sql.query<{ slug: string; created_at: Date }>(
+    `SELECT DISTINCT p.slug, p.created_at
+       FROM products p
+       JOIN inventory_items i ON i.product_id = p.id AND i.is_listed = true
+      ORDER BY p.created_at DESC
+      LIMIT $1`,
+    [limit],
+  )
+}
+
 export async function listCategories(): Promise<Category[]> {
   const sql = await getSql()
   return sql.query<Category>(`SELECT * FROM categories ORDER BY sort_order ASC, name ASC`)

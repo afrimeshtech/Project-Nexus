@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon, type IconName } from '@/components/Icon'
 
@@ -33,27 +33,77 @@ export interface MenuLink {
  */
 export function HeaderMenu({ links, accountLabel }: { links: MenuLink[]; accountLabel?: string }) {
   const [open, setOpen] = useState(false)
+  const panelRef = useRef<HTMLElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
+
+    const panel = panelRef.current
+    // Captured now rather than read in cleanup: by the time cleanup runs the
+    // ref may point somewhere else, and focus would go with it.
+    const trigger = triggerRef.current
+    /*
+     * Move into the sheet, and keep the keyboard inside it.
+     *
+     * Opening used to leave focus on the trigger, behind the scrim: a keyboard
+     * user pressed the button, nothing appeared to happen, and tabbing walked
+     * them through the page underneath rather than the menu they had just
+     * opened. A sheet that covers the page has to own the keyboard while it is
+     * up, and hand it back when it closes.
+     */
+    const focusable = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null)
+
+    focusable()[0]?.focus()
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') {
+        setOpen(false)
+        return
+      }
+      if (event.key !== 'Tab') return
+
+      const items = focusable()
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const activeEl = document.activeElement
+
+      // Wrap at the ends rather than letting focus escape to the page behind.
+      if (event.shiftKey && (activeEl === first || !panel?.contains(activeEl))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && activeEl === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
+
     document.addEventListener('keydown', onKey)
     // Stop the page scrolling behind an open sheet.
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
+      // Back to the control that opened it, so the place in the page is not
+      // lost. Guarded because the trigger is still mounted either way.
+      trigger?.focus()
     }
   }, [open])
 
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={open}
+        aria-haspopup="dialog"
         aria-label="Open menu"
         className="grid size-10 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60"
       >

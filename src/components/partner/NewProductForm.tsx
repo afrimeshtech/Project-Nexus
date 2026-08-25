@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useActionState, useRef, useState } from 'react'
 import { createAndListProductAction, type NewProductState } from '@/app/actions/catalogue'
-import { Alert, Field, inputClass } from '@/components/ui'
+import { FormError, Alert, Field, inputClass } from '@/components/ui'
 
 const MAX_MB = 2
 
@@ -84,7 +84,7 @@ export function NewProductForm({
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
       {state.notice && <Alert tone="success">{state.notice}</Alert>}
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
 
       {/* Shown once, when a near-match exists. Listing one of these is almost
           always the better outcome for both the seller and buyers. */}

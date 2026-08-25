@@ -527,6 +527,15 @@ export function EmptyState({
   )
 }
 
+/**
+ * A banner, announced to a screen reader according to how much it matters.
+ *
+ * Every tone used to be `role="status"`, which is polite: the reader finishes
+ * whatever it is saying first, and a failed payment waits its turn behind the
+ * rest of the page. An error takes `role="alert"` instead, which interrupts.
+ * Success and information stay polite — interrupting someone to say a thing
+ * worked is its own kind of rude.
+ */
 export function Alert({
   children,
   tone = 'danger',
@@ -540,9 +549,37 @@ export function Alert({
     info: 'border-info-ink/30 bg-info/40 text-info-ink',
     warning: 'border-warning/40 bg-warning/15 text-warning-ink',
   }[tone]
+  const urgent = tone === 'danger' || tone === 'warning'
   return (
-    <div role="status" className={`rounded-brand border px-3.5 py-2.5 text-sm ${styles}`}>
+    <div
+      role={urgent ? 'alert' : 'status'}
+      className={`rounded-brand border px-3.5 py-2.5 text-sm ${styles}`}
+    >
       {children}
+    </div>
+  )
+}
+
+/**
+ * The place a form puts what went wrong.
+ *
+ * The region is rendered whether or not there is an error, which is the part
+ * that actually makes it work: a live region only announces changes that
+ * happen *inside* it, and one inserted into the page at the same instant as
+ * its text is announced inconsistently — reliably by some screen readers,
+ * silently by others. Mounting it empty means the message arriving is a change
+ * to existing content, which is the case every reader handles.
+ *
+ * Empty it takes no space, so nothing shifts when an error appears.
+ */
+export function FormError({ children }: { children?: ReactNode }) {
+  return (
+    <div role="alert" aria-live="assertive" aria-atomic="true">
+      {children ? (
+        <div className="rounded-brand border border-coral/40 bg-coral/15 px-3.5 py-2.5 text-sm text-coral-ink">
+          {children}
+        </div>
+      ) : null}
     </div>
   )
 }

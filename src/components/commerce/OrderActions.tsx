@@ -9,7 +9,7 @@ import {
   type OrderActionState,
 } from '@/app/actions/orders'
 import { payOrderAction, type CartActionState } from '@/app/actions/cart'
-import { Alert, inputClass } from '@/components/ui'
+import { FormError, Alert, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
 
 export function AdvanceOrderButton({
@@ -86,7 +86,7 @@ export function CancelOrderForm({ orderId }: { orderId: string }) {
           Keep order
         </button>
       </div>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       <p className="text-xs text-muted">
         If the order was already paid, the full amount returns to your wallet and the stock goes
         back to the seller.
@@ -142,7 +142,7 @@ export function RateOrderForm({ orderId }: { orderId: string }) {
       >
         {pending ? 'Saving…' : 'Submit rating'}
       </button>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
     </form>
   )
 }
@@ -179,7 +179,7 @@ export function RetryPaymentForm({ orderId }: { orderId: string }) {
       >
         {pending ? 'Processing…' : 'Complete payment'}
       </button>
-      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      <FormError>{state.error}</FormError>
       <p className="text-xs text-muted">
         Stock stays reserved for a short window. If payment is not completed, the reservation is
         released and the items go back on sale.

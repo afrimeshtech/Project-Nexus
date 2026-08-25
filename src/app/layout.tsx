@@ -1,3 +1,4 @@
+import { siteUrl } from '@/lib/site'
 import type { Metadata, Viewport } from 'next'
 import { Inter, IBM_Plex_Sans } from 'next/font/google'
 import './globals.css'
@@ -32,6 +33,10 @@ const plex = IBM_Plex_Sans({
 })
 
 export const metadata: Metadata = {
+  // Canonical and og: URLs are read off-site, where a relative path means
+  // nothing. Without this, every alternates.canonical set on a page below
+  // resolves against nothing and Next drops it.
+  metadataBase: new URL(siteUrl()),
   title: {
     default: 'AfriMesh — Where Commerce Connects',
     template: '%s · AfriMesh',

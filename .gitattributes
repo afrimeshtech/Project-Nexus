@@ -1,0 +1,30 @@
+# Line endings.
+#
+# Prettier is configured `endOfLine: "lf"`, and CI runs `format:check` on a
+# Linux checkout, where that is what it gets. On Windows, git's core.autocrlf
+# writes CRLF into the working tree instead — so the same file that passes in
+# CI fails locally, and `npm run format:check` reports dozens of files that
+# git itself considers unmodified. The check becomes noise, and a developer
+# learns to ignore it.
+#
+# `text=auto eol=lf` settles it: git still normalises to LF in the object
+# store, and now also checks out LF on every platform, so the working tree
+# matches what CI and Prettier both expect.
+
+* text=auto eol=lf
+
+# Binary files must never be line-ending converted — doing so corrupts them.
+# The brand artwork in particular is opaque PNG whose bytes matter: the app's
+# bar colour is sampled to match the crop's own ground.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.docx binary
+*.xlsx binary
+*.mp4 binary

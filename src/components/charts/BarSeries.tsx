@@ -71,7 +71,20 @@ export function BarSeries({
   return (
     <figure>
       <figcaption className="sr-only">{caption}</figcaption>
-      <div className="flex h-32 items-end gap-1" role="img" aria-label={caption}>
+      {/* items-stretch, not items-end.
+          
+          The bars size themselves with a percentage height, and a percentage
+          resolves against the parent's height — so the column has to have one.
+          Under items-end the columns were not stretched to the track: they
+          shrink-wrapped to their content, which is only the percentage-height
+          span, so the column measured 0px and every bar resolved to 0% of 0.
+          The chart rendered its axis, its caption and its values while drawing
+          nothing at all, on both the admin and partner dashboards.
+
+          The bars stay bottom-aligned because each column is flex-col with
+          justify-end; that was always doing the alignment work, and items-end
+          on the track was only stopping the columns from having a height. */}
+      <div className="flex h-32 items-stretch gap-1" role="img" aria-label={caption}>
         {data.map((row, index) => {
           const value = Number(row[valueKey]) || 0
           const height = Math.max(2, (value / max) * 100)

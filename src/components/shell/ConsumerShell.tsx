@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { HeaderMenu } from '@/components/shell/HeaderMenu'
+import { StickyHeaderSentinel } from '@/components/shell/StickyHeaderSentinel'
 import { Icon, type IconName } from '@/components/Icon'
 import { Wordmark } from '@/components/brand/Logo'
 import { SearchBar } from '@/components/shell/SearchBar'
@@ -45,11 +46,30 @@ export async function ConsumerShell({
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
           layers — chrome, content, chrome — rather than three flat bands. */}
+
+      {/* Sits immediately above the header so the observer can tell when the
+          header has pinned. One pixel, no visual effect. */}
+      <StickyHeaderSentinel headerId="site-header" />
+
+      {/*
+       * Pinned, because search lives in here.
+       *
+       * On a phone the bottom navigation has no search entry — it is at its
+       * five-item limit — so once a shopper scrolled a results page, the only
+       * route back to the search field was scrolling all the way up. For a
+       * storefront whose whole proposition is "search what is near you", that
+       * is the one control that should never leave.
+       *
+       * It condenses when pinned rather than taking the full 165px it needs in
+       * flow, which is 26% of a phone viewport. `data-stuck` is set by the
+       * sentinel above; the rules that read it are on the two rows below.
+       */}
       <header
-        className="bar-depth relative border-b border-bar-line bg-bar"
+        id="site-header"
+        className="bar-depth group sticky top-0 border-b border-bar-line bg-bar"
         style={{ zIndex: 'var(--z-bar)' }}
       >
-        <div className="mx-auto w-full max-w-6xl px-4 py-3">
+        <div className="mx-auto w-full max-w-6xl px-4 py-3 transition-[padding] duration-200 group-data-[stuck]:py-2">
           <div className="flex items-center justify-between gap-4">
             {/* Menu leads on the left, then the lockup. */}
             <div className="flex items-center gap-3">
@@ -150,7 +170,10 @@ export async function ConsumerShell({
             </nav>
           </div>
 
-          <div className="mt-3 sm:hidden">
+          {/* Where you are is context, not an action — the first thing that can
+              be spared when the bar has to earn its height. Mobile only; on a
+              wider screen it sits inline in the row above and never moves. */}
+          <div className="mt-3 sm:hidden group-data-[stuck]:hidden">
             <LocationPicker label={location.label} areas={KNOWN_AREAS} />
           </div>
 

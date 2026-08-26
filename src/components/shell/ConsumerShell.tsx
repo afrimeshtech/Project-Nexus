@@ -136,10 +136,15 @@ export async function ConsumerShell({
                 were 40px with a 6px gap — inside WCAG's 24px floor, but under
                 the 44/48px both platform guidelines ask for, on a product whose
                 buyers are shopping one-handed in a market. */}
+            {/* Hover shifts the ground, it does not grow the button. A 10%
+                scale on a 44px target moves its edges ~4px while the pointer
+                is on it, and three of them side by side made the bar twitch
+                on the way past. The background change says "this is live"
+                without anything moving. */}
             <nav className="flex items-center gap-2 text-sm">
               <Link
                 href="/messages"
-                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="chat" />
                 <span className="sr-only">Messages</span>
@@ -149,7 +154,7 @@ export async function ConsumerShell({
               </Link>
               <Link
                 href="/notifications"
-                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="bell" />
                 <span className="sr-only">Notifications</span>
@@ -159,7 +164,7 @@ export async function ConsumerShell({
               </Link>
               <Link
                 href="/cart"
-                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="basket" />
                 <span className="sr-only">Basket</span>

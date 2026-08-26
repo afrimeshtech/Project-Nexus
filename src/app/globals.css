@@ -387,15 +387,16 @@
   --shadow-field-focus: inset 0 1px 0 #fff, 0 2px 6px color-mix(in srgb, #2d4a3a 16%, transparent);
 
   /* -- Motion -------------------------------------------------------------
-     Three curves and three durations, so motion across the app feels like one
-     system rather than per-component guesswork. Everything here is decorative:
+     Two curves and three durations, so motion across the app feels like one
+     system rather than per-component guesswork. There was a third — an elastic
+     curve that overshot past its end state — and it read as a toy. Things in
+     the physical world decelerate into place; they do not spring past and come
+     back. Both remaining curves are exponential ease-outs. Everything here is decorative:
      the reduced-motion block near the bottom of this file switches all of it
      off, and nothing depends on an animation having run.
      --------------------------------------------------------------------- */
   --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Overshoots past 1 then settles — the bounce on a category icon. */
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   --duration-tap: 60ms;
   --duration-hover: 260ms;
@@ -437,11 +438,15 @@
   }
 }
 
-/* Category icons arriving: scale past 1 and settle, via --ease-bounce. */
+/* Category icons arriving: a short settle into place. */
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: scale(0.72);
+    /* Was 0.72 — a 28% jump, which on a row of tiles reads as the row
+       inflating rather than arriving. Near enough to full size that the
+       movement registers as settling, and small enough that the tile never
+       exceeds the track it scrolls in. */
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
@@ -758,7 +763,7 @@ html {
   animation: rise-in var(--duration-enter) var(--ease-out) both;
 }
 @utility pop-in {
-  animation: pop-in 320ms var(--ease-bounce) both;
+  animation: pop-in 320ms var(--ease-out) both;
 }
 
 /* -- Glow and depth ------------------------------------------------------ */
@@ -961,10 +966,13 @@ html {
 }
 
 /* An orange word inside a white heading — the specified heading treatment.
-   Wrap the word that carries the meaning, not a decorative one. */
+   Wrap the word that carries the meaning, not a decorative one.
+
+   The colour is the emphasis. A glow behind it was a second treatment doing
+   the same job, and at heading sizes it softened the letterforms it was meant
+   to strengthen. */
 @utility accent-word {
   color: var(--color-accent-500);
-  text-shadow: 0 0 14px color-mix(in srgb, #ff9500 20%, transparent);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1048,7 +1056,7 @@ html {
    under the pointer. Three degrees, because a category icon that spins is a
    toy — this should read as the tile responding, not performing. */
 @utility category-art {
-  transition: transform var(--duration-hover) var(--ease-bounce);
+  transition: transform var(--duration-hover) var(--ease-out);
 }
 @utility category-art-hover {
   transform: scale(1.1) rotate(-3deg);
@@ -1070,7 +1078,7 @@ html {
     var(--shadow-subtle),
     0 8px 18px -6px var(--color-brand-glow-strong);
   transition:
-    transform var(--duration-hover) var(--ease-bounce),
+    transform var(--duration-hover) var(--ease-out),
     box-shadow var(--duration-hover) var(--ease-out);
 }
 
@@ -1312,25 +1320,27 @@ html {
 }
 
 /* The price on a card: its own warm ground, so the number being compared is
-   findable without shouting in another colour. */
+   findable without shouting in another colour.
+
+   This used to carry a 3px orange bar down its left edge. The reasoning was
+   sound — the price should read as tagged at rest, not only on hover — but a
+   thick coloured edge on a small element is the single most recognisable tell
+   of a generated interface, and it was doing a job the tinted ground already
+   does. The ground is the tag. Removing the bar costs nothing in findability
+   and takes the loudest ornament off the busiest card in the product. */
 @utility price-tag {
   display: inline-block;
   padding: 0.125rem 0.5rem;
   margin-left: -0.5rem;
   border-radius: 0.625rem;
   background: var(--color-price-tint);
-  /* A permanent accent edge, so the price reads as tagged at rest rather than
-     only once the pointer arrives — most of the time nothing is hovered. */
-  box-shadow: inset 3px 0 0 var(--color-accent-500);
-  transition:
-    box-shadow var(--duration-hover) var(--ease-out),
-    background-color var(--duration-hover) var(--ease-out);
+  transition: background-color var(--duration-hover) var(--ease-out);
 }
+
+/* Hover deepens the same ground rather than lighting a ring around it. The
+   card is already lifting; the price does not need to announce itself twice. */
 @utility price-tag-glow {
   background: color-mix(in srgb, var(--color-accent-500) 18%, var(--color-price-tint));
-  box-shadow:
-    inset 3px 0 0 var(--color-accent-500),
-    0 0 0 4px var(--color-accent-glow);
 }
 
 /* Skeletons: a highlight sweeping across the block, rather than the whole

@@ -233,7 +233,9 @@ function JobCard({ job, mode }: { job: DeliveryJob; mode: 'open' | 'active' }) {
           </p>
         </div>
         <div className="text-right">
-          <p className="text-lg font-bold text-accent-strong">{formatMoney(job.rider_fee)}</p>
+          <p className="text-lg font-bold tabular-nums text-accent-strong">
+            {formatMoney(job.rider_fee)}
+          </p>
           <p className="text-xs text-muted">you earn</p>
         </div>
       </div>

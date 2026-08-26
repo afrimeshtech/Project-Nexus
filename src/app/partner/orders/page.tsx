@@ -146,7 +146,7 @@ export default async function PartnerOrdersPage({
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-semibold text-ink">
+                    <p className="font-semibold tabular-nums text-ink">
                       {formatMoney(
                         showPurchases ? order.total : order.total - order.platform_fee,
                         order.currency,

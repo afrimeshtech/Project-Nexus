@@ -305,8 +305,6 @@
   --color-bar-ink: #ffffff; /* logo white — 18.6:1 */
   --color-bar-muted: color-mix(in srgb, #ffffff 72%, transparent);
   --color-bar-line: color-mix(in srgb, #ffffff 16%, transparent);
-  --color-bar-green: #3f9c68; /* logo green, lifted to 5.5:1 for UI text */
-  --color-bar-tan: #c08a52; /* logo tan, lifted to 6.2:1 for UI text */
 
   /* -- Logo -------------------------------------------------------------------
      The mark keeps its own colours, independent of the orange UI accent — a
@@ -627,6 +625,17 @@ input[type='date']::-webkit-calendar-picker-indicator {
   color: var(--color-accent-ink);
 }
 
+/* The header is sticky, so anything the browser scrolls into view — a
+   keyboard tab landing just above the fold, or an in-page #anchor — arrives
+   underneath it. WCAG 2.2 AA 2.4.11 (Focus Not Obscured) is explicit that a
+   sticky region must not hide the focused control. scroll-padding reserves the
+   header's own height at the top of every scroll, so the target lands below it
+   rather than behind it. 7.5rem clears the condensed header, which is the
+   state it is always in once the page has scrolled at all. */
+html {
+  scroll-padding-top: 7.5rem;
+}
+
 /* Accessibility: visible keyboard focus on every interactive surface. */
 :focus-visible {
   outline: 2px solid var(--color-focus-ring);
@@ -634,11 +643,34 @@ input[type='date']::-webkit-calendar-picker-indicator {
   border-radius: 4px;
 }
 
-/* Touch-friendly targets. */
-button,
-a[role='button'],
-[type='submit'] {
-  min-height: 2.25rem;
+/* Pointer-aware target floor.
+   
+   This used to be an unlayered `min-height: 2.25rem` labelled "touch-friendly
+   targets". Two things were wrong with it. 36px is not a touch size — it clears
+   WCAG 2.2 AA's 24px web floor and nothing else, while Apple asks 44pt and
+   Material 48dp. And because it sat outside any cascade layer, it beat every
+   Tailwind `min-h-*` utility no matter the specificity, so a component that
+   tried to opt into a bigger target silently stayed at 36px.
+
+   `@layer base` fixes the second problem: this is now a default that a utility
+   can override, which is what anyone writing `min-h-11` expects. The media
+   query fixes the first. A mouse is precise and a 36px button is comfortable
+   for it; a finger is not, so on a coarse pointer the floor rises to the 44px
+   both platform guidelines ask for. Same markup, right target per input. */
+@layer base {
+  button,
+  a[role='button'],
+  [type='submit'] {
+    min-height: 2.25rem;
+  }
+
+  @media (pointer: coarse) {
+    button,
+    a[role='button'],
+    [type='submit'] {
+      min-height: 2.75rem;
+    }
+  }
 }
 
 /* Every animation in this file is decoration. Someone who has asked their OS
@@ -1312,4 +1344,31 @@ a[role='button'],
   );
   background-size: 220% 100%;
   animation: shimmer 1.6s linear infinite;
+}
+
+/* ---------------------------------------------------------------------------
+   Skip link
+   --------------------------------------------------------------------------- */
+
+/* Every page puts a menu, a logo, a location picker, a search field and four
+   icon buttons ahead of the content. Without this, reaching the first sentence
+   of a product page costs a keyboard or switch user nine tab presses, on every
+   navigation. Off-screen until focused, then it lands on top of the bar. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: var(--z-overlay);
+  transform: translateY(-200%);
+  border-radius: var(--radius-brand);
+  background: var(--color-accent-500);
+  color: var(--color-accent-ink);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: transform 0.18s var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
 }

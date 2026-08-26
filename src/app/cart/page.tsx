@@ -123,7 +123,7 @@ export default async function CartPage() {
                   </button>
                 </form>
 
-                <p className="w-24 shrink-0 text-right font-semibold text-ink">
+                <p className="w-24 shrink-0 text-right font-semibold tabular-nums text-ink">
                   {formatMoney(line.line_total)}
                 </p>
               </Card>

@@ -127,6 +127,9 @@ export async function PartnerShell({
 
   return (
     <div className="flex min-h-screen bg-page">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       {/*
        * The rail is its own scroll context and does not move with the page:
        * on a dashboard you navigate from wherever you have scrolled to, and a
@@ -275,7 +278,7 @@ export async function PartnerShell({
           </div>
         )}
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-6">
           <nav aria-label="Dashboard" className="scroll-x mb-5 lg:hidden">
             <ul className="flex gap-2">
               {nav.map((item) => (

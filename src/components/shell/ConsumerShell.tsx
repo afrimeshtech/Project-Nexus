@@ -42,6 +42,9 @@ export async function ConsumerShell({
        and a white card on a white page has nothing to be a card against — the
        ground is what makes the boundary legible rather than the border alone. */
     <div className="flex min-h-screen flex-col bg-page">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       {/* The bar carries the logo artwork's own background, so the lockup sits
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
@@ -191,7 +194,13 @@ export async function ConsumerShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-7 sm:pb-14">{children}</main>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-7 sm:pb-14"
+      >
+        {children}
+      </main>
 
       <BottomNav messages={unreadMessages} />
       <SiteFooter />

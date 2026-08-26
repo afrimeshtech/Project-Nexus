@@ -31,6 +31,9 @@ export async function AdminShell({
 
   return (
     <div className="min-h-screen bg-page">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <header className="bg-bar">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href="/admin" className="flex items-center gap-3">
@@ -84,7 +87,7 @@ export async function AdminShell({
           </ul>
         </nav>
 
-        <main className="min-w-0 flex-1">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1">
           <nav aria-label="Console" className="scroll-x mb-4 lg:hidden">
             <ul className="flex gap-2">
               {NAV.map((item) => (

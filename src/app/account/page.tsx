@@ -107,7 +107,7 @@ export default async function AccountPage() {
               page and pushed the rest below the fold. */}
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {links.map((link) => (
-              <Link key={link.href} href={link.href}>
+              <Link key={link.href} href={link.href} className="block h-full min-w-0">
                 <Card className="flex h-full items-start gap-3 p-4 card-interactive hover:card-interactive-hover sm:p-5">
                   {/* An accent tint carries the icon rather than a grey outline.
                       On a page that is otherwise ink on white, this is the one

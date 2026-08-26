@@ -202,7 +202,11 @@ export default async function HomePage() {
             <SectionHeading title="Nearby outlets" subtitle="Verified shops closest to you" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {outlets.map((outlet) => (
-                <Link key={outlet.id} href={`/shop/${outlet.slug}`}>
+                <Link
+                  key={outlet.id}
+                  href={`/shop/${outlet.slug}`}
+                  className="block h-full min-w-0"
+                >
                   <Card className="flex h-full items-center gap-3 card-interactive hover:card-interactive-hover">
                     <SellerThumb
                       name={outlet.name}

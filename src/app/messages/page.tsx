@@ -88,7 +88,7 @@ function ThreadList({
         const counterpart =
           viewerSide === 'buyer' ? thread.seller_name : (thread.buyer_org_name ?? thread.buyer_name)
         return (
-          <Link key={thread.id} href={`/messages/${thread.order_id}`}>
+          <Link key={thread.id} href={`/messages/${thread.order_id}`} className="block min-w-0">
             <Card className="flex items-center gap-3 card-interactive hover:card-interactive-hover">
               {/* A shopfront mark only when the counterpart is a shop. Facing a
                   buyer, the counterpart is a person, and drawing them a

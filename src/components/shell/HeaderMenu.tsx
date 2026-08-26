@@ -105,7 +105,7 @@ export function HeaderMenu({ links, accountLabel }: { links: MenuLink[]; account
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Open menu"
-        className="grid size-10 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60"
+        className="grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60"
       >
         <Icon name="menu" size={20} />
       </button>

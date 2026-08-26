@@ -53,7 +53,7 @@ export function LocationPicker({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex max-w-[13rem] items-center gap-1.5 rounded-brand px-2 py-1.5 text-left text-sm text-bar-ink transition-colors hover:bg-bar-line/60"
+        className="flex min-h-11 max-w-[13rem] items-center gap-1.5 rounded-brand px-2 py-1.5 text-left text-sm text-bar-ink transition-colors hover:bg-bar-line/60"
       >
         <Icon name="pin" size={16} />
         <span className="truncate font-medium">{label}</span>

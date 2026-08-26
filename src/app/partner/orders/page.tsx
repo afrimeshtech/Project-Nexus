@@ -116,7 +116,7 @@ export default async function PartnerOrdersPage({
         {orders.length ? (
           <div className="space-y-2">
             {orders.map((order) => (
-              <Link key={order.id} href={`/partner/orders/${order.id}`}>
+              <Link key={order.id} href={`/partner/orders/${order.id}`} className="block min-w-0">
                 <Card className="flex items-center gap-3 card-interactive hover:card-interactive-hover">
                   <ProductThumb
                     name={order.first_item ?? 'Order'}
@@ -146,7 +146,7 @@ export default async function PartnerOrdersPage({
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <p className="font-semibold text-ink">
+                    <p className="font-semibold tabular-nums text-ink">
                       {formatMoney(
                         showPurchases ? order.total : order.total - order.platform_fee,
                         order.currency,

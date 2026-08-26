@@ -172,7 +172,7 @@ export async function ActivityPanel({
                   <td className="whitespace-nowrap py-2.5 pr-3 text-right text-muted">
                     {cell.orders}
                   </td>
-                  <td className="whitespace-nowrap py-2.5 text-right text-muted">
+                  <td className="whitespace-nowrap py-2.5 text-right tabular-nums text-muted">
                     {compact
                       ? formatMoneyCompact(Number(cell.value))
                       : formatMoney(Number(cell.value))}

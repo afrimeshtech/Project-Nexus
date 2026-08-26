@@ -177,7 +177,7 @@ export function SearchBar({
           />
           <button
             type="submit"
-            className="rounded-brand bg-accent-500 px-3 py-1.5 text-xs font-semibold text-accent-ink hover:bg-accent-600"
+            className="min-h-11 rounded-brand bg-accent-500 px-3.5 text-xs font-semibold text-accent-ink hover:bg-accent-600"
           >
             Search
           </button>

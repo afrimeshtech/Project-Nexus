@@ -39,7 +39,7 @@ export default async function OrdersPage() {
         {orders.length ? (
           <div className="space-y-3">
             {orders.map((order) => (
-              <Link key={order.id} href={`/orders/${order.id}`}>
+              <Link key={order.id} href={`/orders/${order.id}`} className="block min-w-0">
                 <Card className="flex items-center gap-3 card-interactive hover:card-interactive-hover">
                   <ProductThumb
                     name={order.first_item ?? 'Order'}

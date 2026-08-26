@@ -40,7 +40,7 @@ export default async function FavouritesPage() {
             <SectionHeading title="Saved products" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {products.map((product) => (
-                <Link key={product.id} href={`/product/${product.slug}`}>
+                <Link key={product.id} href={`/product/${product.slug}`} className="block min-w-0">
                   <Card className="flex items-center gap-3 card-interactive hover:card-interactive-hover">
                     <ProductThumb name={product.name} imageUrl={product.image_url} size="md" />
                     <div className="min-w-0">
@@ -59,7 +59,7 @@ export default async function FavouritesPage() {
             <SectionHeading title="Saved shops" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {sellers.map((seller) => (
-                <Link key={seller.id} href={`/shop/${seller.slug}`}>
+                <Link key={seller.id} href={`/shop/${seller.slug}`} className="block min-w-0">
                   <Card className="flex items-center gap-3 card-interactive hover:card-interactive-hover">
                     <SellerThumb name={seller.name} logoUrl={seller.logo_url} size="md" />
                     <div className="min-w-0">

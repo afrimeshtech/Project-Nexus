@@ -42,6 +42,9 @@ export async function ConsumerShell({
        and a white card on a white page has nothing to be a card against — the
        ground is what makes the boundary legible rather than the border alone. */
     <div className="flex min-h-screen flex-col bg-page">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       {/* The bar carries the logo artwork's own background, so the lockup sits
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
@@ -118,7 +121,7 @@ export async function ConsumerShell({
                 ]}
               />
 
-              <Link href="/" aria-label="AfriMesh home">
+              <Link href="/" aria-label="AfriMesh home" className="flex min-h-11 items-center">
                 <Wordmark size="sm" priority />
               </Link>
             </div>
@@ -127,10 +130,16 @@ export async function ConsumerShell({
               <LocationPicker label={location.label} areas={KNOWN_AREAS} />
             </div>
 
-            <nav className="flex items-center gap-1.5 text-sm">
+            {/* 44px targets, 8px apart.
+                These are the most-tapped controls in the app and they sit at
+                the top of the screen, where thumb reach is already worst. They
+                were 40px with a 6px gap — inside WCAG's 24px floor, but under
+                the 44/48px both platform guidelines ask for, on a product whose
+                buyers are shopping one-handed in a market. */}
+            <nav className="flex items-center gap-2 text-sm">
               <Link
                 href="/messages"
-                className="press relative grid size-10 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="chat" />
                 <span className="sr-only">Messages</span>
@@ -140,7 +149,7 @@ export async function ConsumerShell({
               </Link>
               <Link
                 href="/notifications"
-                className="press relative grid size-10 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="bell" />
                 <span className="sr-only">Notifications</span>
@@ -150,7 +159,7 @@ export async function ConsumerShell({
               </Link>
               <Link
                 href="/cart"
-                className="press relative grid size-10 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-[background-color,transform] hover:scale-110 hover:bg-bar-line/60 active:press-active"
               >
                 <Icon name="basket" />
                 <span className="sr-only">Basket</span>
@@ -162,7 +171,7 @@ export async function ConsumerShell({
               {!user && (
                 <Link
                   href="/login"
-                  className="hidden rounded-brand bg-accent-500 px-3.5 py-2 font-semibold text-accent-ink transition-colors hover:bg-accent-600 sm:block"
+                  className="hidden min-h-11 items-center rounded-brand bg-accent-500 px-3.5 font-semibold text-accent-ink transition-colors hover:bg-accent-600 sm:flex"
                 >
                   Sign in
                 </Link>
@@ -185,7 +194,13 @@ export async function ConsumerShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-7 sm:pb-14">{children}</main>
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-7 sm:pb-14"
+      >
+        {children}
+      </main>
 
       <BottomNav messages={unreadMessages} />
       <SiteFooter />

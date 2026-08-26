@@ -29,6 +29,9 @@ export function RiderShell({
 
   return (
     <div className="min-h-screen bg-page">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       <header className="bg-bar">
         <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-4">
@@ -71,7 +74,9 @@ export function RiderShell({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl space-y-8 px-4 py-8">{children}</main>
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-4xl space-y-8 px-4 py-8">
+        {children}
+      </main>
     </div>
   )
 }

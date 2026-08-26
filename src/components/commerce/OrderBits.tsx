@@ -41,7 +41,7 @@ export function OrderProgress({ status }: { status: OrderStatus }) {
                 className={`h-1 flex-1 rounded-full ${index === 0 ? 'opacity-0' : done ? 'bg-accent-500' : 'bg-surface-muted'}`}
               />
               <span
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11.2px] font-bold ${
                   done ? 'bg-accent-500 text-accent-ink' : 'bg-surface-muted text-muted'
                 }`}
               >
@@ -57,7 +57,7 @@ export function OrderProgress({ status }: { status: OrderStatus }) {
                 }`}
               />
             </div>
-            <span className={`text-[10px] ${done ? 'font-medium text-ink' : 'text-muted'}`}>
+            <span className={`text-[11.2px] ${done ? 'font-medium text-ink' : 'text-muted'}`}>
               {step.label}
             </span>
           </li>

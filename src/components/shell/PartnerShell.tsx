@@ -121,9 +121,8 @@ export async function PartnerShell({
     { href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' },
     { href: '/partner/api', label: 'API access', icon: 'lock' },
     { href: '/partner/settings', label: 'Settings', icon: 'settings' },
+    { href: '/contact?from=partner', label: 'Contact us', icon: 'mail' },
   ]
-
-  const nav = [...work, ...account]
 
   return (
     <div className="flex min-h-screen bg-page">
@@ -255,6 +254,12 @@ export async function PartnerShell({
               )}
             </Link>
             <Link
+              href="/contact?from=partner"
+              className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
+            >
+              Contact us
+            </Link>
+            <Link
               href="/"
               className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
             >
@@ -279,9 +284,33 @@ export async function PartnerShell({
         )}
 
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+          {/* The desktop rail splits work (Overview, Orders, Inventory...) from
+              account (Wallet, Settings...) with a divider specifically so the
+              retailer scans one register at a time instead of one flat list.
+              Concatenating both into a single scroll row here threw that
+              grouping away — the one device this shopkeeper actually has was
+              getting the worse version of a pattern already built correctly
+              for a device they don't. A vertical rule between the two groups
+              carries the same distinction into the scroll strip. */}
           <nav aria-label="Dashboard" className="scroll-x mb-5 lg:hidden">
-            <ul className="flex gap-2">
-              {nav.map((item) => (
+            <ul className="flex items-center gap-2">
+              {work.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active === item.href ? 'page' : undefined}
+                    className={`block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                      active === item.href
+                        ? 'bg-brand-deep text-white'
+                        : 'border border-line bg-surface text-muted'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+              <li aria-hidden="true" className="h-5 w-px shrink-0 bg-line-soft" />
+              {account.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}

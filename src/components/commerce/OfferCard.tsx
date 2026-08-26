@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { Icon } from '@/components/Icon'
-import { Badge, ItemCard, Rating, ScoreBar } from '@/components/ui'
+import { Badge, ItemCard, Rating, ScoreBar, StatusPill, stockState } from '@/components/ui'
 import { AddToCart } from '@/components/commerce/AddToCart'
 import { formatMoney } from '@/lib/money'
 import { formatDistance, formatEta } from '@/lib/geo'
@@ -21,6 +21,7 @@ export function OfferCard({
   showScore = true,
   lead = 'seller',
   index = 0,
+  cartQty = 0,
 }: {
   offer: Offer
   rank?: number
@@ -34,6 +35,12 @@ export function OfferCard({
    * card would carry the same logo, so the product leads instead.
    */
   lead?: 'seller' | 'product'
+  /**
+   * This exact inventory item's quantity already in the basket, if any.
+   * Product-leading cards only — a seller-leading card's thumb is the shop's
+   * mark, not the product's, so a quantity control has nothing to overlap.
+   */
+  cartQty?: number
 }) {
   const low = offer.qty_available <= 5
   const leadsWithProduct = lead === 'product'
@@ -56,13 +63,36 @@ export function OfferCard({
           </span>
         )}
         {leadsWithProduct ? (
-          <ProductThumb
-            name={offer.product_name}
-            imageUrl={offer.image_url}
-            brandLogo={offer.brand_logo}
-            categorySlug={offer.category_slug}
-            size="md"
-          />
+          <div className="relative shrink-0">
+            <ProductThumb
+              name={offer.product_name}
+              imageUrl={offer.image_url}
+              brandLogo={offer.brand_logo}
+              categorySlug={offer.category_slug}
+              size="lg"
+            />
+            {/* Same corner `pill-status` already uses over an ItemCard's well —
+                one occupant: a confirmed basket line outranks a low-stock
+                warning, since the shopper already acted on it. */}
+            {cartQty > 0 ? (
+              <StatusPill state="in">
+                <Icon name="check" size={11} />
+                In basket
+              </StatusPill>
+            ) : (
+              low && <StatusPill state={stockState(offer.qty_available)} />
+            )}
+            <div className="absolute -bottom-2.5 -right-3.5">
+              <AddToCart
+                inventoryItemId={offer.inventory_item_id}
+                minOrderQty={offer.min_order_qty}
+                maxQty={offer.qty_available}
+                mode={mode}
+                overlay
+                cartQty={cartQty}
+              />
+            </div>
+          </div>
         ) : (
           <SellerThumb
             name={offer.seller_name}
@@ -127,15 +157,20 @@ export function OfferCard({
             per {offer.pack_size ? offer.pack_size : offer.unit_of_measure}
           </p>
         </div>
-        <div className="w-36">
-          <AddToCart
-            inventoryItemId={offer.inventory_item_id}
-            minOrderQty={offer.min_order_qty}
-            maxQty={offer.qty_available}
-            mode={mode}
-            compact
-          />
-        </div>
+        {/* Product-leading cards already carry the add control as the stepper
+            overlapping the thumb above — a second one here would be the two
+            competing controls the redesign was written to avoid. */}
+        {!leadsWithProduct && (
+          <div className="w-36">
+            <AddToCart
+              inventoryItemId={offer.inventory_item_id}
+              minOrderQty={offer.min_order_qty}
+              maxQty={offer.qty_available}
+              mode={mode}
+              compact
+            />
+          </div>
+        )}
       </div>
     </article>
   )

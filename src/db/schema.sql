@@ -671,6 +671,29 @@ CREATE TABLE notifications (
 CREATE INDEX notifications_user_idx ON notifications (user_id, created_at DESC);
 
 -- ---------------------------------------------------------------------------
+-- MODULE: support
+-- ---------------------------------------------------------------------------
+
+-- Inbound "Contact us" submissions. `user_id` is nullable on purpose: the
+-- showcase landing page and the shop/product pages it leads to are the most
+-- likely place someone reaches for this before they have an account.
+CREATE TABLE contact_messages (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES users(id) ON DELETE SET NULL,
+  name       TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  message    TEXT NOT NULL,
+  -- Which shell the visitor was in when they reached the form, so a real
+  -- support inbox can triage a shopkeeper's question differently from a
+  -- shopper's.
+  source     TEXT NOT NULL DEFAULT 'consumer',
+  status     TEXT NOT NULL DEFAULT 'new',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX contact_messages_created_idx ON contact_messages (created_at DESC);
+
+-- ---------------------------------------------------------------------------
 -- MODULE: analytics / demand intelligence (Inventory doc §9)
 -- ---------------------------------------------------------------------------
 

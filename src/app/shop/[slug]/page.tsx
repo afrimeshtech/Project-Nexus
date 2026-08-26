@@ -6,8 +6,9 @@ import { OfferCard } from '@/components/commerce/OfferCard'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { Badge, Card, EmptyState, Rating, SectionHeading, Thumb } from '@/components/ui'
 import { toggleFavouriteSellerAction } from '@/app/actions/cart'
-import { currentUser } from '@/lib/auth'
+import { requireUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
+import { hydrateCart } from '@/lib/cart'
 import { TIER, ORG_LABEL, type OrgType } from '@/lib/tiers'
 import { formatDistance, formatEta, haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
@@ -48,22 +49,29 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
   const org = await getOrganisation(decodeURIComponent(slug))
   if (!org) notFound()
 
-  const [user, location, reviews] = await Promise.all([
-    currentUser(),
+  // Browsing shop cards on the storefront is open to guests; a specific
+  // seller's live stock and prices is what asks for an account.
+  const user = await requireUser(`/shop/${slug}`)
+  const [location, reviews, cart] = await Promise.all([
     buyerLocation(),
     ratingsFor(org.id, 8),
+    hydrateCart(),
   ])
 
   const ctx = {
     lat: location.lat,
     lng: location.lng,
     tier: TIER.consumer,
-    userId: user?.id ?? null,
+    userId: user.id,
   }
   // Only consumers buy from outlets. For any other tier the shopfront is
   // informational, which keeps the business rules honest on this page too.
   const offers =
     org.type === 'outlet' ? await offersFromSeller(ctx, org.id, { maxDistanceKm: 200 }) : []
+
+  // For the overlay stepper's "already in the basket?" state — a plain
+  // lookup rather than passing the whole cart down every card.
+  const cartQtyByItem = new Map(cart.lines.map((line) => [line.inventory_item_id, line.qty]))
 
   const distance = haversineKm(location, { lat: org.lat, lng: org.lng })
   const eta = estimateEtaMinutes(distance, org.avg_dispatch_minutes)
@@ -101,17 +109,15 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
             </div>
           </div>
 
-          {user && (
-            <form action={toggleFavouriteSellerAction}>
-              <input type="hidden" name="organisationId" value={org.id} />
-              <button
-                type="submit"
-                className="rounded-brand border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface-muted"
-              >
-                Save shop
-              </button>
-            </form>
-          )}
+          <form action={toggleFavouriteSellerAction}>
+            <input type="hidden" name="organisationId" value={org.id} />
+            <button
+              type="submit"
+              className="rounded-brand border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface-muted"
+            >
+              Save shop
+            </button>
+          </form>
         </Card>
 
         {org.type === 'outlet' ? (
@@ -128,6 +134,7 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
                     offer={offer}
                     showScore={false}
                     lead="product"
+                    cartQty={cartQtyByItem.get(offer.inventory_item_id) ?? 0}
                   />
                 ))}
               </div>

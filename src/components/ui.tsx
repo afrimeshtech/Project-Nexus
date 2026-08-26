@@ -159,6 +159,54 @@ export function PageHeader({
 }
 
 /**
+ * A grouped, link-driven filter for a small fixed set of options where
+ * exactly one is always active — distance, a party type, anything that reads
+ * as one control rather than a row of independent toggles. Chips inside one
+ * rounded track rather than loose and wrapped, which is the container an
+ * open-ended set like Category should *not* take: a track that scrolls is
+ * worse than a row that wraps, so leave those as loose chips.
+ *
+ * Server-renderable on purpose — options are links, not client state, so a
+ * filtered page stays shareable and fast on a dropped connection like the
+ * rest of the filter rows in the app.
+ */
+export function SegmentedLinks<T extends string>({
+  label,
+  options,
+  active,
+  hrefFor,
+}: {
+  label: string
+  options: { value: T; label: string }[]
+  active: T
+  hrefFor: (value: T) => string
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
+      <span className="w-24 shrink-0 font-technical text-eyebrow uppercase text-muted">
+        {label}
+      </span>
+      <div className="flex gap-1 rounded-full border border-line-soft bg-surface-muted p-1">
+        {options.map((opt) => (
+          <Link
+            key={opt.value}
+            href={hrefFor(opt.value)}
+            aria-current={active === opt.value ? 'true' : undefined}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              active === opt.value
+                ? 'bg-accent-500 text-accent-ink'
+                : 'text-muted hover:text-accent-strong'
+            }`}
+          >
+            {opt.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
  * The controls that act on the list below: search on the left, switches and
  * secondary actions on the right, and — where the collection has totals worth
  * stating — a summary line beneath both.
@@ -374,6 +422,40 @@ export function LinkButton({
     >
       {children}
     </Link>
+  )
+}
+
+/**
+ * Two simultaneous actions, inbound and outbound money, in one sticky bottom
+ * bar — see DESIGN.md's Dual-Action Bar rule under Buttons. Inbound gets
+ * `primary` (Price Orange); outbound gets `danger` (`#c0392b`), the tone
+ * DESIGN.md already holds visually apart from primary. No third accent: if
+ * the pair ever reads as insufficiently distinct, the fix is spacing or a
+ * leading icon, not a new hue.
+ *
+ * Not wired into a real screen yet — nothing in the app currently offers a
+ * sale and a purchase as two live actions on the same list. This exists so
+ * the first screen that does (a point-of-sale-style cash sale flow, most
+ * plausibly) has it ready rather than reinventing the pairing.
+ */
+export function DualActionBar({
+  inbound,
+  outbound,
+}: {
+  inbound: { label: string; icon: IconName; href: string }
+  outbound: { label: string; icon: IconName; href: string }
+}) {
+  return (
+    <div className="flex gap-2.5">
+      <LinkButton href={inbound.href} variant="primary" full>
+        <Icon name={inbound.icon} size={16} />
+        {inbound.label}
+      </LinkButton>
+      <LinkButton href={outbound.href} variant="danger" full>
+        <Icon name={outbound.icon} size={16} />
+        {outbound.label}
+      </LinkButton>
+    </div>
   )
 }
 
@@ -706,7 +788,7 @@ export function ScoreBar({
             .map(([factor, v]) => (
               <span
                 key={factor}
-                className="rounded bg-surface-muted px-1.5 py-0.5 font-technical text-[10px] text-muted"
+                className="rounded bg-surface-muted px-1.5 py-0.5 font-technical text-[11.2px] text-muted"
               >
                 {FACTOR_LABEL[factor] ?? factor} +{v.toFixed(0)}
               </span>

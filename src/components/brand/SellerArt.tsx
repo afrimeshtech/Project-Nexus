@@ -183,6 +183,23 @@ function Warehouse({ accent }: ArtProps) {
   )
 }
 
+function Hardware({ accent }: ArtProps) {
+  return (
+    <>
+      {/* coursed brick/block stock - the yard's own goods, not a shopfront */}
+      <path d="M14 36h52v34H14Z" fill={WALL} />
+      <path d="M14 36h52v4H14Z" fill={WALL_SHADE} />
+      <g stroke={WALL_SHADE} strokeWidth="1.4" opacity="0.6">
+        <path d="M14 50h52M14 60h52" />
+        <path d="M30 40v10M46 40v10M22 50v10M38 50v10M54 50v10" />
+      </g>
+      {/* sign board, the same convention every shopfront form uses */}
+      <rect x="26" y="28" width="28" height="6" rx="2" fill={accent} />
+      <ellipse cx="40" cy="70" rx="28" ry="3" fill={SHADOW} />
+    </>
+  )
+}
+
 function Wholesale({ accent }: ArtProps) {
   return (
     <>
@@ -261,6 +278,7 @@ const FORMS = {
   pharmacy: Pharmacy,
   warehouse: Warehouse,
   wholesale: Wholesale,
+  hardware: Hardware,
   fresh: FreshFoods,
   home: HomeGoods,
   electronics: Electronics,
@@ -280,6 +298,7 @@ const KEYWORDS: [RegExp, SellerForm][] = [
   [/pharmac|chemist|drug/i, 'pharmacy'],
   [/warehouse|depot|cold store/i, 'warehouse'],
   [/wholesale|bulk|distribution|\btrade\b|traders|hub/i, 'wholesale'],
+  [/material|hardware|building|construction|cement|timber|paint\b/i, 'hardware'],
   [/supermarket|superstore|hypermarket/i, 'supermarket'],
   [/mini ?mart|\bmart\b|kiosk/i, 'minimart'],
   [/provision|sundry/i, 'provisions'],

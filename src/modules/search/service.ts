@@ -224,3 +224,24 @@ export async function trendingSearches(limit = 8) {
     [limit],
   )
 }
+
+/**
+ * One signed-in shopper's own recent searches, most recent distinct query
+ * first. The homepage prefers this over `trendingSearches` once someone is
+ * signed in - "what did I search for" is a more useful shortcut back into the
+ * catalogue than "what is Ikeja searching for" once there is a real history
+ * to draw on. No `hits` count: a personal history is ordered by recency, not
+ * frequency, so there is nothing honest to put in that column.
+ */
+export async function recentSearches(userId: string, limit = 6) {
+  const sql = await getSql()
+  return sql.query<{ query: string }>(
+    `SELECT query
+       FROM search_queries
+      WHERE user_id = $1 AND length(query) > 1
+      GROUP BY query
+      ORDER BY MAX(created_at) DESC
+      LIMIT $2`,
+    [userId, limit],
+  )
+}

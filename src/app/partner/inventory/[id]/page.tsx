@@ -144,7 +144,12 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
             title="Inventory ledger"
             subtitle="Append-only. Every movement of this product, permanently."
           />
-          <div className="scroll-x">
+          {/* A real table at sm+; below it, a stacked card per row instead
+              of forcing a phone-primary user to scroll sideways to read
+              their own stock history. Same data, two renderings — the
+              pattern AdminShell/PartnerShell's own nav already uses for
+              their desktop/mobile split. */}
+          <div className="hidden scroll-x sm:block">
             <table className="w-full min-w-[34rem] text-sm">
               <caption className="sr-only">Inventory ledger for {item.product_name}</caption>
               <thead>
@@ -188,6 +193,39 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
               </tbody>
             </table>
           </div>
+
+          <ul className="space-y-2 sm:hidden">
+            {ledger.map((row) => (
+              <li key={row.id} className="rounded-brand border border-line-soft p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 flex-1 text-sm text-ink">
+                    {MOVEMENT_LABEL[row.movement] ?? row.movement}
+                    {row.note && <span className="block text-xs text-muted">{row.note}</span>}
+                  </p>
+                  <p
+                    className={`shrink-0 font-medium ${
+                      row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
+                    }`}
+                  >
+                    {row.qty_delta > 0 ? '+' : ''}
+                    {row.qty_delta}
+                  </p>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between font-technical text-xs text-muted">
+                  <span>
+                    {new Date(row.created_at).toLocaleString('en-NG', {
+                      day: '2-digit',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    {row.reference_type ? ` · ${row.reference_type}` : ''}
+                  </span>
+                  <span>{row.qty_after} available after</span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </Card>
       </div>
     </PartnerShell>

@@ -1,18 +1,18 @@
 import Link from 'next/link'
+import { Icon } from '@/components/Icon'
 import { CategoryRow } from '@/components/commerce/CategoryRow'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { ProductResultCard } from '@/components/commerce/OfferCard'
-import { SellerThumb } from '@/components/commerce/SellerThumb'
+import { OutletCard } from '@/components/commerce/OutletCard'
 import { AreaSwitch } from '@/components/commerce/AreaSwitch'
 // FUTURE-DASHBOARD: import { RiderNetworkView, riderRadius } from '@/components/rider/NetworkView'
-import { Badge, Card, EmptyState, LinkButton, Rating, SectionHeading } from '@/components/ui'
+import { EmptyState, LinkButton, SectionHeading } from '@/components/ui'
 import { currentUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { KNOWN_AREAS } from '@/lib/areas'
 import { TIER } from '@/lib/tiers'
-import { formatDistance, formatEta } from '@/lib/geo'
 import { listCategories } from '@/modules/catalog/service'
-import { popularNearby, trendingSearches } from '@/modules/search/service'
+import { popularNearby, recentSearches, trendingSearches } from '@/modules/search/service'
 import { rankSellers } from '@/modules/recommendation/service'
 
 export const dynamic = 'force-dynamic'
@@ -94,10 +94,20 @@ export default async function HomePage() {
     listCategories(),
     popularNearby(ctx, 8),
     rankSellers(ctx, { limit: 8 }),
-    trendingSearches(6),
+    // A signed-in shopper's own history is a more useful shortcut back into
+    // the catalogue than area-wide trending once there is a real history to
+    // draw on; a guest still gets the trending list. `hits` stays undefined
+    // for personal history because a recency-ordered list has no honest count
+    // to show — see the conditional render below.
+    user
+      ? recentSearches(user.id, 6).then((rows) =>
+          rows.map((r) => ({ query: r.query, hits: undefined as number | undefined })),
+        )
+      : trendingSearches(6),
   ])
 
   const greeting = user ? `Hello, ${user.full_name.split(' ')[0]}` : 'Find what you need, nearby'
+  const searchRailLabel = user ? 'Your recent searches' : 'Searched nearby'
 
   return (
     <ConsumerShell>
@@ -110,19 +120,29 @@ export default async function HomePage() {
             over a row of chips is the shape every generated homepage has. */}
         <section className="grid gap-x-10 gap-y-6 border-b border-line-soft pb-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
           <div>
-            <p className="font-technical text-eyebrow uppercase text-accent-strong">
+            {/* Was an eyebrow above the h1 — DESIGN.md bans that structure
+                ("the Eyebrow role exists for labels inside components... a
+                heading carries its own weight"). Location is real
+                information the header hides below sm, not a caption for the
+                greeting, so it now follows the heading as a plain supporting
+                line rather than introducing it. */}
+            <h1 className="text-display-sm text-ink">{greeting}</h1>
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted">
+              <Icon name="pin" size={12} />
               {location.label}
             </p>
-            <h1 className="mt-2 text-display-sm text-ink">{greeting}</h1>
             <p className="mt-3 max-w-[46ch] text-base text-muted">
-              One search. Real inventory, nearby. Pay. Delivered. Restocked. Everything below is
-              stock a verified seller around you physically has right now.
+              Search once to see what&rsquo;s really in stock nearby, pay safely, and get it
+              delivered. Sellers restock as they sell, so everything below is what a verified
+              seller near you actually has right now.
             </p>
           </div>
 
           {trending.length > 0 && (
             <aside className="lg:border-l lg:border-line-soft lg:pl-6">
-              <p className="font-technical text-eyebrow uppercase text-muted">Searched nearby</p>
+              <p className="font-technical text-eyebrow uppercase text-muted">
+                {searchRailLabel}
+              </p>
               <ul className="mt-2.5 space-y-1">
                 {trending.map((t) => (
                   <li key={t.query}>
@@ -131,9 +151,11 @@ export default async function HomePage() {
                       className="group flex items-baseline justify-between gap-3 py-0.5 text-sm text-muted hover:text-accent-strong"
                     >
                       <span className="truncate capitalize group-hover:underline">{t.query}</span>
-                      <span className="shrink-0 font-technical text-xs tabular-nums opacity-60">
-                        {t.hits}
-                      </span>
+                      {t.hits !== undefined && (
+                        <span className="shrink-0 font-technical text-xs tabular-nums opacity-60">
+                          {t.hits}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}
@@ -199,41 +221,27 @@ export default async function HomePage() {
 
         {outlets.length > 0 && (
           <section>
-            <SectionHeading title="Nearby outlets" subtitle="Verified shops closest to you" />
+            <SectionHeading
+              title="Nearby outlets"
+              subtitle="Verified shops closest to you"
+              action={
+                <Link
+                  href="/shops"
+                  className="text-sm font-medium text-accent-strong hover:underline"
+                >
+                  See all
+                </Link>
+              }
+            />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {outlets.map((outlet) => (
-                <Link
-                  key={outlet.id}
-                  href={`/shop/${outlet.slug}`}
-                  className="block h-full min-w-0"
-                >
-                  <Card className="flex h-full items-center gap-3 card-interactive hover:card-interactive-hover">
-                    <SellerThumb
-                      name={outlet.name}
-                      logoUrl={outlet.logo_url}
-                      type={outlet.type}
-                      size="md"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-ink">{outlet.name}</p>
-                      <p className="truncate text-xs text-muted">{outlet.address ?? outlet.city}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-                        <span>{formatDistance(outlet.distance_km)}</span>
-                        <span>· {formatEta(outlet.eta_minutes)}</span>
-                        <Rating value={outlet.rating} count={outlet.rating_count} />
-                      </div>
-                      <Badge tone="neutral" className="mt-1.5">
-                        {outlet.sku_count} products in stock
-                      </Badge>
-                    </div>
-                  </Card>
-                </Link>
+                <OutletCard key={outlet.id} outlet={outlet} />
               ))}
             </div>
           </section>
         )}
 
-        <section className="mesh-surface hero">
+        <section className="mesh-surface hero hero-compact">
           <h2 className="text-display-sm">
             Sell on <span className="accent-word">AfriMesh</span>
           </h2>

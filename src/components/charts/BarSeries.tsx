@@ -59,7 +59,7 @@ export function BarSeries({
             of the answer — "nothing in the last 14 days" is information, and
             "nothing" on its own is not. */}
         {data.length > 0 && (
-          <div className="mt-1.5 flex justify-between font-technical text-[10px] text-muted">
+          <div className="mt-1.5 flex justify-between font-technical text-[11.2px] text-muted">
             <span>{data[0]?.[labelKey]}</span>
             <span>{data[data.length - 1]?.[labelKey]}</span>
           </div>
@@ -94,14 +94,14 @@ export function BarSeries({
                 className="rounded-t bg-accent-500/80 transition-colors group-hover:bg-accent-500"
                 style={{ height: `${height}%` }}
               />
-              <span className="pointer-events-none absolute -top-6 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-surface-deep px-1.5 py-0.5 text-[10px] text-white group-hover:block">
+              <span className="pointer-events-none absolute -top-6 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-surface-deep px-1.5 py-0.5 text-[11.2px] text-white group-hover:block">
                 {money ? formatMoneyCompact(value) : value}
               </span>
             </div>
           )
         })}
       </div>
-      <div className="mt-1.5 flex justify-between font-technical text-[10px] text-muted">
+      <div className="mt-1.5 flex justify-between font-technical text-[11.2px] text-muted">
         <span>{data[0]?.[labelKey]}</span>
         <span>{data[data.length - 1]?.[labelKey]}</span>
       </div>

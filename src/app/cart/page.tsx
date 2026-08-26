@@ -3,6 +3,7 @@ import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { CheckoutForm } from '@/components/commerce/CheckoutForm'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
+import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
 import { Alert, Badge, Card, EmptyState, LinkButton, PageHeader } from '@/components/ui'
 import { clearCartAction, updateCartQtyAction } from '@/app/actions/cart'
 import { currentUser } from '@/lib/auth'
@@ -50,9 +51,12 @@ export default async function CartPage() {
           subtitle={`${cart.itemCount} item${cart.itemCount === 1 ? '' : 's'} from ${cart.seller.name}`}
           actions={
             <form action={clearCartAction}>
-              <button type="submit" className="text-sm text-muted hover:text-coral-ink">
+              <ConfirmSubmitButton
+                message="Clear your basket? This removes every item and can't be undone."
+                className="text-sm text-muted hover:text-coral-ink"
+              >
                 Clear
-              </button>
+              </ConfirmSubmitButton>
             </form>
           }
         />

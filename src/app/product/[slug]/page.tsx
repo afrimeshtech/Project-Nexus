@@ -7,7 +7,7 @@ import { OfferCard } from '@/components/commerce/OfferCard'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { Badge, Card, EmptyState, SectionHeading } from '@/components/ui'
 import { toggleFavouriteProductAction } from '@/app/actions/cart'
-import { currentUser } from '@/lib/auth'
+import { requireUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { TIER } from '@/lib/tiers'
 import { formatMoney } from '@/lib/money'
@@ -62,20 +62,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const product = await getProduct(decodeURIComponent(slug))
   if (!product) notFound()
 
-  const [user, location] = await Promise.all([currentUser(), buyerLocation()])
+  // Browsing the storefront is open to guests; a specific product's live
+  // price and seller list is what asks for an account — see /showcase's
+  // "Browse nearby stock" and DESIGN.md's brief on the split.
+  const user = await requireUser(`/product/${slug}`)
+  const location = await buyerLocation()
   const ctx = {
     lat: location.lat,
     lng: location.lng,
     tier: TIER.consumer,
-    userId: user?.id ?? null,
+    userId: user.id,
   }
 
   const offers = await offersForProduct(ctx, product.id, { maxDistanceKm: 40 })
-  const favourites = user ? await favouriteProductIds(user.id) : new Set<string>()
+  const favourites = await favouriteProductIds(user.id)
   const isFavourite = favourites.has(product.id)
 
   // Demand intelligence: every view is a signal for Phase 3 forecasting.
-  await recordProductView(product.id, user?.id ?? null)
+  await recordProductView(product.id, user.id)
 
   const best = offers[0]
   const cheapest = offers.reduce<number | null>(
@@ -145,20 +149,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             )}
           </div>
 
-          {user && (
-            <form action={toggleFavouriteProductAction}>
-              <input type="hidden" name="productId" value={product.id} />
-              <button
-                type="submit"
-                className="rounded-brand border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface-muted"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  <Icon name={isFavourite ? 'star-filled' : 'star'} size={15} />
-                  {isFavourite ? 'Saved' : 'Save'}
-                </span>
-              </button>
-            </form>
-          )}
+          <form action={toggleFavouriteProductAction}>
+            <input type="hidden" name="productId" value={product.id} />
+            <button
+              type="submit"
+              className="rounded-brand border border-line px-3 py-2 text-sm font-medium text-ink hover:bg-surface-muted"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name={isFavourite ? 'star-filled' : 'star'} size={15} />
+                {isFavourite ? 'Saved' : 'Save'}
+              </span>
+            </button>
+          </form>
         </Card>
 
         <section>

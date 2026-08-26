@@ -226,7 +226,12 @@
         whole document in the body rule, so headings and body share them.)
      ------------------------------------------------------------------------ */
 
-  --text-display: clamp(2.5rem, 7vw, 5rem); /* 40 → 80px */
+  /* Tried 700 here to win harder against Heading (620) — it read heavy and
+     cramped against the existing -0.045em/-0.035em tracking on a real page
+     (`/about`'s three-word h1), which is precisely the condition under which
+     this was scoped to be abandoned rather than forced through by loosening
+     the tracking too. Back to 620. */
+  --text-display: clamp(2.25rem, 6vw, 4.5rem); /* 36 → 72px — trimmed from 40→80px, still read as too large on /about and /showcase */
   --text-display--line-height: 0.98;
   --text-display--letter-spacing: -0.045em;
   --text-display--font-weight: 620;
@@ -274,20 +279,27 @@
      product thumbnails, so the two genuinely match rather than being two values
      five points apart that only look the same.
 
-     Lifted from #2d5a4a to #2d7a6b: brighter reads as lit rather than printed,
-     which is the digital feel we are after. White on it is 5.1:1, so the labels
-     inside a category card still clear AA. The original deeper green is kept
-     below — it is the far end of the tile gradient and the colour of the glow
-     the tiles cast, both of which need something darker than the face. */
-  --color-category-card: #2d7a6b;
-  --color-product-tile: #2d7a6b;
-  --color-brand-deep: #2d5a4a; /* gradient far end, and the glow colour */
+     A second, separate teal (#2d7a6b) used to live here specifically so an
+     illustrated tile would never be mistaken for interface chrome. In
+     practice a shopper does not read that distinction — they see two
+     unrelated greens and the tile reads as an off-brand colour pick. A
+     lightened-top-edge gradient toward Forest Ground was tried next and
+     rejected on sight — the lightened face itself read as a third, washed-out
+     green. Tiles are now flat Forest Ground, identical to `--color-bar` and to
+     `--color-surface-deep` (the mesh background's own fill): one exact green,
+     used solid, everywhere it appears.
+     `--color-brand-deep`/`--color-brand-deepest` are unrelated to this fix —
+     they drive nav-tile/nav-row active-state text and item-card hover
+     borders, not the tile ground, and are untouched. */
+  --color-category-card: var(--color-bar);
+  --color-product-tile: var(--color-bar);
+  --color-brand-deep: #2d5a4a; /* nav-tile/nav-row active state, item-card hover border — not the tile ground */
   --color-brand-deepest: #1a3a32; /* badge gradients */
-  --color-brand-glow: color-mix(in srgb, #2d5a4a 20%, transparent);
+  --color-tile-glow: color-mix(in srgb, var(--color-bar) 20%, transparent);
   /* The same green, opaque enough to actually be seen as a cast shadow. The
      20% above is the specified value and stays available; at the sizes these
      tiles are drawn, it alone was invisible against the page. */
-  --color-brand-glow-strong: color-mix(in srgb, #2d5a4a 42%, transparent);
+  --color-tile-glow-strong: color-mix(in srgb, var(--color-bar) 42%, transparent);
 
   /* -- Header and footer: the logo's own surface --------------------------
      Sampled from Afrimesh logo.jpeg. The bars carry the artwork's exact
@@ -547,10 +559,12 @@ th {
    inside them flips to light. Without this the heading rule above would put
    deep green text on a deep green panel — invisible, and the kind of thing that
    only shows up once you look at the page. */
-.mesh-surface :where(h1, h2, h3, h4) {
+/* `.glass-card-light` is a light island inside the dark one — the flip above
+   must not reach through it, or its own ink-on-white text goes invisible. */
+.mesh-surface :where(h1, h2, h3, h4):not(.glass-card-light, .glass-card-light *) {
   color: #fff;
 }
-.mesh-surface :where(p, li, dd, dt, span) {
+.mesh-surface :where(p, li, dd, dt, span):not(.glass-card-light, .glass-card-light *) {
   color: color-mix(in srgb, #fff 78%, transparent);
 }
 .mesh-surface .hero-lede {
@@ -705,17 +719,20 @@ html {
    Utilities
    --------------------------------------------------------------------------- */
 
-/* Cards sit on the page rather than float above it.
-   A drop shadow says "this is nearer to you than the page". On a dashboard
-   where nine of them are stacked in a column, none is nearer than any other,
-   so the shadow states something untrue nine times and the screen reads as
-   decorated. A hairline states the boundary, which is the only thing that was
-   ever being communicated. Elevation is kept for things that genuinely float —
-   menus and dialogs. */
+/* Cards sit on the page, one plane above it rather than floating over it.
+   `shadow-subtle` — the softest step in the Shadow Vocabulary, tinted brand
+   green rather than black — states that boundary at a lower volume than the
+   hairline alone; a column of nine cards reads as nine planes at the same
+   height, not nine decorated boxes. `shadow-strong` on hover is still the
+   thing that changes when the pointer arrives, so hover still means
+   something. Illustrated tiles (`brand-tile`, `category-card`) keep their own
+   stronger, more saturated stack — they read as sitting *in* the card, so
+   they stay the deepest thing on it. */
 @utility card {
   background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
+  box-shadow: var(--shadow-subtle);
 }
 
 /* A card that responds to the pointer — lifts rather than just tinting. */
@@ -772,7 +789,7 @@ html {
 @utility brand-glow {
   box-shadow:
     var(--shadow-subtle),
-    0 6px 18px -6px var(--color-brand-glow);
+    0 6px 18px -6px var(--color-tile-glow);
 }
 
 /* Warm halo on the accent, for a hovered price or an emphasised control. */
@@ -787,6 +804,12 @@ html {
 }
 @utility bar-depth-top {
   box-shadow: 0 -4px 16px -6px color-mix(in srgb, #021614 45%, transparent);
+}
+/* The floating bottom-nav pill no longer touches the screen edge, so its
+   shadow casts downward like anything else that floats above the page,
+   rather than upward like the bars that still sit flush to an edge. */
+@utility bar-depth-float {
+  box-shadow: 0 8px 20px -6px color-mix(in srgb, #021614 50%, transparent);
 }
 
 /* Drawer menu row: icon, label, optional badge. 16px in from the panel edge,
@@ -990,6 +1013,21 @@ html {
   border-radius: var(--radius-card);
 }
 
+/* A secondary CTA sharing the mesh treatment (e.g. the "Sell on AfriMesh"
+   panel closing out the consumer homepage) needs a fraction of a primary
+   page hero's space — it is one card among several sections, not the first
+   thing on the page. Scoped as a modifier on `.hero` rather than changed in
+   place, so a genuine page hero like `/about`'s keeps its full size. */
+@utility hero-compact {
+  padding-block: clamp(1.75rem, 4vw, 3rem);
+}
+.hero-compact .hero-lede {
+  margin-top: 0.625rem;
+}
+.hero-compact .hero-actions {
+  margin-top: 1.125rem;
+}
+
 /* The description under a hero heading: light gray, a touch larger than body
    copy, and held to a comfortable measure so a long line does not run the full
    width of a desktop. */
@@ -1029,15 +1067,18 @@ html {
   flex-direction: column;
   align-items: center;
   flex: 0 0 auto;
-  width: 6.75rem; /* 108px */
-  padding: 0.875rem 0.5rem 1rem;
-  background: linear-gradient(160deg, var(--color-category-card), var(--color-brand-deep));
+  width: 6.75rem; /* 108px, unchanged — the Category Tiles named rule fixes this */
+  /* Trimmed from 0.875rem/1rem so the tile reads closer to square: a row of
+     five square tiles reads as one band, where the taller original made the
+     row read as a column of towers. */
+  padding: 0.625rem 0.5rem 0.75rem;
+  background: var(--color-category-card);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #ffffff 14%, transparent),
     var(--shadow-medium),
-    0 8px 20px -8px var(--color-brand-glow);
+    0 8px 20px -8px var(--color-tile-glow);
   transition:
     border-color var(--duration-hover) var(--ease-out),
     transform var(--duration-hover) var(--ease-out),
@@ -1068,15 +1109,15 @@ html {
    tile depth, so the mark reads as sitting *in* something rather than pasted on
    a flat square. */
 @utility brand-tile {
-  /* Lit from above: the brighter green at the top, the deeper one at the
-     bottom, which is the same read as the inset highlight but across the whole
-     face rather than one pixel of it. */
-  background: linear-gradient(160deg, var(--color-product-tile), var(--color-brand-deep));
+  /* Flat Forest Ground — the same exact green as the header and the mesh
+     background, everywhere it appears. Depth comes from the inset highlight
+     and the drop shadow below, not from a second, lighter green. */
+  background: var(--color-product-tile);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent),
     inset 0 -2px 0 color-mix(in srgb, #000000 20%, transparent),
     var(--shadow-subtle),
-    0 8px 18px -6px var(--color-brand-glow-strong);
+    0 8px 18px -6px var(--color-tile-glow-strong);
   transition:
     transform var(--duration-hover) var(--ease-out),
     box-shadow var(--duration-hover) var(--ease-out);
@@ -1090,7 +1131,7 @@ html {
     inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent),
     var(--shadow-medium),
     0 0 0 3px var(--color-accent-glow),
-    0 14px 28px -8px var(--color-brand-glow-strong);
+    0 14px 28px -8px var(--color-tile-glow-strong);
 }
 
 /* A product card in a results grid.
@@ -1244,10 +1285,14 @@ html {
   background: var(--color-surface);
   border: 1px solid var(--color-line-soft);
   border-radius: var(--radius-brand);
-  transition: border-color var(--duration-hover) var(--ease-out);
+  box-shadow: var(--shadow-subtle);
+  transition:
+    border-color var(--duration-hover) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out);
 }
 @utility item-card-hover {
   border-color: color-mix(in srgb, var(--color-brand-deep) 40%, transparent);
+  box-shadow: var(--shadow-strong);
 }
 
 /* The photo's panel. Fixed aspect so a grid of cards keeps one baseline for
@@ -1354,6 +1399,63 @@ html {
   );
   background-size: 220% 100%;
   animation: shimmer 1.6s linear infinite;
+}
+
+/* -- Showcase (marketing) surfaces ------------------------------------------
+   Frosted panels for the /showcase campaign page. Tinted to the brand ink
+   rather than neutral gray, so the glassmorphism still reads as ours and not
+   as a borrowed fintech-dark-mode look. */
+@utility glass-card {
+  position: relative;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, #ffffff 14%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+  box-shadow: var(--shadow-strong);
+  color: #fff;
+}
+
+/* The one light card in the stack — the compact callout, near-white rather
+   than translucent-dark, so it reads as the odd one out on purpose. */
+@utility glass-card-light {
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-line-soft);
+  background: color-mix(in srgb, #ffffff 92%, var(--color-page));
+  box-shadow: var(--shadow-medium);
+  color: var(--color-ink);
+}
+
+/* Scroll-tied depth: the mesh ground holds its position while the glass
+   cards above it move with the page, so the two layers read as separated in
+   space. A static rendering mode, not a JS scroll listener — degrades to
+   ordinary scrolling on anything that doesn't support it, and reduced-motion
+   turns it off outright since parallax is exactly the kind of background
+   motion that preference exists to suppress. */
+@utility mesh-parallax {
+  background-attachment: fixed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mesh-parallax {
+    background-attachment: scroll;
+  }
+}
+
+/* The order-tracking ring on the showcase page's first glass card: draws on
+   load rather than appearing solved. One-off values (r=34, 68%) for this
+   specific illustrative widget rather than a generic parameterised
+   component — there is exactly one of these on one page. */
+@keyframes ring-reveal-68 {
+  from {
+    stroke-dashoffset: 213.6;
+  }
+  to {
+    stroke-dashoffset: 68.4;
+  }
+}
+@utility ring-progress {
+  stroke-dasharray: 213.6;
+  animation: ring-reveal-68 1.1s var(--ease-out) 0.3s both;
 }
 
 /* ---------------------------------------------------------------------------

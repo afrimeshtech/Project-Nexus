@@ -109,6 +109,7 @@ export async function ConsumerShell({
                     ? [{ href: '/admin', label: 'Platform console', icon: 'settings' as const }]
                     : []),
                   { href: '/about', label: 'How the network works', icon: 'info' as const },
+                  { href: '/contact?from=consumer', label: 'Contact us', icon: 'mail' as const },
                   ...(org
                     ? []
                     : [
@@ -202,7 +203,7 @@ export async function ConsumerShell({
       <main
         id="main"
         tabIndex={-1}
-        className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-7 sm:pb-14"
+        className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-7 sm:pb-14"
       >
         {children}
       </main>
@@ -231,10 +232,17 @@ function BottomNav({ messages }: { messages: number }) {
   ]
   // On a phone this bar *is* the footer — the site footer is hidden below the
   // sm breakpoint — so it carries the same brand ground as the header.
+  //
+  // Floating rather than flush: inset 0.75rem (Tailwind's `3`) on every edge,
+  // radius-card rather than a bespoke value so it stays on the three-radii
+  // scale, shadow flipped to `bar-depth-float` since it no longer touches an
+  // edge for `bar-depth-top`'s upward cast to make sense against. Labels stay
+  // under every icon — that's why Recognition Rather Than Recall scores well
+  // here, and a floating shape isn't a reason to give it up.
   return (
     <nav
       aria-label="Primary"
-      className="bar-depth-top fixed inset-x-0 bottom-0 border-t border-bar-line bg-bar sm:hidden"
+      className="bar-depth-float fixed inset-x-3 bottom-3 rounded-card border border-bar-line bg-bar sm:hidden"
       style={{ zIndex: 'var(--z-bottom-nav)' }}
     >
       <ul className="mx-auto flex max-w-6xl">
@@ -269,6 +277,9 @@ function SiteFooter() {
         <p className="font-technical text-xs">
           AfriMesh Technologies · Project Nexus · Proximity Commerce &amp; Payment Infrastructure
         </p>
+        <Link href="/contact?from=consumer" className="font-medium text-bar-ink hover:underline">
+          Contact us
+        </Link>
       </div>
     </footer>
   )

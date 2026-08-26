@@ -102,7 +102,10 @@ export default async function HealthPage() {
         </div>
 
         <Card className="p-0">
-          <div className="scroll-x">
+          {/* A real table at sm+; a stacked card per check below it, so
+              staff checking system health on a phone read the same data
+              without scrolling sideways. */}
+          <div className="hidden scroll-x sm:block">
             <table className="w-full min-w-[36rem] text-sm">
               <caption className="sr-only">System health checks</caption>
               <thead>
@@ -131,6 +134,23 @@ export default async function HealthPage() {
               </tbody>
             </table>
           </div>
+
+          <ul className="space-y-2 p-4 sm:hidden">
+            {checks.map((check) => (
+              <li key={check.label} className="rounded-brand border border-line-soft p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-medium text-ink">{check.label}</p>
+                  {check.ok ? (
+                    <Badge tone="brand">Pass</Badge>
+                  ) : (
+                    <Badge tone="danger">Attention</Badge>
+                  )}
+                </div>
+                <p className="mt-1 text-sm text-muted">{check.value}</p>
+                <p className="mt-0.5 text-xs text-muted">Target: {check.target}</p>
+              </li>
+            ))}
+          </ul>
         </Card>
 
         <Card>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
 import { RejectBusinessForm } from '@/components/admin/AdminForms'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
+import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
 import { Badge, Card, EmptyState, PageHeader, Rating } from '@/components/ui'
 import { toggleSuspensionAction, verifyOrganisationAction } from '@/app/actions/admin'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
@@ -144,12 +145,12 @@ export default async function AdminOrganisationsPage({
                     {org.verification !== 'verified' && (
                       <form action={verifyOrganisationAction}>
                         <input type="hidden" name="organisationId" value={org.id} />
-                        <button
-                          type="submit"
+                        <ConfirmSubmitButton
+                          message={`Verify ${org.name}? They become live and discoverable to buyers immediately.`}
                           className="rounded-brand bg-accent-500 px-3 py-1.5 text-xs font-semibold text-accent-ink hover:bg-accent-600"
                         >
                           Verify
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     )}
                     {org.verification !== 'rejected' && (
@@ -162,12 +163,21 @@ export default async function AdminOrganisationsPage({
                         name="status"
                         value={org.status === 'suspended' ? 'active' : 'suspended'}
                       />
-                      <button
-                        type="submit"
-                        className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
-                      >
-                        {org.status === 'suspended' ? 'Reinstate' : 'Suspend'}
-                      </button>
+                      {org.status === 'suspended' ? (
+                        <button
+                          type="submit"
+                          className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
+                        >
+                          Reinstate
+                        </button>
+                      ) : (
+                        <ConfirmSubmitButton
+                          message={`Suspend ${org.name}? Their listings stop being discoverable to buyers immediately.`}
+                          className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
+                        >
+                          Suspend
+                        </ConfirmSubmitButton>
+                      )}
                     </form>
                   </div>
                 )}

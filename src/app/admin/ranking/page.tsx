@@ -83,7 +83,10 @@ export default async function RankingPage() {
             title="Reference: shipped defaults"
             subtitle="The values in the System Architecture Document, for comparison"
           />
-          <div className="scroll-x">
+          {/* A real table at sm+; below it, one card per factor listing each
+              scope's weight as a labeled row, so this reads without
+              sideways scrolling on a phone. */}
+          <div className="hidden scroll-x sm:block">
             <table className="w-full min-w-[30rem] text-sm">
               <caption className="sr-only">Default ranking weights by scope</caption>
               <thead>
@@ -112,6 +115,28 @@ export default async function RankingPage() {
               </tbody>
             </table>
           </div>
+
+          <ul className="space-y-2 sm:hidden">
+            {[...new Set(SCOPES.flatMap((s) => Object.keys(DEFAULT_WEIGHTS[s.key])))].map(
+              (factor) => (
+                <li key={factor} className="rounded-brand border border-line-soft p-3">
+                  <p className="text-sm font-medium capitalize text-ink">
+                    {factor.replace(/_/g, ' ')}
+                  </p>
+                  <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                    {SCOPES.map((s) => (
+                      <div key={s.key} className="flex items-baseline gap-1">
+                        <dt className="capitalize">{s.key}:</dt>
+                        <dd className="font-medium tabular-nums text-ink">
+                          {DEFAULT_WEIGHTS[s.key][factor] ?? '—'}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </li>
+              ),
+            )}
+          </ul>
         </Card>
       </div>
     </AdminShell>

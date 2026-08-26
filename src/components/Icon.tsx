@@ -68,6 +68,7 @@ export type IconName =
   | 'close'
   | 'info'
   | 'bookmark'
+  | 'mail'
 
 /** Every path is stroked; `fill` stays none so the set reads as outlined. */
 const PATHS: Record<IconName, string> = {
@@ -129,6 +130,7 @@ const PATHS: Record<IconName, string> = {
   close: 'M6 6l12 12M18 6L6 18',
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 11v5.5M12 7.75h.01',
   bookmark: 'M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4.5L5.5 20V5a1 1 0 0 1 1-1Z',
+  mail: 'M4 6.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 6.5v11A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-11ZM4.5 6.5l7.5 6 7.5-6',
 }
 
 /** Only this one is filled — a filled star is how a rating reads. */

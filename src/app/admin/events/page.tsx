@@ -64,7 +64,11 @@ export default async function EventsPage({
 
         {events.length ? (
           <Card className="p-0">
-            <div className="scroll-x">
+            {/* A real table at sm+; below it, one card per event, so the
+                widest reference table in the admin console (5 columns
+                including a raw JSON payload) doesn't force sideways
+                scrolling on a phone. */}
+            <div className="hidden scroll-x sm:block">
               <table className="w-full min-w-[46rem] text-sm">
                 <caption className="sr-only">Recent domain events</caption>
                 <thead>
@@ -100,6 +104,26 @@ export default async function EventsPage({
                 </tbody>
               </table>
             </div>
+
+            <ul className="space-y-2 p-4 sm:hidden">
+              {events.map((event) => (
+                <li key={event.id} className="rounded-brand border border-line-soft p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge tone="neutral">{event.event_type}</Badge>
+                    <span className="font-technical text-xs text-muted">
+                      {new Date(event.occurred_at).toLocaleString('en-NG')}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 font-technical text-xs text-muted">
+                    {event.aggregate_type} · {String(event.aggregate_id).slice(0, 8)}… ·{' '}
+                    {event.id}
+                  </p>
+                  <code className="mt-1 block truncate font-technical text-xs text-muted">
+                    {JSON.stringify(event.payload)}
+                  </code>
+                </li>
+              ))}
+            </ul>
           </Card>
         ) : (
           <EmptyState icon="list" title="No events of that type yet" />

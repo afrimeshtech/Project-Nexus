@@ -51,7 +51,7 @@ export function Thread({
                 }`}
               >
                 <p className="whitespace-pre-wrap break-words text-sm">{message.body}</p>
-                <p className={`mt-0.5 text-[10px] ${mine ? 'text-white/70' : 'text-muted'}`}>
+                <p className={`mt-0.5 text-[11.2px] ${mine ? 'text-white/70' : 'text-muted'}`}>
                   {new Date(message.created_at).toLocaleString('en-NG', {
                     day: '2-digit',
                     month: 'short',

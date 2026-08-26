@@ -87,7 +87,7 @@ export default async function PartnerApiPage() {
                               {key.scopes.map((scope) => (
                                 <span
                                   key={scope}
-                                  className="rounded bg-surface-muted px-1.5 py-0.5 font-technical text-[10px] text-muted"
+                                  className="rounded bg-surface-muted px-1.5 py-0.5 font-technical text-[11.2px] text-muted"
                                 >
                                   {scope}
                                 </span>

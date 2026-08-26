@@ -52,10 +52,10 @@ export function CategoryRow({
               <img
                 src={category.image_url}
                 alt=""
-                className="size-[72px] rounded-brand object-cover"
+                className="size-[56px] rounded-brand object-cover"
               />
             ) : (
-              <CategoryArt slug={category.slug} size={72} />
+              <CategoryArt slug={category.slug} size={56} />
             )}
           </span>
           <span className="mt-2 text-center text-xs font-medium leading-tight text-white">
@@ -71,8 +71,8 @@ export function CategoryRow({
         className="category-card press pop-in group relative snap-start overflow-hidden hover:category-card-hover active:press-active"
         style={{ animationDelay: `${shown.length * 80}ms` }}
       >
-        <span className="category-art grid size-[72px] place-items-center text-white/70 transition-colors group-hover:category-art-hover group-hover:text-accent-400">
-          <Icon name="more" size={34} />
+        <span className="category-art grid size-[56px] place-items-center text-white/70 transition-colors group-hover:category-art-hover group-hover:text-accent-400">
+          <Icon name="more" size={26} />
         </span>
         <span className="mt-2 text-center text-xs font-medium leading-tight text-white">More</span>
       </Link>

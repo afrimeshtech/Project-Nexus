@@ -12,7 +12,6 @@ colors:
   surface-muted: "#f4f7f5"
   surface-strong: "#e5ebe7"
   price-tint: "#f5f0e8"
-  tile-teal: "#2d7a6b"
   accent-ink: "#1f3329"
   bar-ink: "#ffffff"
   field: "#f5f5f5"
@@ -25,13 +24,13 @@ colors:
   pill-low: "#b3271a"
   pill-out: "#3d4f47"
   well: "#edf3ef"
-  category-card: "#2d7a6b"
+  category-card: "#123824"
   brand-deep: "#2d5a4a"
   line: "#2d4a3a"
 typography:
   display:
     fontFamily: "Inter, ui-sans-serif, system-ui, Arial, sans-serif"
-    fontSize: "clamp(2.5rem, 7vw, 5rem)"
+    fontSize: "clamp(2.25rem, 6vw, 4.5rem)"
     fontWeight: 620
     lineHeight: 0.98
     letterSpacing: "-0.045em"
@@ -242,20 +241,21 @@ accent that earns its loudness by being rare.
   and the deepest hero surfaces. Sampled from the logo artwork so the lockup
   sits in it with no visible edge. It is a *ground to place things on*, never a
   fill for small elements — a chip or a badge in this green reads as a hole in
-  the page rather than an object on it.
+  the page rather than an object on it. Illustrated tiles (category tiles,
+  product and seller thumbnails) are the one sanctioned exception: flat Forest
+  Ground, identical to the frame, because a second "brand green" for
+  illustrated content read as an off-brand colour pick rather than as a
+  deliberate distinction. See Category Tiles.
 - **Price Orange** (`#ff9500`): Fills. Primary buttons, selected chips,
   notification badges. At 2.2:1 on white it is **a fill colour only and never a
   text colour** — it carries dark ink on top of it, never the reverse.
 - **Deep Price** (`#c04a12`): The text-safe sibling at 4.97:1. Links, inline
-  emphasis, focus rings, the eyebrow above a page title. Everywhere the accent
-  must be *read* rather than filled.
+  emphasis, focus rings, an eyebrow label inside a component (a filter
+  group's name, a location line) — never above a page heading; see the
+  Typography Don'ts. Everywhere the accent must be *read* rather than filled.
 
 ### Secondary
 
-- **Tile Teal** (`#2d7a6b`): The ground for category tiles and product
-  thumbnails. A second green that separates *illustrated content* from
-  *interface chrome*, so an artwork tile is never mistaken for a navigation
-  surface.
 - **Price Tint** (`#f5f0e8`): Warm sand, sitting only behind a price. It is the
   tag on the goods — the one place a number gets its own ground.
 
@@ -312,8 +312,10 @@ for "advanced".
 
 ### Hierarchy
 
-- **Display** (620, `clamp(2.5rem, 7vw, 5rem)`, 0.98): Hero headlines. Fluid,
-  so it never needs a breakpoint to stay in proportion.
+- **Display** (620, `clamp(2.25rem, 6vw, 4.5rem)`, 0.98): Hero headlines.
+  Fluid, so it never needs a breakpoint to stay in proportion. Trimmed from
+  40→80px to 36→72px — the larger size read as oversized on /about and
+  /showcase, the only two places this register is used.
 - **Display Small** (620, `clamp(1.9rem, 5vw, 3rem)`, 1.06): Page titles.
 - **Heading** (620, `clamp(1.15rem, 2vw, 1.4rem)`, 1.2): Section headings.
 - **Stat** (600, `1.5rem`, 1.15, tabular): The number on a metric tile. Tabular
@@ -379,18 +381,22 @@ a wide table — scrolls inside its own container.
 
 ## Elevation & Depth
 
-**Flat by default.** Content surfaces carry no shadow at rest. Separation comes
-from tonal layering — page → surface-muted → surface → surface-strong →
-surface-deep — reinforced by a single hairline (`1px`, brand green at 18%
-alpha). Depth is a *response to state*, not a property of a component.
+**A soft plane at rest, not a flat cut-out.** Content surfaces carry
+`shadow-subtle` at rest — the softest step in the Shadow Vocabulary below,
+tinted brand green rather than black — reinforced by tonal layering — page →
+surface-muted → surface → surface-strong → surface-deep — and a single
+hairline (`1px`, brand green at 18% alpha). See the Resting Elevation Rule.
+Hover is still what changes: `shadow-strong` and a lift, so the pointer still
+produces a visible response rather than a surface that was already lifted.
 
 There is one deliberate exception, and it is a class rather than a one-off:
 **illustrated tiles**. A category tile or product thumbnail is artwork, not a
-content surface — it carries a gradient ground and a resting `shadow-medium`
-plus a green cast, because it is meant to read as an *object sitting on* the
-page rather than a panel cut into it. The distinction is what `Tile Teal`
-marks. Everything that holds text and controls stays flat; everything that is
-a picture may lift.
+content surface — it carries a flat Forest Ground fill and a resting
+`shadow-medium` plus a green cast, because it is meant to read as an *object
+sitting on* the page rather than a panel cut into it. The distinction is the
+shadow and inset-highlight treatment itself, not a separate colour — the fill
+is exactly `--color-bar`, the same green as the frame. Everything that holds
+text and controls stays flat; everything that is a picture may lift.
 
 Shadows exist in a three-step scale and appear only when something is being
 acted on or genuinely floats above the page.
@@ -408,10 +414,25 @@ depth belongs to the palette instead of greying the page.
 
 ### Named Rules
 
-**The Flat-At-Rest Rule.** A content card at rest has a hairline and no shadow.
-On hover it takes `shadow-strong` and lifts `4px`. If a card that holds text
-needs a resting shadow to be legible, the tonal layering underneath it is
-wrong. Illustrated tiles are the stated exception, not a precedent.
+**The Resting Elevation Rule.** A card carries `shadow-subtle` at rest, tinted
+brand green per the Tinted Shadow Rule — never black. This applies to `Card`
+and `ItemCard`; `shadow-strong` stays reserved for the hover and interactive
+state, so the pointer still produces a visible change rather than a card that
+was already lifted.
+
+The shadow states the card's boundary the way the hairline does, at a lower
+volume: it is the softest of the three-step Shadow Vocabulary, and a column of
+nine cards reads as nine planes at the same height rather than nine decorated
+boxes.
+
+Exception, deliberate and not to be flattened into the rule above: an
+illustrated tile (`brand-tile`, `category-card`) keeps its stronger, more
+saturated shadow stack. The tile is meant to read as sitting *in* the card, so
+it must stay the deepest element on it.
+
+Nested cards remain banned — with a resting shadow, nesting compounds
+elevation as well as border, which is exactly the decorated read this rule is
+written to avoid.
 
 **The Tinted Shadow Rule.** No black shadows. Depth is cast in brand green at
 low alpha.
@@ -469,10 +490,23 @@ rather than left to the browser.
 - **Async:** a button that submits disables itself and swaps its label
   ("Sign in" → "Signing in…"). It never spins silently.
 
+**Dual-Action Bar.** Where a screen offers inbound and outbound money as two
+simultaneous actions — a sale and a purchase — they sit as two adjacent pills
+in one sticky bottom bar. Inbound takes `primary` (Price Orange fill, Accent
+Ink label). Outbound takes `danger` (`#c0392b`, white label), which this
+document already holds visually apart from the primary action.
+
+This is the one place two filled actions share a bar; it is not a licence for
+two primaries elsewhere. If the pairing reads as insufficiently distinct, the
+remedy is spacing or a leading icon per button — never a third accent. No
+teal, no new hue, is introduced to carry this pattern. See `DualActionBar` in
+`components/ui.tsx`.
+
 ### Cards
 
 - **Corner:** `1.5rem`. **Background:** Surface on a tinted Page.
-- **Border:** One hairline. **Shadow:** none at rest — see Elevation.
+- **Border:** One hairline. **Shadow:** `shadow-subtle` at rest, `shadow-strong`
+  on hover — see Elevation and the Resting Elevation Rule.
 - **Padding:** `1.25rem`, opening to `1.75rem` above `sm`.
 - **Interactive variant:** hover lifts `4px` with `shadow-strong`, over `260ms`
   on the exponential ease-out. Transitions are written as **longhands, never the
@@ -566,21 +600,31 @@ The dashboard primitive: one number, and nothing competing with it.
   a scroll listener). Icon buttons are 44px, 8px apart, and shift their
   background on hover — **they do not scale**; a 10% scale on a 44px target
   moves its edges ~4px and makes a row of them twitch.
-- **Bottom navigation:** below `sm` only, `fixed` at `z-index: 40`, Forest
-  Ground, five items maximum, each icon **with** its label, at 97×58px.
+- **Bottom navigation:** below `sm` only, floating — `fixed`, inset `0.75rem`
+  from every edge rather than flush, `radius-card`, `bar-depth-float`'s
+  downward shadow instead of the flush bars' upward `bar-depth-top` — at
+  `z-index: 40`, Forest Ground, five items maximum, each icon **with** its
+  label, at 97×58px. `<main>` reserves `pb-32` beneath it (up from `pb-28`)
+  to keep the inset from eating into the last row of content.
 - **Sidebar (admin/partner):** its own scroll context, independent of the page.
 - **Skip link:** the first focusable element on every shell, off-screen until
   focused. Nine tab presses to reach content is not navigable.
 
 ### Category Tiles
 
-The signature illustrated component, and the stated exception to Flat-At-Rest.
+The signature illustrated component, and the stated exception to the Resting
+Elevation Rule.
 
 - Fixed `6.75rem` (108px) wide so a scrolling row keeps an even rhythm whether
-  the name is "Pharmacy" or "Building Materials".
-- A `160°` gradient from Tile Teal to Brand Deep, hairline border, `1.5rem`
-  radius, an inset white highlight at 14%, `shadow-medium`, and a green cast
-  beneath. It is an object on the page, not a panel cut into it.
+  the name is "Pharmacy" or "Building Materials". Padding trimmed to
+  `0.625rem 0.5rem 0.75rem` and the illustration to 56px (from 72px), so the
+  tile reads closer to square — a row of five square tiles reads as one band,
+  where the taller original read as a column of towers.
+- Flat Forest Ground fill — the same exact `#123824` as the header, the bottom
+  nav, and the mesh background, not a gradient and not a second green —
+  hairline border, `1.5rem` radius, an inset white highlight at 14%,
+  `shadow-medium`, and a green cast beneath. It is an object on the page, not
+  a panel cut into it.
 - Entrance settles from `scale(0.94)` on the exponential ease-out. It must not
   overshoot past `1` — an overshoot pushes the tile beyond the track it scrolls
   in and produces a transient horizontal overflow.

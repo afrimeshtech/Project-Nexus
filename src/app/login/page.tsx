@@ -11,9 +11,9 @@ export const metadata = { title: 'Sign in' }
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; ref?: string }>
+  searchParams: Promise<{ next?: string; ref?: string; method?: string }>
 }) {
-  const { next, ref } = await searchParams
+  const { next, ref, method } = await searchParams
   const user = await currentUser()
   if (user) redirect(next ?? '/')
 
@@ -38,7 +38,14 @@ export default async function LoginPage({
        */
       footnote="Your sign-in is kept secure, and you can sign out from any device at any time."
     >
-      <LoginForm next={next ?? '/'} referralCode={invite} />
+      <LoginForm
+        next={next ?? '/'}
+        referralCode={invite}
+        // Anything other than the one value we recognise falls back to the
+        // phone default rather than erroring — a mistyped query string
+        // should still give someone a working sign-in page.
+        initialMethod={method === 'password' ? 'password' : 'otp'}
+      />
       <p className="mt-4 text-center text-sm text-muted">
         New to AfriMesh?{' '}
         <Link href={registerHref} className="font-medium text-accent-strong hover:underline">

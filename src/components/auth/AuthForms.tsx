@@ -16,9 +16,17 @@ import { FormError, Alert, Field, inputClass } from '@/components/ui'
  * phone + OTP. Phone-first is deliberate - it is the identifier most Nigerian
  * shoppers and shopkeepers actually have and remember.
  */
+export type Method = 'otp' | 'password'
+
+const METHODS = [
+  { key: 'otp', label: 'Phone + code' },
+  { key: 'password', label: 'Password' },
+] as const satisfies readonly { key: Method; label: string }[]
+
 export function LoginForm({
   next = '/',
   referralCode = '',
+  initialMethod = 'otp',
 }: {
   next?: string
   /**
@@ -27,23 +35,51 @@ export function LoginForm({
    * form at all — the code has to survive that route too.
    */
   referralCode?: string
+  /**
+   * Which method to open on, from `?method=` in the URL.
+   *
+   * This used to be client state only, which made password sign-in reachable
+   * *exclusively* by clicking the tab. The form bodies stream in behind a
+   * Suspense boundary, so until the reveal script runs the page shows two tabs
+   * and nothing else — and a click that lands in that window does nothing.
+   * There was also no address to link to, so "sign in with your password"
+   * could not be sent to anyone. Now `/login?method=password` opens it
+   * directly, and the tabs stay as the fast path once the page is live.
+   */
+  initialMethod?: Method
 }) {
-  const [tab, setTab] = useState<'otp' | 'password'>('otp')
+  const [tab, setTab] = useState<Method>(initialMethod)
 
   return (
     <div>
-      <div role="tablist" className="mb-4 flex rounded-brand bg-surface-muted p-1">
-        {(
-          [
-            { key: 'otp', label: 'Phone + code' },
-            { key: 'password', label: 'Password' },
-          ] as const
-        ).map((option) => (
+      <div
+        role="tablist"
+        aria-label="Sign-in method"
+        className="mb-4 flex rounded-brand bg-surface-muted p-1"
+      >
+        {METHODS.map((option, index) => (
           <button
             key={option.key}
+            /* Without an explicit type a button inside a form submits it.
+               These sit outside the form today, so it is latent rather than
+               broken — but it is one refactor away from swallowing the tab
+               click as a submit, which is exactly the reported symptom. */
+            type="button"
             role="tab"
+            id={`tab-${option.key}`}
             aria-selected={tab === option.key}
+            aria-controls={`panel-${option.key}`}
+            /* Roving tabindex: a tablist is one stop, arrows move within it. */
+            tabIndex={tab === option.key ? 0 : -1}
             onClick={() => setTab(option.key)}
+            onKeyDown={(event) => {
+              const delta = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0
+              if (!delta) return
+              event.preventDefault()
+              const nextMethod = METHODS[(index + delta + METHODS.length) % METHODS.length]
+              setTab(nextMethod.key)
+              document.getElementById(`tab-${nextMethod.key}`)?.focus()
+            }}
             className={`flex-1 rounded-[0.6rem] px-3 py-2 text-sm font-medium transition-colors ${
               tab === option.key ? 'bg-surface text-ink shadow-sm' : 'text-muted'
             }`}
@@ -53,13 +89,15 @@ export function LoginForm({
         ))}
       </div>
 
-      {tab === 'otp' ? (
-        <OtpLogin next={next} referralCode={referralCode} />
-      ) : (
-        // No invite code on the password tab: an account with a password
-        // already exists, so nobody is being introduced by signing into it.
-        <PasswordLogin next={next} />
-      )}
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+        {tab === 'otp' ? (
+          <OtpLogin next={next} referralCode={referralCode} />
+        ) : (
+          // No invite code on the password tab: an account with a password
+          // already exists, so nobody is being introduced by signing into it.
+          <PasswordLogin next={next} />
+        )}
+      </div>
     </div>
   )
 }

@@ -16,7 +16,7 @@ export default async function OnboardingPage() {
 
   return (
     <ConsumerShell search={false}>
-      <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
+      <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
         <Card>
           <SectionHeading
             title="Register your business"

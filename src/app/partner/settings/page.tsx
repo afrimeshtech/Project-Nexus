@@ -40,7 +40,7 @@ export default async function PartnerSettingsPage() {
           subtitle="Your location and dispatch time directly affect where you rank with buyers."
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-4">
             <Card>
               <SectionHeading

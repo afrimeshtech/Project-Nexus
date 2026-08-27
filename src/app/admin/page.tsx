@@ -118,7 +118,7 @@ export default async function AdminHome() {
           moreHref="/admin/locations"
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
           <Card>
             <SectionHeading
               title="GMV, last 14 days"

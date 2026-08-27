@@ -107,7 +107,7 @@ export async function RewardsView({ userId, role }: { userId: string; role: stri
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_21rem]">
+      <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_21rem]">
         <div className="space-y-4">
           <Card>
             <SectionHeading title="How you earn" subtitle={PROGRAMME_LABEL[programme]} />

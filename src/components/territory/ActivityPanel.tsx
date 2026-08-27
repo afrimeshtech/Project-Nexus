@@ -125,7 +125,7 @@ export async function ActivityPanel({
         }
       />
 
-      <div className={compact ? '' : 'grid gap-5 lg:grid-cols-[18rem_1fr]'}>
+      <div className={compact ? '' : 'grid gap-5 [&>*]:min-w-0 lg:grid-cols-[18rem_1fr]'}>
         {!compact && (
           <HotspotMap
             cells={cells}

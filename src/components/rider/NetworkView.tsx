@@ -91,7 +91,7 @@ export async function RiderNetworkView({
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
+      <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[22rem_1fr]">
         <Card>
           {pins.length ? (
             <>

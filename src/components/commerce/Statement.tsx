@@ -48,45 +48,92 @@ export function Statement({
   }
 
   return (
-    <div className="scroll-x">
-      <table className="w-full min-w-[34rem] text-sm">
-        <caption className="sr-only">Wallet statement</caption>
-        <thead>
-          <tr className="border-b border-line-soft text-left text-xs uppercase tracking-wide text-muted">
-            <th className="py-2 pr-3 font-medium">Date</th>
-            <th className="py-2 pr-3 font-medium">Description</th>
-            <th className="py-2 pr-3 text-right font-medium">Amount</th>
-            <th className="py-2 text-right font-medium">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.map((line) => (
-            <tr key={line.id} className="border-b border-line-soft last:border-0">
-              <td className="whitespace-nowrap py-2.5 pr-3 font-technical text-xs text-muted">
+    <>
+      {/*
+       * Below `sm` the ledger is a stacked list, not a 34rem table in a
+       * scroller. DESIGN.md's No Horizontal Scroll Rule does allow a wide
+       * table to scroll inside its own container, and that is what this was —
+       * but the Phone-First Shell Rule outranks it here: on a 360px screen the
+       * card is ~296px wide, so Amount and Balance both began off the right
+       * edge, behind a sideways scroll a shopkeeper has to discover. Amount is
+       * the column the whole screen exists for. Same data, same order, same
+       * ledger — only the shape changes.
+       */}
+      <ul className="sm:hidden">
+        {lines.map((line) => (
+          <li
+            key={line.id}
+            className="flex items-start justify-between gap-3 border-b border-line-soft py-3 last:border-0"
+          >
+            <div className="min-w-0">
+              <p className="text-sm text-ink">{TYPE_LABEL[line.type] ?? line.type}</p>
+              <p className="truncate text-xs text-muted">{line.narration ?? line.reference}</p>
+              <p className="mt-0.5 font-technical text-xs text-muted">
                 {new Date(line.created_at).toLocaleDateString('en-NG', {
                   day: '2-digit',
                   month: 'short',
                 })}
-              </td>
-              <td className="py-2.5 pr-3">
-                <span className="block text-ink">{TYPE_LABEL[line.type] ?? line.type}</span>
-                <span className="block text-xs text-muted">{line.narration ?? line.reference}</span>
-              </td>
-              <td
-                className={`whitespace-nowrap py-2.5 pr-3 text-right font-medium ${
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p
+                className={`whitespace-nowrap text-sm font-medium tabular-nums ${
                   line.direction === 'credit' ? 'text-accent-strong' : 'text-ink'
                 }`}
               >
                 {line.direction === 'credit' ? '+' : '−'}
                 {format(line.amount)}
-              </td>
-              <td className="whitespace-nowrap py-2.5 text-right text-muted">
+              </p>
+              <p className="whitespace-nowrap font-technical text-xs tabular-nums text-muted">
                 {format(line.balance_after)}
-              </td>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden scroll-x sm:block">
+        <table className="w-full min-w-[34rem] text-sm">
+          <caption className="sr-only">Wallet statement</caption>
+          <thead>
+            <tr className="border-b border-line-soft text-left text-xs uppercase tracking-wide text-muted">
+              <th className="py-2 pr-3 font-medium">Date</th>
+              <th className="py-2 pr-3 font-medium">Description</th>
+              <th className="py-2 pr-3 text-right font-medium">Amount</th>
+              <th className="py-2 text-right font-medium">Balance</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {lines.map((line) => (
+              <tr key={line.id} className="border-b border-line-soft last:border-0">
+                <td className="whitespace-nowrap py-2.5 pr-3 font-technical text-xs text-muted">
+                  {new Date(line.created_at).toLocaleDateString('en-NG', {
+                    day: '2-digit',
+                    month: 'short',
+                  })}
+                </td>
+                <td className="py-2.5 pr-3">
+                  <span className="block text-ink">{TYPE_LABEL[line.type] ?? line.type}</span>
+                  <span className="block text-xs text-muted">
+                    {line.narration ?? line.reference}
+                  </span>
+                </td>
+                <td
+                  className={`whitespace-nowrap py-2.5 pr-3 text-right font-medium ${
+                    line.direction === 'credit' ? 'text-accent-strong' : 'text-ink'
+                  }`}
+                >
+                  {line.direction === 'credit' ? '+' : '−'}
+                  {format(line.amount)}
+                </td>
+                <td className="whitespace-nowrap py-2.5 text-right text-muted">
+                  {format(line.balance_after)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }

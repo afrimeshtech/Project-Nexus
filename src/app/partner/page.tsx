@@ -136,7 +136,7 @@ export default async function PartnerHome({
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
           <Card>
             <SectionHeading title="Sales, last 14 days" subtitle="Net of platform fees" />
             {/* The period totals, above the chart.
@@ -207,7 +207,7 @@ export default async function PartnerHome({
           />
         )}
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
           <Card>
             <SectionHeading
               title="Recent orders"
@@ -275,11 +275,14 @@ export default async function PartnerHome({
                     <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
                       <Link
                         href={`/partner/inventory/${item.id}`}
-                        className="truncate text-ink hover:text-accent-strong"
+                        className="min-w-0 truncate text-ink hover:text-accent-strong"
                       >
                         {item.product_name}
                       </Link>
-                      <Badge tone={item.qty_available === 0 ? 'danger' : 'warning'}>
+                      <Badge
+                        className="shrink-0"
+                        tone={item.qty_available === 0 ? 'danger' : 'warning'}
+                      >
                         {item.qty_available === 0 ? 'Out of stock' : `${item.qty_available} left`}
                       </Badge>
                     </li>
@@ -296,8 +299,11 @@ export default async function PartnerHome({
                 <ul className="space-y-1.5">
                   {expiring.slice(0, 5).map((batch) => (
                     <li key={batch.id} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="truncate text-ink">{batch.product_name}</span>
-                      <Badge tone={batch.days_left < 30 ? 'danger' : 'warning'}>
+                      <span className="min-w-0 truncate text-ink">{batch.product_name}</span>
+                      <Badge
+                        className="shrink-0"
+                        tone={batch.days_left < 30 ? 'danger' : 'warning'}
+                      >
                         {batch.days_left} days
                       </Badge>
                     </li>
@@ -308,14 +314,14 @@ export default async function PartnerHome({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
           <Card>
             <SectionHeading title="Best sellers" />
             {top.length ? (
               <ul className="space-y-2">
                 {top.map((row) => (
                   <li key={row.name} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate text-ink">{row.name}</span>
+                    <span className="min-w-0 truncate text-ink">{row.name}</span>
                     <span className="shrink-0 text-muted">
                       {row.units} units · {formatMoney(row.revenue)}
                     </span>

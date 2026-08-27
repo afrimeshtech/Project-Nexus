@@ -47,7 +47,7 @@ export default async function PartnerWalletPage() {
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
           <Card>
             <SectionHeading
               title="Statement"

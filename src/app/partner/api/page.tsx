@@ -49,7 +49,7 @@ export default async function PartnerApiPage() {
           <Stat label="Rate limit" value="120/min" hint="Per key, by default" icon="clock" />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_21rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_21rem]">
           <div className="space-y-4">
             <Card>
               <SectionHeading

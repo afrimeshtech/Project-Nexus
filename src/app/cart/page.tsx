@@ -73,7 +73,7 @@ export default async function CartPage() {
           </Alert>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
+        <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1fr_22rem]">
           <div className="space-y-3">
             <Card className="flex items-center gap-3">
               <SellerThumb name={cart.seller.name} size="sm" />

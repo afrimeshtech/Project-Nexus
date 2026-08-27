@@ -39,7 +39,13 @@ export default function ShowcasePage() {
   return (
     <div className="bg-bar">
       <section className="mesh-surface mesh-parallax relative flex min-h-screen flex-col overflow-hidden">
-        <header className="relative z-10 flex items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-6">
+        {/* z-20, not z-10. The hero below is `relative z-10` too and comes
+            later in the DOM, so at equal z-index it painted over the header —
+            which took the mobile disclosure menu with it: opened on a phone,
+            "Browse nearby stock" and "Sign in" rendered behind the headline
+            and could not be tapped. The header owns the only sign-in route on
+            a phone, so it outranks the hero. */}
+        <header className="relative z-20 flex items-center justify-between gap-4 px-5 py-5 sm:px-8 sm:py-6">
           <Link href="/" className="shrink-0">
             <Wordmark size="sm" orientation="horizontal" priority />
           </Link>
@@ -141,8 +147,8 @@ export default function ShowcasePage() {
               Proximity commerce
             </p>
             <p className="mt-4 max-w-[38ch] text-base leading-relaxed text-white/75">
-              See what verified sellers near you actually have on the shelf before
-              you leave the house — paid for safely, delivered fast.
+              See what verified sellers near you actually have on the shelf before you leave the
+              house — paid for safely, delivered fast.
             </p>
             <p className="mt-3 font-technical text-xs uppercase tracking-[0.1em] text-white/50">
               Piloting now in Ikeja, Lagos

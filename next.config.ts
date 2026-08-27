@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   // sits behind this same origin check that the whole form read as inert.
   // Add a real device's LAN IP here when testing on one; it will need
   // updating if DHCP hands out a different address later.
-  allowedDevOrigins: ['192.168.1.63'],
+  allowedDevOrigins: ['192.168.1.63', '192.168.43.153'],
   experimental: {
     // The commerce, payment and inventory modules all run server-side only.
     serverActions: { bodySizeLimit: '2mb' },

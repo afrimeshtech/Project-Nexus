@@ -71,7 +71,7 @@ export default async function FraudPage({
           }
         />
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
           <div className="space-y-2">
             {alerts.length ? (
               alerts.map((alert) => (

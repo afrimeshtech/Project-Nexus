@@ -94,7 +94,7 @@ export default async function SourcePage({
             title="Restock in one step"
             subtitle="Everything at or below its reorder level, sourced from a single supplier"
           />
-          <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
+          <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
             <div>
               {lowStock.length ? (
                 <div className="flex flex-wrap gap-2">

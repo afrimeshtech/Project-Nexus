@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/Icon'
 import { Wordmark } from '@/components/brand/Logo'
-import { Badge, Thumb, inputWithIconClass } from '@/components/ui'
+import { Thumb, inputWithIconClass } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentOrganisation, currentUser } from '@/lib/auth'
 import { ORG_LABEL, type OrgType } from '@/lib/tiers'
@@ -229,23 +229,49 @@ export async function PartnerShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/*
+         * Forest Ground, like every other shell's header — DESIGN.md, Do:
+         * "frame every screen in Forest Ground" and Navigation: "Header:
+         * Forest Ground bar". This bar was `bg-surface`, which made the
+         * retailer's dashboard the one persona whose screen was not framed:
+         * on a desktop the green survived only as the plate behind the
+         * wordmark in the rail, and on a phone — where the rail is hidden
+         * outright — there was no brand ground anywhere on the page.
+         *
+         * The wordmark comes with it. The phone header used to carry a bare
+         * chart glyph, so the one surface a shopkeeper actually works on was
+         * also the one that never said whose product it was.
+         */}
         <header
-          className="sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-line-soft bg-surface px-4 sm:px-6"
-          style={{ zIndex: 'var(--z-sticky)' }}
+          className="bar-depth sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-bar-line bg-bar px-4 sm:px-6"
+          style={{ zIndex: 'var(--z-bar)' }}
         >
-          <Link href="/partner" className="lg:hidden">
+          <Link href="/partner" className="flex items-center lg:hidden">
             <span className="sr-only">AfriMesh partner dashboard</span>
-            <Icon name="chart" size={22} className="text-brand-deep" />
+            <Wordmark size="sm" priority />
           </Link>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            {/* Not `Badge`. Its tones are mixed for a light card — `success`
+                is a #1a6b45 tint under #14603f ink, which on Forest Ground is
+                green on green and gone. Verified reads as plain bar ink in an
+                outlined chip; pending keeps the solid amber, whose dark ink
+                clears any ground and matches the banner below.
+
+                Hidden below `sm`: at 360px the bar is already carrying the
+                lockup, messages and sign-out, and an unverified retailer is
+                told so by that full-width banner two lines further down. */}
             {org.verification === 'verified' ? (
-              <Badge tone="success">Verified</Badge>
+              <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
+                Verified
+              </span>
             ) : (
-              <Badge tone="warning">Pending review</Badge>
+              <span className="hidden items-center rounded-full bg-warning px-2 py-0.5 text-xs font-medium text-warning-ink sm:inline-flex">
+                Pending review
+              </span>
             )}
             <Link
               href="/messages"
-              className="icon-button hover:icon-button-hover relative"
+              className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
               aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
             >
               <Icon name="chat" size={18} />
@@ -253,22 +279,26 @@ export async function PartnerShell({
                 <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
               )}
             </Link>
+            {/* Both of these are secondary trips off the dashboard, and on a
+                360px phone they were pushing the bar's contents into each
+                other. They stay one tap away in the rail and the scroll
+                strip; here they wait for the room to exist. */}
             <Link
               href="/contact?from=partner"
-              className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
+              className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
             >
               Contact us
             </Link>
             <Link
               href="/"
-              className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
+              className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
             >
               Storefront
             </Link>
             <form action={logoutAction} className="lg:hidden">
               <button
                 type="submit"
-                className="rounded-brand px-3 py-1.5 text-sm font-medium text-muted hover:bg-surface-muted hover:text-ink"
+                className="whitespace-nowrap rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink"
               >
                 Sign out
               </button>

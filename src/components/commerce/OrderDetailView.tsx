@@ -61,7 +61,7 @@ export async function OrderDetailView({
         <OrderProgress status={order.status} />
       </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
+      <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1fr_22rem]">
         <div className="space-y-4">
           <Card>
             <SectionHeading title="Items" />

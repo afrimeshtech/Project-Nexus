@@ -63,13 +63,26 @@ export default function ShowcasePage() {
                 the Rationed Accent Rule allows. Routed through /enter rather
                 than straight to "/": a guest who clicks through should not
                 be shown this same pitch again on their next visit — see
-                middleware.ts and the afm_seen_landing cookie it checks. */}
-            <LinkButton href="/enter?next=/" variant="secondary" className="hidden sm:inline-flex">
-              Browse nearby stock
-            </LinkButton>
-            <LinkButton href="/login" variant="primary" className="hidden sm:inline-flex">
-              Sign in
-            </LinkButton>
+                middleware.ts and the afm_seen_landing cookie it checks.
+
+                Visibility toggle lives on this wrapper, not on the buttons
+                themselves: LinkButton's own base classes hardcode
+                `inline-flex` unconditionally, and stacking a competing
+                `hidden` at the same (unprefixed) cascade layer on the button
+                is a coin flip — Tailwind resolves same-layer utility
+                conflicts by source scan order, not by class-list order, so
+                `inline-flex` was winning and showing both buttons below the
+                sm breakpoint they were meant to disappear at. A wrapper with
+                no competing display utility of its own doesn't have that
+                fight. */}
+            <div className="hidden items-center gap-2 sm:flex">
+              <LinkButton href="/enter?next=/" variant="secondary">
+                Browse nearby stock
+              </LinkButton>
+              <LinkButton href="/login" variant="primary">
+                Sign in
+              </LinkButton>
+            </div>
 
             {/* A native disclosure rather than client state — a real,
                 keyboard-accessible toggle with no JS required. */}

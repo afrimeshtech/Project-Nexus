@@ -17,7 +17,9 @@ const NAV_LINKS = [
   { label: 'Contact us', href: '/contact?from=showcase' },
 ]
 
-const CATEGORY_RAIL = ['Groceries', 'Pharmacy', 'Building materials']
+// The grocery MVP's categories (src/lib/launch-categories.ts).
+// FUTURE-CATEGORIES: 'Pharmacy', 'Building materials' - back when they launch.
+const CATEGORY_RAIL = ['Groceries', 'Beverages']
 
 /**
  * A standalone campaign surface — deliberately not `ConsumerShell`. The

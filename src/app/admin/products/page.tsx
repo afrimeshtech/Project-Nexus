@@ -79,7 +79,8 @@ export default async function AdminProductsPage({
         LIMIT 100`,
       values,
     ),
-    listCategories(),
+    // The console manages the whole catalogue, silenced categories included.
+    listCategories({ includeSilenced: true }),
   ])
 
   const href = (patch: Record<string, string>) => {

@@ -1,5 +1,6 @@
 import { getSql } from '@/db/client'
 import { publish, EVENT } from '@/modules/events/service'
+import { LAUNCH_CATEGORY_SLUGS } from '@/lib/launch-categories'
 
 /**
  * MODULE: catalog - the Master Product Catalogue
@@ -188,9 +189,22 @@ export async function listProductSlugs(
   )
 }
 
-export async function listCategories(): Promise<Category[]> {
+/**
+ * Categories to list, limited to the ones the MVP launches with (see
+ * `LAUNCH_CATEGORY_SLUGS`). `includeSilenced` is for the admin console, which
+ * manages the whole catalogue and has to be able to filter all of it.
+ */
+export async function listCategories(
+  opts: { includeSilenced?: boolean } = {},
+): Promise<Category[]> {
   const sql = await getSql()
-  return sql.query<Category>(`SELECT * FROM categories ORDER BY sort_order ASC, name ASC`)
+  if (opts.includeSilenced) {
+    return sql.query<Category>(`SELECT * FROM categories ORDER BY sort_order ASC, name ASC`)
+  }
+  return sql.query<Category>(
+    `SELECT * FROM categories WHERE slug = ANY($1::text[]) ORDER BY sort_order ASC, name ASC`,
+    [[...LAUNCH_CATEGORY_SLUGS]],
+  )
 }
 
 /**

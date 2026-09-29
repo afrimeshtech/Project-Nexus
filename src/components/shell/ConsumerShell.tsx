@@ -79,6 +79,10 @@ export async function ConsumerShell({
               <HeaderMenu
                 accountLabel={user ? user.full_name : 'AfriMesh'}
                 links={[
+                  // First, so the way back to the storefront is one tap from
+                  // anywhere. The logo also leads home, but nothing says so,
+                  // and on a desktop there is no bottom nav with a Home tab.
+                  { href: '/', label: 'Shop', icon: 'home' as const },
                   ...(user
                     ? [{ href: '/account', label: 'Your account', icon: 'user' as const }]
                     : [{ href: '/login', label: 'Sign in', icon: 'user' as const }]),

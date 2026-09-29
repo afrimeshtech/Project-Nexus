@@ -289,25 +289,57 @@ export async function deposit(
   return tx ? run(tx) : withTx(run)
 }
 
-/** Cash out to a bank account. */
+/**
+ * Cash out to a bank account. Takes `tx` so a payout can debit the wallet and
+ * record itself in one transaction - neither may exist without the other.
+ */
 export async function withdraw(
   ownerType: WalletOwnerType,
   ownerId: string,
   amount: number,
   narration = 'Withdrawal',
+  tx?: Sql,
+  ledgerReference?: string,
 ) {
-  return withTx(async (db) => {
+  const run = async (db: Sql) => {
     const wallet = await ensureWallet(ownerType, ownerId, DEFAULT_CURRENCY, db)
     if (wallet.available < amount) throw new InsufficientFundsError(wallet.available)
     const float = await platformWallet(PLATFORM_FLOAT, db)
     return postTransaction(db, {
       type: 'withdrawal',
       narration,
+      reference: ledgerReference,
       lines: [
         { walletId: wallet.id, direction: 'debit', amount },
         { walletId: float.id, direction: 'credit', amount },
       ],
     })
+  }
+  return tx ? run(tx) : withTx(run)
+}
+
+/**
+ * Put a withdrawal back: the bank transfer failed or was reversed, so the
+ * money never left and returns to the wallet it came from.
+ */
+export async function reverseWithdrawal(
+  tx: Sql,
+  ownerType: WalletOwnerType,
+  ownerId: string,
+  amount: number,
+  narration: string,
+  ledgerReference?: string,
+) {
+  const wallet = await ensureWallet(ownerType, ownerId, DEFAULT_CURRENCY, tx)
+  const float = await platformWallet(PLATFORM_FLOAT, tx)
+  return postTransaction(tx, {
+    type: 'refund',
+    narration,
+    reference: ledgerReference,
+    lines: [
+      { walletId: float.id, direction: 'debit', amount },
+      { walletId: wallet.id, direction: 'credit', amount },
+    ],
   })
 }
 

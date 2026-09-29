@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { currentUser, organisationFor } from '@/lib/auth'
-import { deposit, withdraw, InsufficientFundsError } from '@/modules/wallet/service'
+import { deposit } from '@/modules/wallet/service'
 import { attachProviderRef, createPayment, gateway, markPayment } from '@/modules/payments/service'
 import { withTx } from '@/db/client'
 import { toMinor } from '@/lib/money'
@@ -22,11 +22,6 @@ const topUpSchema = z.object({
     message: `Single top-ups are capped at ₦${MAX_TOPUP_NAIRA.toLocaleString()}.`,
   }),
   method: paymentMethod.catch('card'),
-  scope: z.enum(['user', 'organisation']).catch('user'),
-})
-
-const withdrawSchema = z.object({
-  amount: nairaAmount('Withdrawal amount', 100),
   scope: z.enum(['user', 'organisation']).catch('user'),
 })
 
@@ -115,37 +110,6 @@ export async function topUpAction(
   return { notice: `₦${naira.toLocaleString()} added to your wallet.` }
 }
 
-export async function withdrawAction(
-  _prev: WalletActionState,
-  formData: FormData,
-): Promise<WalletActionState> {
-  const user = await currentUser()
-  if (!user) redirect('/login?next=/wallet')
-
-  const parsed = parseForm(withdrawSchema, formData)
-  if (!parsed.ok) return { error: parsed.error }
-  const { amount: naira, scope } = parsed.data
-
-  let ownerType: 'user' | 'organisation' = 'user'
-  let ownerId = user.id
-  if (scope === 'organisation') {
-    const org = await organisationFor('funds')
-    if (!org) return { error: 'Only the business owner can move business funds' }
-    ownerType = 'organisation'
-    ownerId = org.id
-  }
-
-  try {
-    await withdraw(ownerType, ownerId, toMinor(naira), 'Withdrawal to bank account')
-  } catch (err) {
-    if (err instanceof InsufficientFundsError) {
-      return { error: 'Your available balance is not enough for that withdrawal' }
-    }
-    console.error('[wallet] withdrawal failed', err)
-    return { error: 'We could not process that withdrawal.' }
-  }
-
-  revalidatePath('/wallet')
-  revalidatePath('/partner/wallet')
-  return { notice: `₦${naira.toLocaleString()} is on its way to your bank account.` }
-}
+// Withdrawals moved to app/actions/payouts.ts: they now go to a saved,
+// name-verified bank account through the payouts module, instead of only
+// debiting the ledger.

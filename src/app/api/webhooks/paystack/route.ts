@@ -4,6 +4,7 @@ import {
   failPaymentByProviderRef,
   type SettlementOutcome,
 } from '@/modules/orders/service'
+import { completePayout, failPayout, isPayoutReference } from '@/modules/payouts/service'
 
 /**
  * Paystack webhook — the only thing on this platform that turns an external
@@ -73,6 +74,30 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
+    /*
+     * Transfers out of our Paystack balance - wallet withdrawals. Their
+     * reference is a payout's, and they settle that payout: success marks it
+     * paid, failed/reversed returns the money to the wallet. A transfer event
+     * with any other reference falls through to the payment handling below.
+     */
+    if (event.event.startsWith('transfer.') && (await isPayoutReference(reference))) {
+      const meta = { provider: PROVIDER, id: eventId, type: event.event }
+      const result =
+        event.event === 'transfer.success'
+          ? await completePayout(reference, meta)
+          : event.event === 'transfer.failed' || event.event === 'transfer.reversed'
+            ? await failPayout(
+                reference,
+                event.data?.reason ??
+                  event.data?.gateway_response ??
+                  `Transfer ${event.event.slice(9)}`,
+                meta,
+              )
+            : null
+      if (result) console.log(`[paystack:webhook] ${event.event} ${reference} -> ${result.outcome}`)
+      return ack('ignored')
+    }
+
     switch (event.event) {
       case 'charge.success': {
         const outcome = await settlePaymentByProviderRef(
@@ -164,5 +189,7 @@ interface PaystackEvent {
     currency?: string
     status?: string
     gateway_response?: string
+    /** Transfers carry their failure reason here. */
+    reason?: string
   }
 }

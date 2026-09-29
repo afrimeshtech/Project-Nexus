@@ -6,6 +6,8 @@ import { requireOrgCapability } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getBalance, statement } from '@/modules/wallet/service'
 import { sellerKpis } from '@/modules/analytics/service'
+import { listBankAccounts, listBanks, listPayouts } from '@/modules/payouts/service'
+import { PayoutHistory } from '@/components/commerce/PayoutHistory'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Business wallet' }
@@ -13,8 +15,16 @@ export const metadata = { title: 'Business wallet' }
 export default async function PartnerWalletPage() {
   const { org } = await requireOrgCapability('funds', '/partner/wallet')
 
+  const owner = { type: 'organisation' as const, id: org.id }
   const wallet = await getBalance('organisation', org.id)
-  const [lines, kpis] = await Promise.all([statement(wallet.id, 50), sellerKpis(org.id)])
+  const [lines, kpis, accounts, banks, payouts] = await Promise.all([
+    statement(wallet.id, 50),
+    sellerKpis(org.id),
+    listBankAccounts(owner),
+    // A provider outage must not take the balance and statement down with it.
+    listBanks().catch(() => []),
+    listPayouts(owner, 5),
+  ])
 
   return (
     <PartnerShell active="/partner/wallet">
@@ -59,8 +69,11 @@ export default async function PartnerWalletPage() {
               <TopUpForm scope="organisation" />
             </Card>
             <Card>
-              <SectionHeading title="Withdraw" subtitle="To your registered bank account" />
-              <WithdrawForm scope="organisation" />
+              <SectionHeading title="Withdraw" subtitle="To the business's bank account" />
+              <div className="space-y-4">
+                <WithdrawForm scope="organisation" accounts={accounts} banks={banks} />
+                <PayoutHistory payouts={payouts} />
+              </div>
             </Card>
           </div>
         </div>

@@ -5,14 +5,23 @@ import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getBalance, statement } from '@/modules/wallet/service'
+import { listBankAccounts, listBanks, listPayouts } from '@/modules/payouts/service'
+import { PayoutHistory } from '@/components/commerce/PayoutHistory'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Wallet' }
 
 export default async function WalletPage() {
   const user = await requireUser('/wallet')
+  const owner = { type: 'user' as const, id: user.id }
   const wallet = await getBalance('user', user.id)
-  const lines = await statement(wallet.id, 40)
+  const [lines, accounts, banks, payouts] = await Promise.all([
+    statement(wallet.id, 40),
+    listBankAccounts(owner),
+    // A provider outage must not take the balance and statement down with it.
+    listBanks().catch(() => []),
+    listPayouts(owner, 5),
+  ])
 
   return (
     <ConsumerShell search={false}>
@@ -48,8 +57,11 @@ export default async function WalletPage() {
               <TopUpForm />
             </Card>
             <Card>
-              <SectionHeading title="Withdraw" />
-              <WithdrawForm />
+              <SectionHeading title="Withdraw" subtitle="To your own bank account" />
+              <div className="space-y-4">
+                <WithdrawForm accounts={accounts} banks={banks} />
+                <PayoutHistory payouts={payouts} />
+              </div>
             </Card>
           </div>
         </div>

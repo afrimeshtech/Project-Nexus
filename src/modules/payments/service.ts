@@ -131,13 +131,14 @@ function paystackSecret(): string {
   return key
 }
 
-interface PaystackEnvelope<T> {
+export interface PaystackEnvelope<T> {
   status: boolean
   message?: string
   data?: T
 }
 
-async function paystackFetch<T>(
+/** Shared with the payouts module, which drives Paystack's Transfers API. */
+export async function paystackFetch<T>(
   path: string,
   init: { method: 'GET' | 'POST'; body?: unknown },
 ): Promise<PaystackEnvelope<T>> {

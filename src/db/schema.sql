@@ -629,6 +629,62 @@ CREATE TABLE webhook_events (
 CREATE INDEX webhook_events_received_idx ON webhook_events (provider, received_at DESC);
 
 -- ---------------------------------------------------------------------------
+-- MODULE: payouts - withdrawals from a wallet to a Nigerian bank account
+--
+-- A bank account is saved only after the provider has resolved the account
+-- number to a name, and that name is what the owner confirmed. The provider's
+-- recipient code is kept so a repeat withdrawal needs no second lookup.
+--
+-- A payout debits the wallet when it is requested, in the same transaction as
+-- its own row, and is then sent through the provider. A failed or reversed
+-- transfer puts the money back; nothing is ever paid out that the ledger did
+-- not first take from the wallet.
+-- ---------------------------------------------------------------------------
+
+CREATE TYPE payout_status AS ENUM ('processing', 'paid', 'failed');
+
+CREATE TABLE bank_accounts (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_type         TEXT NOT NULL CHECK (owner_type IN ('user', 'organisation')),
+  owner_id           UUID NOT NULL,
+  bank_code          TEXT NOT NULL,
+  bank_name          TEXT NOT NULL,
+  account_number     TEXT NOT NULL CHECK (account_number ~ '^[0-9]{10}$'),
+  account_name       TEXT NOT NULL,
+  recipient_code     TEXT,
+  created_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (owner_type, owner_id, bank_code, account_number)
+);
+
+CREATE INDEX bank_accounts_owner_idx ON bank_accounts (owner_type, owner_id);
+
+CREATE TABLE payouts (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- Ours, sent to the provider and echoed back on its webhooks.
+  reference            TEXT NOT NULL UNIQUE,
+  owner_type           TEXT NOT NULL CHECK (owner_type IN ('user', 'organisation')),
+  owner_id             UUID NOT NULL,
+  -- Kept even if the account is later removed: the payout must stay readable.
+  bank_account_id      UUID REFERENCES bank_accounts(id) ON DELETE SET NULL,
+  bank_name            TEXT NOT NULL,
+  account_number       TEXT NOT NULL,
+  account_name         TEXT NOT NULL,
+  amount               BIGINT NOT NULL CHECK (amount > 0),
+  currency             TEXT NOT NULL DEFAULT 'NGN',
+  status               payout_status NOT NULL DEFAULT 'processing',
+  provider             TEXT NOT NULL,
+  provider_ref         TEXT,
+  failure_reason       TEXT,
+  requested_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at         TIMESTAMPTZ
+);
+
+CREATE INDEX payouts_owner_idx  ON payouts (owner_type, owner_id, created_at DESC);
+CREATE INDEX payouts_status_idx ON payouts (status) WHERE status = 'processing';
+
+-- ---------------------------------------------------------------------------
 -- MODULE: logistics
 -- ---------------------------------------------------------------------------
 

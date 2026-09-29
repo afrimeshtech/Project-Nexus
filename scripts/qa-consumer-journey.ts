@@ -4,7 +4,8 @@
  *
  *   register by email with a one-time code -> sign in by email code ->
  *   fund the wallet -> place and pay for an order -> track it ->
- *   seller prepares, dispatches, delivers -> buyer confirms receipt.
+ *   seller prepares, dispatches, delivers -> buyer confirms receipt ->
+ *   save a name-checked bank account -> withdraw -> a failed transfer refunds.
  *
  * Point it at a throwaway copy of the database - it creates real rows:
  *
@@ -33,6 +34,15 @@ import {
   placeOrder,
 } from '../src/modules/orders/service.ts'
 import { toMinor } from '../src/lib/money.ts'
+import {
+  addBankAccount,
+  failPayout,
+  listBanks,
+  listPayouts,
+  requestPayout,
+  resolveBankAccount,
+} from '../src/modules/payouts/service.ts'
+import { readdirSync, readFileSync } from 'node:fs'
 
 if (process.env.DATABASE_URL || !process.env.PGLITE_DIR || process.env.PGLITE_DIR === '.pgdata') {
   console.error('! point PGLITE_DIR at a copy of the database; this script writes to it')
@@ -54,6 +64,13 @@ async function check(name: string, fn: () => Promise<void>) {
 
 async function main() {
   const sql = await getSql()
+  // Bring the copy up to date; every migration is safe to re-run.
+  const dir = new URL('../src/db/migrations/', import.meta.url)
+  for (const file of readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()) {
+    await sql.exec(readFileSync(new URL(file, dir), 'utf8'))
+  }
   const stamp = Date.now().toString(36)
   const email = `qa.shopper.${stamp}@example.ng`
   let userId = ''
@@ -164,7 +181,10 @@ async function main() {
 
   await check('track the order: it is listed and has a timeline', async () => {
     const mine = await ordersForBuyer(userId)
-    assert.ok(mine.some((o) => o.id === orderId), 'the order is on the buyer’s orders list')
+    assert.ok(
+      mine.some((o) => o.id === orderId),
+      'the order is on the buyer’s orders list',
+    )
     const timeline = await orderTimeline(orderId)
     assert.deepEqual(
       timeline.map((t) => t.status),
@@ -178,10 +198,11 @@ async function main() {
     await advanceOrder(orderId, 'dispatched', owner)
     await advanceOrder(orderId, 'delivered', owner)
     const tracked = await orderTimeline(orderId)
-    assert.deepEqual(
-      tracked.map((t) => t.status).slice(-3),
-      ['preparing', 'dispatched', 'delivered'],
-    )
+    assert.deepEqual(tracked.map((t) => t.status).slice(-3), [
+      'preparing',
+      'dispatched',
+      'delivered',
+    ])
   })
 
   await check('the buyer confirms the order was received', async () => {
@@ -195,6 +216,88 @@ async function main() {
       Number(sellerAfter.available) > Number(sellerBefore.available),
       'escrow was released to the seller',
     )
+  })
+
+  // --- Withdrawals to a bank --------------------------------------------------
+  const owner = { type: 'user' as const, id: userId }
+  let accountId = ''
+
+  await check('a bank account is name-checked before it is saved', async () => {
+    const banks = await listBanks()
+    assert.ok(
+      banks.some((b) => b.code === '058'),
+      'the bank list includes GTBank',
+    )
+    const resolved = await resolveBankAccount('0123456789', '058')
+    assert.equal(resolved.bankName, 'Guaranty Trust Bank')
+    assert.equal(resolved.accountName, 'TEST ACCOUNT 6789')
+    await assert.rejects(resolveBankAccount('0123450000', '058'), /could not find/)
+    await assert.rejects(resolveBankAccount('12345', '058'), /10 digits/)
+    const account = await addBankAccount(
+      owner,
+      { accountNumber: '0123456789', bankCode: '058' },
+      userId,
+    )
+    accountId = account.id
+    assert.equal(account.account_name, 'TEST ACCOUNT 6789')
+    await assert.rejects(
+      addBankAccount(owner, { accountNumber: '0123456789', bankCode: '058' }, userId),
+      /already saved/,
+    )
+  })
+
+  await check('withdraw to the saved account', async () => {
+    const before = Number((await getBalance('user', userId)).available)
+    const payout = await requestPayout(
+      owner,
+      { bankAccountId: accountId, amount: toMinor(2_000) },
+      userId,
+    )
+    assert.equal(payout.status, 'paid')
+    assert.equal(payout.account_name, 'TEST ACCOUNT 6789')
+    const after = Number((await getBalance('user', userId)).available)
+    assert.equal(after, before - toMinor(2_000), 'exactly the withdrawal left the wallet')
+    assert.equal((await listPayouts(owner))[0].id, payout.id)
+  })
+
+  await check(
+    'withdrawals below the minimum, beyond the balance or to another’s account are refused',
+    async () => {
+      await assert.rejects(
+        requestPayout(owner, { bankAccountId: accountId, amount: toMinor(50) }, userId),
+        /smallest/,
+      )
+      await assert.rejects(
+        requestPayout(owner, { bankAccountId: accountId, amount: toMinor(10_000_000) }, userId),
+        /Insufficient/,
+      )
+      const stranger = { type: 'user' as const, id: shop!.owner_user_id }
+      await assert.rejects(
+        requestPayout(stranger, { bankAccountId: accountId, amount: toMinor(1_000) }, stranger.id),
+        /saved bank accounts/,
+      )
+    },
+  )
+
+  await check('a failed transfer returns the money to the wallet, once', async () => {
+    const payout = await requestPayout(
+      owner,
+      { bankAccountId: accountId, amount: toMinor(1_000) },
+      userId,
+    )
+    // The mock pays instantly; wind it back to in-flight to exercise the
+    // failure path Paystack's transfer.failed webhook takes.
+    await sql.query(`UPDATE payouts SET status = 'processing', completed_at = NULL WHERE id = $1`, [
+      payout.id,
+    ])
+    const before = Number((await getBalance('user', userId)).available)
+    const event = { provider: 'qa', id: `transfer.failed:${payout.id}`, type: 'transfer.failed' }
+    const first = await failPayout(payout.reference, 'Account dormant', event)
+    assert.equal(first.outcome, 'failed')
+    const again = await failPayout(payout.reference, 'Account dormant', event)
+    assert.equal(again.outcome, 'already_settled', 'a redelivered webhook changes nothing')
+    const after = Number((await getBalance('user', userId)).available)
+    assert.equal(after, before + toMinor(1_000), 'refunded exactly once')
   })
 
   console.log(`\n${step} checks, ${process.exitCode ? 'FAILED' : 'all passed'}`)

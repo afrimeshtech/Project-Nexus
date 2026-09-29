@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import { getSql } from '@/db/client'
 import { publish, EVENT } from '@/modules/events/service'
 import { queueNotification } from '@/modules/notifications/service'
+import { emailTransport, sendOtpEmail } from '@/modules/notifications/email'
 
 /**
  * MODULE: identity
@@ -97,6 +98,8 @@ export interface RegisterInput {
   address?: string | null
   city?: string | null
   state?: string | null
+  /** Set only once the address has been proven with a one-time code. */
+  emailVerified?: boolean
 }
 
 export async function registerUser(input: RegisterInput): Promise<User> {
@@ -116,8 +119,8 @@ export async function registerUser(input: RegisterInput): Promise<User> {
 
   const user = await sql.one<User>(
     `INSERT INTO users (full_name, phone, email, password_hash, role, default_lat, default_lng,
-                        default_address, city, state, phone_verified)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                        default_address, city, state, phone_verified, email_verified)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
      RETURNING *`,
     [
       input.fullName.trim(),
@@ -131,6 +134,7 @@ export async function registerUser(input: RegisterInput): Promise<User> {
       input.city ?? null,
       input.state ?? null,
       false,
+      Boolean(input.emailVerified && email),
     ],
   )
   if (!user) throw new Error('Failed to create user')
@@ -190,28 +194,48 @@ export async function authenticateWithPassword(
 export async function requestOtp(
   destination: string,
   purpose: 'login' | 'register' | 'reset' = 'login',
-): Promise<{ sent: true; devCode?: string }> {
+): Promise<{ sent: true; destination: string; devCode?: string }> {
   const sql = await getSql()
-  const dest = normalisePhone(destination) ?? destination.trim().toLowerCase()
+  const dest = otpDestination(destination)
+  const channel = isEmail(dest) ? 'email' : 'sms'
+  const emailLive = channel === 'email' && emailTransport() === 'resend'
+
+  // A code shown on screen is only acceptable on a developer's machine. On a
+  // live site it would let anyone sign in as any address they can type.
+  if (channel === 'email' && !emailLive && process.env.NODE_ENV === 'production') {
+    throw new OtpDeliveryError('Email sign-in codes are not configured on this server.')
+  }
+
   const code = String(randomInt(100_000, 999_999))
 
   await sql.query(
     `INSERT INTO otp_codes (destination, channel, code_hash, purpose, expires_at)
      VALUES ($1, $2, $3, $4, now() + ($5 || ' minutes')::interval)`,
-    [dest, dest.startsWith('+') ? 'sms' : 'email', sha256(code), purpose, String(OTP_TTL_MINUTES)],
+    [dest, channel, sha256(code), purpose, String(OTP_TTL_MINUTES)],
   )
+
+  if (emailLive) {
+    try {
+      await sendOtpEmail(dest, code, purpose, OTP_TTL_MINUTES)
+    } catch (err) {
+      console.error('[otp] email delivery failed', err)
+      throw new OtpDeliveryError('We could not email your code. Please try again.')
+    }
+  }
 
   await publish({
     type: EVENT.OtpIssued,
     aggregateType: 'otp',
     aggregateId: dest,
-    payload: { purpose },
+    payload: { purpose, channel },
   })
 
-  const devMode = (process.env.NOTIFICATION_TRANSPORT ?? 'console') === 'console'
+  const devMode = !emailLive && (process.env.NOTIFICATION_TRANSPORT ?? 'console') === 'console'
   if (devMode) console.log(`[otp] ${dest} -> ${code} (${purpose})`)
 
-  return devMode ? { sent: true, devCode: code } : { sent: true }
+  return devMode
+    ? { sent: true, destination: dest, devCode: code }
+    : { sent: true, destination: dest }
 }
 
 export async function verifyOtp(
@@ -220,7 +244,7 @@ export async function verifyOtp(
   purpose: 'login' | 'register' | 'reset' = 'login',
 ): Promise<boolean> {
   const sql = await getSql()
-  const dest = normalisePhone(destination) ?? destination.trim().toLowerCase()
+  const dest = otpDestination(destination)
 
   const row = await sql.one<{ id: string; attempts: number }>(
     `SELECT id, attempts FROM otp_codes
@@ -271,6 +295,50 @@ export async function authenticateWithOtp(
   await sql.query(`UPDATE users SET phone_verified = TRUE WHERE id = $1`, [user.id])
   await touchLogin(user.id)
   return { user: { ...user, phone_verified: true }, created }
+}
+
+/**
+ * Log in by email + OTP, creating the account on first use - the email twin
+ * of `authenticateWithOtp`. Proving you can read the inbox is what verifies
+ * the address, so a successful code always marks it verified.
+ */
+export async function authenticateWithEmailOtp(
+  emailRaw: string,
+  code: string,
+): Promise<{ user: User; created: boolean }> {
+  const ok = await verifyOtp(emailRaw, code, 'login')
+  if (!ok) throw new AuthError('That code is incorrect or has expired')
+
+  const sql = await getSql()
+  const email = emailRaw.trim().toLowerCase()
+  let user = await sql.one<User>(`SELECT * FROM users WHERE email = $1`, [email])
+  const created = !user
+
+  if (!user) {
+    user = await registerUser({ fullName: 'AfriMesh User', email, emailVerified: true })
+  }
+  if (user.status === 'suspended') throw new AuthError('This account has been suspended')
+  await sql.query(`UPDATE users SET email_verified = TRUE WHERE id = $1`, [user.id])
+  await touchLogin(user.id)
+  return { user: { ...user, email_verified: true }, created }
+}
+
+/**
+ * Refuse a registration before any code is sent, so a taken address is
+ * reported at the first step rather than after the person has fetched a code.
+ */
+export async function assertContactAvailable(input: {
+  phone?: string | null
+  email?: string | null
+}): Promise<void> {
+  const sql = await getSql()
+  const phone = normalisePhone(input.phone)
+  const email = input.email?.trim().toLowerCase() || null
+  const clash = await sql.one<{ id: string }>(
+    `SELECT id FROM users WHERE ($1::text IS NOT NULL AND phone = $1) OR ($2::text IS NOT NULL AND email = $2)`,
+    [phone, email],
+  )
+  if (clash) throw new ValidationError('An account already exists with those details')
 }
 
 async function touchLogin(userId: string) {
@@ -329,6 +397,22 @@ export async function revokeSession(token: string | undefined): Promise<void> {
  * Normalise Nigerian numbers to E.164. Users type 0803..., 234803..., +234803...
  * and all three must resolve to one account.
  */
+export function isEmail(value: string): boolean {
+  return value.includes('@')
+}
+
+/**
+ * Where a one-time code goes, in the form it is stored under. Email is decided
+ * first and explicitly: `normalisePhone` strips everything but digits, so an
+ * address like "ada2@example.ng" would otherwise be stored as the "phone" "2"
+ * and its code could never be matched.
+ */
+export function otpDestination(input: string): string {
+  const trimmed = input.trim()
+  if (isEmail(trimmed)) return trimmed.toLowerCase()
+  return normalisePhone(trimmed) ?? trimmed.toLowerCase()
+}
+
 export function normalisePhone(input?: string | null): string | null {
   if (!input) return null
   const digits = input.replace(/[^\d+]/g, '')
@@ -347,3 +431,5 @@ function stripSecret(row: User & { password_hash?: string | null }): User {
 
 export class ValidationError extends Error {}
 export class AuthError extends Error {}
+/** A code could not be delivered; safe to show the message to the person. */
+export class OtpDeliveryError extends Error {}

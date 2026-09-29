@@ -5,12 +5,17 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import {
+  assertContactAvailable,
+  authenticateWithEmailOtp,
   authenticateWithOtp,
   authenticateWithPassword,
   createSession,
+  isEmail,
   registerUser,
   requestOtp,
+  verifyOtp,
   AuthError,
+  OtpDeliveryError,
   ValidationError,
 } from '@/modules/identity/service'
 import { attachReferral } from '@/modules/rewards/service'
@@ -33,6 +38,20 @@ export interface FormState {
   error?: string
   notice?: string
   devCode?: string
+  /**
+   * Where the code went, as the server stored it. The verify step posts this
+   * back rather than a copy held in client state: a number typed before the
+   * page hydrated never reached that state, and verification then failed with
+   * "Enter a valid phone number" on a code that had been sent correctly.
+   */
+  destination?: string
+  /**
+   * An email registration's first-step details, returned for the code step to
+   * resubmit. It includes the password the person just typed; it goes back
+   * only to the browser that sent it, and is never stored before the account
+   * is created.
+   */
+  registration?: Record<string, string>
 }
 
 const passwordLoginSchema = z.object({
@@ -41,14 +60,34 @@ const passwordLoginSchema = z.object({
   next: internalPath,
 })
 
-const otpRequestSchema = z.object({ phone })
+const otpCode = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, { message: 'Enter the 6-digit code we sent you.' })
+
+// A code can go to a phone or an email address; which one is decided by the
+// shape of what was typed.
+const phoneOrEmail = z
+  .string()
+  .trim()
+  .min(1, { message: 'Enter your phone number or email address.' })
+  .superRefine((value, ctx) => {
+    const check = value.includes('@') ? email.safeParse(value) : phone.safeParse(value)
+    if (!check.success) {
+      ctx.addIssue({
+        code: 'custom',
+        message: value.includes('@')
+          ? 'Enter a valid email address.'
+          : 'Enter a valid phone number.',
+      })
+    }
+  })
+
+const otpRequestSchema = z.object({ identifier: phoneOrEmail })
 
 const otpVerifySchema = z.object({
-  phone,
-  code: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, { message: 'Enter the 6-digit code we sent you.' }),
+  identifier: phoneOrEmail,
+  code: otpCode,
   // Phone + OTP creates the account on first use, so it is a sign-up path as
   // much as a sign-in one and has to carry an invitation the same way.
   referralCode: referralCode,
@@ -71,6 +110,8 @@ const registerSchema = z
     // allowed to fail a registration - see below.
     referralCode: referralCode,
     next: internalPath,
+    // Present only on the second step of an email registration.
+    code: otpCode.optional().or(z.literal('')),
   })
   .refine((value) => value.phone || value.email, {
     message: 'Enter a phone number or an email address.',
@@ -132,25 +173,35 @@ export async function loginWithPasswordAction(
 export async function requestOtpAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(otpRequestSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
+  const identifier = parsed.data.identifier
 
   try {
-    const result = await requestOtp(parsed.data.phone, 'login')
+    const result = await requestOtp(identifier, 'login')
     return {
-      notice: `We sent a 6-digit code to ${parsed.data.phone}.`,
+      notice: isEmail(identifier)
+        ? `We emailed a 6-digit code to ${result.destination}.`
+        : `We sent a 6-digit code to ${identifier}.`,
       devCode: result.devCode,
+      destination: result.destination,
     }
   } catch (err) {
+    if (err instanceof OtpDeliveryError) return { error: err.message }
     console.error('[auth] otp request failed', err)
     return { error: 'We could not send that code. Please try again.' }
   }
 }
 
-export async function verifyOtpAction(_prev: FormState, formData: FormData): Promise<FormState> {
+export async function verifyOtpAction(prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(otpVerifySchema, formData)
-  if (!parsed.ok) return { error: parsed.error }
+  // Keep the destination on a failed attempt, so the form stays on the code
+  // step and the person can simply try again.
+  if (!parsed.ok) return { ...prev, error: parsed.error }
+  const { identifier, code } = parsed.data
 
   try {
-    const { user, created } = await authenticateWithOtp(parsed.data.phone, parsed.data.code)
+    const { user, created } = isEmail(identifier)
+      ? await authenticateWithEmailOtp(identifier, code)
+      : await authenticateWithOtp(identifier, code)
 
     // Only on the sign-in that created the account. A returning member was
     // already part of the network, so nobody introduced them.
@@ -159,23 +210,57 @@ export async function verifyOtpAction(_prev: FormState, formData: FormData): Pro
     const token = await createSession(user.id, await sessionMeta())
     await setSessionCookie(token)
   } catch (err) {
-    if (err instanceof AuthError) return { error: err.message }
+    if (err instanceof AuthError) return { ...prev, error: err.message }
     console.error('[auth] otp verify failed', err)
-    return { error: 'We could not verify that code.' }
+    return { ...prev, error: 'We could not verify that code.' }
   }
   redirect(parsed.data.next)
 }
 
-export async function registerAction(_prev: FormState, formData: FormData): Promise<FormState> {
+/**
+ * Registration, in one or two steps.
+ *
+ * With an email address the account is not created until the address is
+ * proven: the first submit checks the details and emails a code, and the
+ * second (`code` present) verifies it and creates the account with the email
+ * already marked verified. A phone-only registration has nothing to verify by
+ * email and completes in one step, as before.
+ */
+export async function registerAction(prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(registerSchema, formData)
-  if (!parsed.ok) return { error: parsed.error }
+  if (!parsed.ok) return { ...prev, error: parsed.error }
+  const details = parsed.data
+  const emailAddress = details.email || null
 
   try {
+    if (emailAddress && !details.code) {
+      await assertContactAvailable({ phone: details.phone || null, email: emailAddress })
+      const result = await requestOtp(emailAddress, 'register')
+      return {
+        notice: `We emailed a 6-digit code to ${result.destination}. Enter it to finish creating your account.`,
+        devCode: result.devCode,
+        destination: result.destination,
+        registration: {
+          fullName: details.fullName,
+          phone: details.phone ?? '',
+          email: emailAddress,
+          password: details.password ?? '',
+          referralCode: details.referralCode ?? '',
+        },
+      }
+    }
+
+    if (emailAddress && details.code) {
+      const ok = await verifyOtp(emailAddress, details.code, 'register')
+      if (!ok) return { ...prev, error: 'That code is incorrect or has expired.' }
+    }
+
     const user = await registerUser({
-      fullName: parsed.data.fullName,
-      phone: parsed.data.phone || null,
-      email: parsed.data.email || null,
-      password: parsed.data.password || null,
+      fullName: details.fullName,
+      phone: details.phone || null,
+      email: emailAddress,
+      password: details.password || null,
+      emailVerified: Boolean(emailAddress),
     })
 
     await creditInviter(user.id, parsed.data.referralCode)
@@ -183,9 +268,12 @@ export async function registerAction(_prev: FormState, formData: FormData): Prom
     const token = await createSession(user.id, await sessionMeta())
     await setSessionCookie(token)
   } catch (err) {
-    if (err instanceof ValidationError) return { error: err.message }
+    if (err instanceof ValidationError || err instanceof OtpDeliveryError) {
+      return { ...prev, error: err.message }
+    }
+    if (err instanceof AuthError) return { ...prev, error: err.message }
     console.error('[auth] registration failed', err)
-    return { error: 'We could not create that account.' }
+    return { ...prev, error: 'We could not create that account.' }
   }
   redirect(parsed.data.next)
 }

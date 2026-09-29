@@ -19,7 +19,7 @@ import { FormError, Alert, Field, inputClass } from '@/components/ui'
 export type Method = 'otp' | 'password'
 
 const METHODS = [
-  { key: 'otp', label: 'Phone + code' },
+  { key: 'otp', label: 'One-time code' },
   { key: 'password', label: 'Password' },
 ] as const satisfies readonly { key: Method; label: string }[]
 
@@ -153,9 +153,11 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
     verifyOtpAction,
     {},
   )
-  const [phone, setPhone] = useState('')
 
-  const codeSent = Boolean(requestState.notice)
+  // The server's copy of where the code went - see `FormState.destination`.
+  const destination = requestState.destination ?? ''
+  const codeSent = Boolean(requestState.notice && destination)
+  const sentToEmail = destination.includes('@')
 
   return (
     <div className="space-y-3">
@@ -172,16 +174,17 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
 
       {!codeSent ? (
         <form action={requestFormAction} className="space-y-3">
-          <Field label="Phone number" hint="We will text you a 6-digit code." htmlFor="phone">
+          <Field
+            label="Phone number or email"
+            hint="We will send you a 6-digit code."
+            htmlFor="otp-identifier"
+          >
             <input
-              id="phone"
-              name="phone"
-              type="tel"
-              autoComplete="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              id="otp-identifier"
+              name="identifier"
+              autoComplete="username"
               className={inputClass}
-              placeholder="08030000001"
+              placeholder="08030000001 or you@example.ng"
               required
             />
           </Field>
@@ -196,13 +199,13 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
       ) : (
         <form action={verifyFormAction} className="space-y-3">
           <input type="hidden" name="next" value={next} />
-          <input type="hidden" name="phone" value={phone} />
+          <input type="hidden" name="identifier" value={destination} />
           <input type="hidden" name="referralCode" value={referralCode} />
           <Alert tone="success">{requestState.notice}</Alert>
           {requestState.devCode && (
             <Alert tone="info">
-              Development mode — no SMS provider is configured, so your code is{' '}
-              <strong className="font-technical">{requestState.devCode}</strong>
+              Development mode — no {sentToEmail ? 'email' : 'SMS'} provider is configured, so your
+              code is <strong className="font-technical">{requestState.devCode}</strong>
             </Alert>
           )}
           <Field label="6-digit code" htmlFor="code">
@@ -239,6 +242,59 @@ export function RegisterForm({
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(registerAction, {})
 
+  // Second step of an email registration: the server has emailed a code and
+  // echoed the first step's details back, so they are resubmitted with it.
+  // Taken from the server rather than client state, which would miss anything
+  // typed before the page finished loading.
+  if (state.destination && state.registration) {
+    return (
+      <form action={formAction} className="space-y-3">
+        <input type="hidden" name="next" value={next} />
+        {Object.entries(state.registration).map(([key, value]) => (
+          <input key={key} type="hidden" name={key} value={value} />
+        ))}
+        <Alert tone="success">{state.notice}</Alert>
+        {state.devCode && (
+          <Alert tone="info">
+            Development mode — no email provider is configured, so your code is{' '}
+            <strong className="font-technical">{state.devCode}</strong>
+          </Alert>
+        )}
+        <FormError>{state.error}</FormError>
+        <Field label="6-digit code" htmlFor="reg-code">
+          <input
+            id="reg-code"
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            className={`${inputClass} text-center font-technical text-lg tracking-[0.4em]`}
+            required
+          />
+        </Field>
+        <button
+          type="submit"
+          disabled={pending}
+          className="w-full rounded-brand bg-accent-500 px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-600 disabled:opacity-60"
+        >
+          {pending ? 'Verifying…' : 'Verify email and create account'}
+        </button>
+        <p className="text-center text-sm text-muted">
+          Wrong address?{' '}
+          {/* A full reload, not client navigation: the action state holding
+              the first step lives in this component and has to be discarded. */}
+          <button
+            type="button"
+            onClick={() => window.location.assign(window.location.href)}
+            className="font-medium text-accent-strong hover:underline"
+          >
+            Start again
+          </button>
+        </p>
+      </form>
+    )
+  }
+
   return (
     <form action={formAction} className="space-y-3">
       <input type="hidden" name="next" value={next} />
@@ -265,7 +321,11 @@ export function RegisterForm({
           placeholder="08030000001"
         />
       </Field>
-      <Field label="Email address" hint="Optional if you gave a phone number." htmlFor="reg-email">
+      <Field
+        label="Email address"
+        hint="We will email you a code to confirm it. Optional if you gave a phone number."
+        htmlFor="reg-email"
+      >
         <input
           id="reg-email"
           name="email"

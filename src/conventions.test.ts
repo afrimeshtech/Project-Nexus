@@ -57,7 +57,7 @@ describe('no hardcoded hosts', () => {
    * this codebase is a deliberate edit to this file, visible in review, rather
    * than something a fetch call can do quietly.
    */
-  const OUTBOUND_APIS = ['PAYSTACK_API']
+  const OUTBOUND_APIS = ['PAYSTACK_API', 'RESEND_API']
 
   test('every fetch() target is a relative path or a declared third-party API', () => {
     for (const file of sourceFiles) {

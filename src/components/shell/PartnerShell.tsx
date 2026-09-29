@@ -158,7 +158,7 @@ export async function PartnerShell({
          * pasted onto white as a dark rectangle. It is sized to the content
          * header opposite it, so the top of the app reads as one band.
          */}
-        <div className="flex h-16 shrink-0 items-center bg-surface-deep px-4">
+        <div className="relative z-10 -mr-px flex h-16 shrink-0 items-center bg-surface-deep px-4">
           <Link href="/partner" className="rounded-brand">
             <Wordmark size="sm" priority />
           </Link>

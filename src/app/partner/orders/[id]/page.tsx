@@ -2,7 +2,9 @@ import { notFound, redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { OrderDetailView } from '@/components/commerce/OrderDetailView'
 import { requireUser, currentOrganisation } from '@/lib/auth'
+import { can } from '@/lib/org-access'
 import { getOrder } from '@/modules/orders/service'
+import { ridersForShop } from '@/modules/logistics/service'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,9 +22,28 @@ export default async function PartnerOrderPage({ params }: { params: Promise<{ i
   const isBuyer = order.buyer_user_id === user.id || order.buyer_org_id === org.id
   if (!isSeller && !isBuyer) notFound()
 
+  // Only looked up while there is still a rider to choose: a delivery order
+  // being prepared, or dispatched and not yet claimed.
+  const choosingRider =
+    isSeller &&
+    can(org.member_role, 'dispatch') &&
+    order.fulfilment === 'delivery' &&
+    ['preparing', 'dispatched'].includes(order.status)
+  const riders = choosingRider
+    ? await ridersForShop({ orgId: org.id, lat: org.lat, lng: org.lng })
+    : undefined
+
   return (
     <PartnerShell active="/partner/orders">
-      <OrderDetailView order={order} viewer={{ isBuyer: isBuyer && !isSeller, isSeller }} />
+      <OrderDetailView
+        order={order}
+        viewer={{
+          isBuyer: isBuyer && !isSeller,
+          isSeller,
+          canSeeFunds: can(org.member_role, 'funds'),
+        }}
+        riders={riders}
+      />
     </PartnerShell>
   )
 }

@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { currentUser, currentOrganisation } from '@/lib/auth'
+import { currentUser, currentOrganisation, organisationFor } from '@/lib/auth'
 import { registerOrganisation, updateOrganisation } from '@/modules/organisations/service'
 import type { OrgType } from '@/lib/tiers'
 
@@ -87,8 +87,8 @@ export async function updateBusinessAction(
   _prev: OnboardingState,
   formData: FormData,
 ): Promise<OnboardingState> {
-  const org = await currentOrganisation()
-  if (!org) return { error: 'No business account found' }
+  const org = await organisationFor('settings')
+  if (!org) return { error: 'Only the business owner can change business details' }
 
   const parsed = parseForm(updateBusinessSchema, formData)
   if (!parsed.ok) return { error: parsed.error }

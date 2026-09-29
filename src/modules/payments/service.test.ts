@@ -28,24 +28,76 @@ describe('gateway resolution', () => {
   })
 
   test('refuses an unknown provider rather than falling back to the mock', () => {
-    // The regression this exists for: paystack has no adapter yet, and the old
-    // resolver answered that with the mock — quietly giving goods away.
-    for (const name of ['paystack', 'flutterwave', 'typo', '']) {
+    // The regression this exists for: the old resolver ended `?? mockGateway`,
+    // so a provider with no adapter behind it quietly gave goods away.
+    for (const name of ['flutterwave', 'typo', '']) {
       process.env.PAYMENT_PROVIDER = name
       assert.throws(() => gateway(), PaymentConfigError, `should refuse "${name}"`)
     }
   })
 
   test('the refusal names the provider and the available adapters', () => {
-    process.env.PAYMENT_PROVIDER = 'paystack'
+    process.env.PAYMENT_PROVIDER = 'flutterwave'
     try {
       gateway()
       assert.fail('expected a throw')
     } catch (err) {
       const message = (err as Error).message
-      assert.match(message, /paystack/)
+      assert.match(message, /flutterwave/)
       assert.match(message, /mock/)
+      assert.match(message, /paystack/)
     }
+  })
+})
+
+describe('paystack configuration', () => {
+  const key = process.env.PAYSTACK_SECRET_KEY
+  const site = process.env.SITE_URL
+
+  afterEach(() => {
+    if (key === undefined) delete process.env.PAYSTACK_SECRET_KEY
+    else process.env.PAYSTACK_SECRET_KEY = key
+    if (site === undefined) delete process.env.SITE_URL
+    else process.env.SITE_URL = site
+  })
+
+  /*
+   * These two refusals are the reason the adapter can be trusted to be either
+   * fully wired or absent. Both failure modes are silent at deploy time and
+   * loud only at a customer's checkout, which is the worst place to find them.
+   */
+  test('refuses paystack without a secret key', () => {
+    process.env.PAYMENT_PROVIDER = 'paystack'
+    delete process.env.PAYSTACK_SECRET_KEY
+    assert.throws(() => gateway(), PaymentConfigError)
+  })
+
+  test('refuses paystack without SITE_URL, which it needs for the callback', () => {
+    process.env.PAYMENT_PROVIDER = 'paystack'
+    process.env.PAYSTACK_SECRET_KEY = 'sk_test_notreal'
+    delete process.env.SITE_URL
+    assert.throws(() => gateway(), PaymentConfigError)
+  })
+
+  test('resolves once both are set', () => {
+    process.env.PAYMENT_PROVIDER = 'paystack'
+    process.env.PAYSTACK_SECRET_KEY = 'sk_test_notreal'
+    process.env.SITE_URL = 'https://afrimesh.ng'
+    const resolved = gateway()
+    assert.equal(resolved.name, 'paystack')
+  })
+
+  test('takes the four external methods and refuses wallet', () => {
+    process.env.PAYMENT_PROVIDER = 'paystack'
+    process.env.PAYSTACK_SECRET_KEY = 'sk_test_notreal'
+    process.env.SITE_URL = 'https://afrimesh.ng'
+    const paystack = gateway()
+    for (const method of ['card', 'bank_transfer', 'ussd', 'qr'] as const) {
+      assert.equal(paystack.supports(method), true, `${method} should be supported`)
+    }
+    // A wallet debit is settled against our own ledger and must never be sent
+    // to a gateway.
+    assert.equal(paystack.supports('wallet'), false)
   })
 })
 
@@ -61,14 +113,14 @@ describe('the mock gateway', () => {
   test('settles a charge and hands back a provider reference', async () => {
     delete process.env.PAYMENT_PROVIDER
     const result = await gateway().charge(request)
-    assert.equal(result.success, true)
+    assert.equal(result.status, 'succeeded')
     assert.match(result.providerRef, /^MOCK-[0-9A-F]{12}$/)
   })
 
   test('declines any amount ending in .13, so the failure path stays exercisable', async () => {
     delete process.env.PAYMENT_PROVIDER
     const result = await gateway().charge({ ...request, amount: 1_013 })
-    assert.equal(result.success, false)
+    assert.equal(result.status, 'failed')
     assert.ok(result.failureReason, 'a decline must say why')
   })
 
@@ -81,7 +133,7 @@ describe('the mock gateway', () => {
   test('a refund references the original charge', async () => {
     delete process.env.PAYMENT_PROVIDER
     const result = await gateway().refund('MOCK-ABCDEF123456', 500_00)
-    assert.equal(result.success, true)
+    assert.equal(result.status, 'succeeded')
     assert.match(result.providerRef, /MOCK-ABCDEF123456/)
   })
 })

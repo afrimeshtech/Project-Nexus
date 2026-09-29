@@ -6,6 +6,7 @@ import { currentUser } from '@/lib/auth'
 import {
   acceptJob,
   completeDelivery,
+  declineJob,
   markPickedUp,
   DeliveryError,
 } from '@/modules/logistics/service'
@@ -69,6 +70,24 @@ export async function pickUpAction(
   }
   revalidatePath('/rider')
   return { notice: 'Marked as collected.' }
+}
+
+/** Hand an assigned job back to the open board, before pickup. */
+export async function declineJobAction(
+  _prev: DeliveryActionState,
+  formData: FormData,
+): Promise<DeliveryActionState> {
+  const rider = await requireRider()
+  const parsed = parseForm(jobSchema, formData)
+  if (!parsed.ok) return { error: parsed.error }
+
+  try {
+    await declineJob(parsed.data.deliveryId, rider.id)
+  } catch (err) {
+    return handle(err)
+  }
+  revalidatePath('/rider')
+  return { notice: 'Handed back. The shop has been told.' }
 }
 
 export async function completeDeliveryAction(

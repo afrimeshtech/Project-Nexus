@@ -1,5 +1,6 @@
 import 'server-only'
 import { currentOrganisation } from '@/lib/auth'
+import { can } from '@/lib/org-access'
 
 /**
  * Buying context for a *business* sourcing upstream, used by the partner
@@ -22,8 +23,12 @@ export async function sourcingContext(): Promise<{
   address: string | null
 } | null> {
   const org = await currentOrganisation()
-  // Logistics partners do not buy stock, so they have no sourcing tier.
+  // Logistics partners do not buy stock, so they have no sourcing tier. A
+  // sales rep does not either: buying upstream spends the business's money,
+  // which stays with the owner. A rep shopping on the storefront is simply a
+  // consumer paying for themselves.
   if (!org || org.type === 'logistics') return null
+  if (!can(org.member_role, 'sourcing')) return null
   return {
     tier: org.tier_level,
     orgId: org.id,

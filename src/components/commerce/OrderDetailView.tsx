@@ -4,6 +4,7 @@ import { OrderProgress, OrderStatusBadge } from '@/components/commerce/OrderBits
 import {
   AdvanceOrderButton,
   CancelOrderForm,
+  DispatchForm,
   RateOrderForm,
   RetryPaymentForm,
 } from '@/components/commerce/OrderActions'
@@ -13,7 +14,7 @@ import { Alert, Badge, Card, Rating, SectionHeading } from '@/components/ui'
 import { formatMoney } from '@/lib/money'
 import { formatDistance, formatEta } from '@/lib/geo'
 import { ORDER_STATUS_LABEL, orderTimeline, type OrderDetail } from '@/modules/orders/service'
-import { deliveryForOrder } from '@/modules/logistics/service'
+import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
 
 /**
@@ -25,15 +26,26 @@ export async function OrderDetailView({
   order,
   viewer,
   payment,
+  riders,
 }: {
   order: OrderDetail
-  viewer: { isBuyer: boolean; isSeller: boolean }
+  /**
+   * `canSeeFunds` is false for a seller's sales rep: they see what the buyer
+   * pays, not what the business nets after fees.
+   */
+  viewer: { isBuyer: boolean; isSeller: boolean; canSeeFunds?: boolean }
   payment?: { status?: string; reason?: string }
+  /** Riders the seller may dispatch to. Absent when the viewer cannot dispatch. */
+  riders?: RiderOption[]
 }) {
   const [timeline, delivery] = await Promise.all([
     orderTimeline(order.id),
     deliveryForOrder(order.id),
   ])
+  const sellerNet = viewer.isSeller && viewer.canSeeFunds !== false
+  const canDispatch = viewer.isSeller && riders !== undefined && order.fulfilment === 'delivery'
+  const awaitingRider =
+    canDispatch && order.status === 'dispatched' && delivery?.status === 'unassigned'
   const canCancel = !['delivered', 'completed', 'cancelled', 'refunded'].includes(order.status)
   const pendingCashback = cashbackFor(order.subtotal)
 
@@ -93,7 +105,7 @@ export async function OrderDetailView({
                 title="Delivery"
                 subtitle={
                   delivery.rider_user_id
-                    ? 'A delivery partner is handling this order'
+                    ? `${delivery.rider_name ?? 'A delivery partner'} is handling this order`
                     : 'Waiting for a delivery partner to accept'
                 }
               />
@@ -115,6 +127,14 @@ export async function OrderDetailView({
                 </span>
                 {delivery.proof_note && (
                   <span className="text-muted">Received by {delivery.proof_note}</span>
+                )}
+                {viewer.isSeller && delivery.rider_phone && delivery.status !== 'delivered' && (
+                  <a
+                    href={`tel:${delivery.rider_phone}`}
+                    className="font-medium text-accent-strong"
+                  >
+                    Call rider
+                  </a>
                 )}
               </div>
             </Card>
@@ -161,7 +181,7 @@ export async function OrderDetailView({
             <dl className="space-y-2 text-sm">
               <Row label="Subtotal" value={formatMoney(order.subtotal, order.currency)} />
               <Row label="Delivery" value={formatMoney(order.delivery_fee, order.currency)} />
-              {viewer.isSeller && (
+              {sellerNet && (
                 <Row
                   label="Platform fee"
                   value={`− ${formatMoney(order.platform_fee, order.currency)}`}
@@ -169,9 +189,9 @@ export async function OrderDetailView({
               )}
               <div className="border-t border-line-soft pt-2">
                 <Row
-                  label={viewer.isSeller ? 'You receive' : 'Total'}
+                  label={sellerNet ? 'You receive' : 'Total'}
                   value={formatMoney(
-                    viewer.isSeller ? order.total - order.platform_fee : order.total,
+                    sellerNet ? order.total - order.platform_fee : order.total,
                     order.currency,
                   )}
                   bold
@@ -274,8 +294,19 @@ export async function OrderDetailView({
               {viewer.isSeller && order.status === 'confirmed' && (
                 <AdvanceOrderButton orderId={order.id} next="preparing" label="Start preparing" />
               )}
-              {viewer.isSeller && order.status === 'preparing' && (
-                <AdvanceOrderButton orderId={order.id} next="dispatched" label="Mark dispatched" />
+              {viewer.isSeller &&
+                order.status === 'preparing' &&
+                (canDispatch ? (
+                  <DispatchForm orderId={order.id} riders={riders ?? []} />
+                ) : (
+                  <AdvanceOrderButton
+                    orderId={order.id}
+                    next="dispatched"
+                    label="Mark dispatched"
+                  />
+                ))}
+              {awaitingRider && (
+                <DispatchForm orderId={order.id} riders={riders ?? []} assignOnly />
               )}
               {viewer.isSeller && order.status === 'dispatched' && (
                 <AdvanceOrderButton orderId={order.id} next="delivered" label="Mark delivered" />

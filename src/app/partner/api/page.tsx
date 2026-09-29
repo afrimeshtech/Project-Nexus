@@ -1,8 +1,7 @@
-import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { IssueKeyForm, RevokeKeyButton } from '@/components/partner/ApiKeyForms'
 import { Badge, Card, EmptyState, PageHeader, SectionHeading, Stat } from '@/components/ui'
-import { requireUser, currentOrganisation } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
 import { listKeys, keyUsage, API_SCOPES, SCOPE_LABEL } from '@/modules/api/service'
 
 export const dynamic = 'force-dynamic'
@@ -17,9 +16,7 @@ export const metadata = { title: 'API access' }
  * that makes that real for them.
  */
 export default async function PartnerApiPage() {
-  await requireUser('/partner/api')
-  const org = await currentOrganisation()
-  if (!org) redirect('/onboarding')
+  const { org } = await requireOrgCapability('api', '/partner/api')
 
   const [keys, usage] = await Promise.all([listKeys(org.id), keyUsage(org.id, 24)])
   const usageById = new Map(usage.map((row) => [row.api_key_id, row]))

@@ -5,9 +5,11 @@ import { Icon } from '@/components/Icon'
 import {
   advanceOrderAction,
   cancelOrderAction,
+  dispatchOrderAction,
   rateOrderAction,
   type OrderActionState,
 } from '@/app/actions/orders'
+import type { RiderOption } from '@/modules/logistics/service'
 import { payOrderAction, type CartActionState } from '@/app/actions/cart'
 import { FormError, Alert, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
@@ -45,6 +47,83 @@ export function AdvanceOrderButton({
       {state.error && <p className="mt-1 text-xs text-coral-ink">{state.error}</p>}
     </form>
   )
+}
+
+/**
+ * Dispatch to a named rider, or to the open board when none is chosen.
+ * `assignOnly` is the already-dispatched case: the order has left the
+ * preparing stage, and all that is missing is someone to carry it.
+ */
+export function DispatchForm({
+  orderId,
+  riders,
+  assignOnly = false,
+}: {
+  orderId: string
+  riders: RiderOption[]
+  assignOnly?: boolean
+}) {
+  const [state, formAction, pending] = useActionState<OrderActionState, FormData>(
+    dispatchOrderAction,
+    {},
+  )
+
+  if (state.notice) return <Alert tone="success">{state.notice}</Alert>
+
+  const fieldId = `rider-${orderId}`
+  return (
+    <form action={formAction} className="w-full space-y-2">
+      <input type="hidden" name="orderId" value={orderId} />
+      <label className="block text-sm font-medium text-ink" htmlFor={fieldId}>
+        {assignOnly ? 'Assign a rider' : 'Delivery rider'}
+      </label>
+      <select
+        id={fieldId}
+        name="riderId"
+        defaultValue=""
+        className={inputClass}
+        required={assignOnly}
+      >
+        {assignOnly ? (
+          <option value="" disabled>
+            Choose a rider
+          </option>
+        ) : (
+          <option value="">Open job board — first nearby rider to accept</option>
+        )}
+        {riders.map((rider) => (
+          <option key={rider.user_id} value={rider.user_id}>
+            {riderOptionLabel(rider)}
+          </option>
+        ))}
+      </select>
+      {riders.length === 0 && (
+        <p className="text-xs text-muted">
+          No riders near the shop yet.{' '}
+          {assignOnly ? 'The job stays on the open board.' : 'It will go to the open job board.'}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={pending || (assignOnly && riders.length === 0)}
+        className="rounded-brand bg-accent-500 px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-600 disabled:opacity-60"
+      >
+        {pending ? 'Working…' : assignOnly ? 'Assign rider' : 'Dispatch'}
+      </button>
+      <FormError>{state.error}</FormError>
+    </form>
+  )
+}
+
+function riderOptionLabel(rider: RiderOption): string {
+  const facts = [
+    rider.distance_km !== null ? `${Number(rider.distance_km).toFixed(1)} km away` : null,
+    rider.deliveries_for_shop > 0
+      ? `${rider.deliveries_for_shop} ${rider.deliveries_for_shop === 1 ? 'delivery' : 'deliveries'} for you`
+      : null,
+    rider.active_jobs > 0 ? `carrying ${rider.active_jobs}` : 'free',
+  ].filter(Boolean)
+  return `${rider.full_name} — ${facts.join(' · ')}`
 }
 
 export function CancelOrderForm({ orderId }: { orderId: string }) {

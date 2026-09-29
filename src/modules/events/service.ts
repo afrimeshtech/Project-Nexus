@@ -24,6 +24,8 @@ export const EVENT = {
   OrganisationRegistered: 'organisation.registered',
   OrganisationVerified: 'organisation.verified',
   OrganisationRejected: 'organisation.rejected',
+  MemberAdded: 'organisation.member_added',
+  MemberRemoved: 'organisation.member_removed',
 
   // catalog
   ProductCreated: 'product.created',
@@ -65,6 +67,7 @@ export const EVENT = {
   // logistics
   DeliveryRequested: 'delivery.requested',
   DeliveryAccepted: 'delivery.accepted',
+  DeliveryAssigned: 'delivery.assigned',
   DeliveryPickedUp: 'delivery.picked_up',
   DeliveryCompleted: 'delivery.completed',
 

@@ -54,6 +54,8 @@ export interface DeliveryJob extends Delivery {
   buyer_name: string
   buyer_phone: string | null
   delivery_address: string | null
+  rider_name: string | null
+  rider_phone: string | null
   /** Distance from the rider to the pickup point. */
   pickup_distance_km: number
 }
@@ -163,11 +165,13 @@ function jobSelect(pickupDistance: string): string {
          o.order_number, o.total AS order_total, o.delivery_fee, o.delivery_address,
          (SELECT COUNT(*)::int FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
          s.name AS seller_name, s.address AS seller_address, s.phone AS seller_phone,
-         u.full_name AS buyer_name, u.phone AS buyer_phone
+         u.full_name AS buyer_name, u.phone AS buyer_phone,
+         r.full_name AS rider_name, r.phone AS rider_phone
     FROM deliveries d
     JOIN orders o        ON o.id = d.order_id
     JOIN organisations s ON s.id = o.seller_org_id
     JOIN users u         ON u.id = o.buyer_user_id
+    LEFT JOIN users r    ON r.id = d.rider_user_id
 `
 }
 
@@ -229,6 +233,186 @@ export async function deliveryForOrder(orderId: string): Promise<DeliveryJob | n
       WHERE d.order_id = $1`,
     [orderId],
   )
+}
+
+// ---------------------------------------------------------------------------
+// Seller-directed dispatch
+//
+// The open board suits a shop that does not mind who comes. Most shops do:
+// they have a rider they trust, or one who is already outside. Assigning by
+// name hands the job straight to that person - it skips the board, and the
+// rider finds it waiting in their active deliveries.
+// ---------------------------------------------------------------------------
+
+export interface RiderOption {
+  user_id: string
+  full_name: string
+  phone: string | null
+  /** From the shop, where the rider's saved location is known. */
+  distance_km: number | null
+  /** Deliveries this rider has completed for this shop. */
+  deliveries_for_shop: number
+  /** Jobs the rider is carrying right now. */
+  active_jobs: number
+}
+
+/**
+ * Riders a shop can hand an order to: the ones who have delivered for it
+ * before, then the nearest others. Suspended accounts never appear.
+ */
+export async function ridersForShop(
+  shop: { orgId: string; lat: number; lng: number },
+  opts: { radiusKm?: number; limit?: number } = {},
+): Promise<RiderOption[]> {
+  const sql = await getSql()
+  const fromShop = distanceKmSqlOn('u.default_lat', 'u.default_lng', '$2', '$3')
+  return sql.query<RiderOption>(
+    `SELECT * FROM (
+       SELECT u.id AS user_id, u.full_name, u.phone,
+              CASE WHEN u.default_lat IS NULL THEN NULL
+                   ELSE ROUND((${fromShop})::numeric, 1) END AS distance_km,
+              (SELECT COUNT(*)::int FROM deliveries d JOIN orders o ON o.id = d.order_id
+                WHERE d.rider_user_id = u.id AND d.status = 'delivered'
+                  AND o.seller_org_id = $1) AS deliveries_for_shop,
+              (SELECT COUNT(*)::int FROM deliveries d
+                WHERE d.rider_user_id = u.id
+                  AND d.status IN ('assigned', 'picked_up', 'in_transit')) AS active_jobs
+         FROM users u
+        WHERE u.role = 'delivery_partner' AND u.status = 'active'
+     ) r
+     WHERE r.deliveries_for_shop > 0 OR (r.distance_km IS NOT NULL AND r.distance_km <= $4)
+     ORDER BY r.deliveries_for_shop DESC, r.distance_km ASC NULLS LAST
+     LIMIT $5`,
+    [shop.orgId, shop.lat, shop.lng, opts.radiusKm ?? 15, opts.limit ?? 20],
+  )
+}
+
+export async function riderIsAvailable(riderUserId: string): Promise<boolean> {
+  const sql = await getSql()
+  const row = await sql.one<{ id: string }>(
+    `SELECT id FROM users WHERE id = $1 AND role = 'delivery_partner' AND status = 'active'`,
+    [riderUserId],
+  )
+  return Boolean(row)
+}
+
+/**
+ * Give an open delivery job to a named rider. Only the selling business may,
+ * and only while nobody has taken it - the same race guard as `acceptJob`, so
+ * a seller assigning and a rider accepting at once cannot both win.
+ */
+export async function assignRider(
+  orderId: string,
+  sellerOrgId: string,
+  riderUserId: string,
+  actorUserId: string,
+): Promise<Delivery> {
+  return withTx(async (tx) => {
+    // Re-checked inside the transaction: availability checked by the caller a
+    // moment earlier is advice, this is the guarantee.
+    const rider = await tx.one<{ id: string; full_name: string }>(
+      `SELECT id, full_name FROM users
+        WHERE id = $1 AND role = 'delivery_partner' AND status = 'active'`,
+      [riderUserId],
+    )
+    if (!rider) throw new DeliveryError('That rider is not available.')
+
+    const delivery = await tx.one<Delivery>(
+      `UPDATE deliveries d
+          SET rider_user_id = $3, status = 'assigned', assigned_at = now()
+         FROM orders o
+        WHERE d.order_id = $1 AND o.id = d.order_id AND o.seller_org_id = $2
+          AND d.status = 'unassigned' AND d.rider_user_id IS NULL
+        RETURNING d.*`,
+      [orderId, sellerOrgId, riderUserId],
+    )
+    if (!delivery) {
+      throw new DeliveryError('A rider has already taken this delivery, or it has no delivery job.')
+    }
+
+    const order = await tx.one<{ order_number: string; buyer_user_id: string }>(
+      `SELECT order_number, buyer_user_id FROM orders WHERE id = $1`,
+      [orderId],
+    )
+
+    await publish(
+      {
+        type: EVENT.DeliveryAssigned,
+        aggregateType: 'delivery',
+        aggregateId: delivery.id,
+        actorUserId,
+        payload: { orderNumber: order?.order_number, riderUserId },
+      },
+      tx,
+    )
+    await queueNotification(
+      {
+        userId: riderUserId,
+        title: 'New delivery for you',
+        body: `You have been assigned order ${order?.order_number ?? ''}. Collect it from the shop.`,
+        category: 'delivery',
+        referenceType: 'order',
+        referenceId: orderId,
+      },
+      tx,
+    )
+    if (order) {
+      await queueNotification(
+        {
+          userId: order.buyer_user_id,
+          title: 'A rider has been assigned',
+          body: `${rider.full_name} will deliver your order ${order.order_number}.`,
+          category: 'delivery',
+          referenceType: 'order',
+          referenceId: orderId,
+        },
+        tx,
+      )
+    }
+
+    return delivery
+  })
+}
+
+/**
+ * A rider hands back a job they were assigned but cannot do. It returns to
+ * the open board, so a direct assignment never strands an order with someone
+ * who is not coming. Only before pickup - once the goods are with the rider,
+ * giving the job back would leave them with nobody accountable for them.
+ */
+export async function declineJob(deliveryId: string, riderUserId: string): Promise<Delivery> {
+  return withTx(async (tx) => {
+    const delivery = await tx.one<Delivery>(
+      `UPDATE deliveries
+          SET rider_user_id = NULL, status = 'unassigned', assigned_at = NULL
+        WHERE id = $1 AND rider_user_id = $2 AND status = 'assigned'
+        RETURNING *`,
+      [deliveryId, riderUserId],
+    )
+    if (!delivery)
+      throw new DeliveryError('That delivery is not yours, or has already been picked up')
+
+    const seller = await tx.one<{ order_number: string; owner_user_id: string | null }>(
+      `SELECT o.order_number, s.owner_user_id
+         FROM orders o JOIN organisations s ON s.id = o.seller_org_id
+        WHERE o.id = $1`,
+      [delivery.order_id],
+    )
+    if (seller?.owner_user_id) {
+      await queueNotification(
+        {
+          userId: seller.owner_user_id,
+          title: 'A rider handed back a delivery',
+          body: `Order ${seller.order_number} is back on the open job board. Assign another rider or wait for one to accept.`,
+          category: 'delivery',
+          referenceType: 'order',
+          referenceId: delivery.order_id,
+        },
+        tx,
+      )
+    }
+    return delivery
+  })
 }
 
 // ---------------------------------------------------------------------------

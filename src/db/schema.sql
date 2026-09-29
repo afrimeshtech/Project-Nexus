@@ -245,6 +245,9 @@ CREATE INDEX organisations_owner_idx   ON organisations (owner_user_id);
 CREATE TABLE organisation_members (
   organisation_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
   user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- 'owner' | 'sales_rep'. What each may do is decided in src/lib/org-access.ts;
+  -- any other value (the legacy 'staff' default included) is treated as a
+  -- sales rep, never as an owner.
   role_in_org     TEXT NOT NULL DEFAULT 'staff',
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (organisation_id, user_id)
@@ -575,12 +578,55 @@ CREATE TABLE payments (
   currency       TEXT NOT NULL DEFAULT 'NGN',
   status         payment_status NOT NULL DEFAULT 'pending',
   failure_reason TEXT,
+
+  -- Where the money lands when this payment settles. NULL is the payer's own
+  -- user wallet, which covers every order payment. A wallet top-up sets it
+  -- explicitly, because a business account topping up must not credit the
+  -- individual who happened to press the button.
+  credit_owner_type TEXT CHECK (credit_owner_type IN ('user', 'organisation')),
+  credit_owner_id   UUID,
+
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-  completed_at   TIMESTAMPTZ
+  completed_at   TIMESTAMPTZ,
+
+  -- Both or neither: half a credit target is a payment that settles somewhere
+  -- unintended.
+  CONSTRAINT payments_credit_owner_complete CHECK (
+    (credit_owner_type IS NULL) = (credit_owner_id IS NULL)
+  )
 );
 
 CREATE INDEX payments_order_idx ON payments (order_id);
 CREATE INDEX payments_payer_idx ON payments (payer_user_id, created_at DESC);
+
+-- A provider webhook arrives knowing only its own reference, so that is the
+-- key the settlement path looks a payment up by. Unique because two payments
+-- sharing a provider reference would make settlement ambiguous, and NULL is
+-- exempt from the constraint, so wallet payments and unstarted attempts are
+-- unaffected.
+CREATE UNIQUE INDEX payments_provider_ref_idx ON payments (provider_ref)
+  WHERE provider_ref IS NOT NULL;
+
+-- ---------------------------------------------------------------------------
+-- Webhook idempotency
+--
+-- Payment providers retry: on a timeout, on any non-2xx, and sometimes simply
+-- because they do. Without a record of what has already been handled, a retry
+-- of charge.success credits the buyer's wallet a second time for one payment.
+-- The unique constraint is the whole mechanism — the settling transaction
+-- inserts here first, and a duplicate delivery loses the race and does nothing.
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE webhook_events (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider    TEXT NOT NULL,
+  event_id    TEXT NOT NULL,
+  event_type  TEXT NOT NULL,
+  received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (provider, event_id)
+);
+
+CREATE INDEX webhook_events_received_idx ON webhook_events (provider, received_at DESC);
 
 -- ---------------------------------------------------------------------------
 -- MODULE: logistics

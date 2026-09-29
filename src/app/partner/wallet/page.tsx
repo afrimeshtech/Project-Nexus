@@ -1,9 +1,8 @@
-import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { Statement } from '@/components/commerce/Statement'
 import { TopUpForm, WithdrawForm } from '@/components/commerce/WalletForms'
 import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
-import { requireUser, currentOrganisation } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { getBalance, statement } from '@/modules/wallet/service'
 import { sellerKpis } from '@/modules/analytics/service'
@@ -12,9 +11,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Business wallet' }
 
 export default async function PartnerWalletPage() {
-  await requireUser('/partner/wallet')
-  const org = await currentOrganisation()
-  if (!org) redirect('/onboarding')
+  const { org } = await requireOrgCapability('funds', '/partner/wallet')
 
   const wallet = await getBalance('organisation', org.id)
   const [lines, kpis] = await Promise.all([statement(wallet.id, 50), sellerKpis(org.id)])

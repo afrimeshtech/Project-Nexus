@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { currentUser, currentOrganisation } from '@/lib/auth'
+import { currentUser, organisationFor } from '@/lib/auth'
 import { InsufficientFundsError } from '@/modules/wallet/service'
 import { redeemPoints, RedemptionError } from '@/modules/rewards/service'
 import { formatMoney } from '@/lib/money'
@@ -47,8 +47,8 @@ export async function redeemPointsAction(
   let ownerType: 'user' | 'organisation' = 'user'
   let ownerId = user.id
   if (scope === 'organisation') {
-    const org = await currentOrganisation()
-    if (!org) return { error: 'No business account found' }
+    const org = await organisationFor('rewards')
+    if (!org) return { error: 'Only the business owner can redeem business points' }
     ownerType = 'organisation'
     ownerId = org.id
   }

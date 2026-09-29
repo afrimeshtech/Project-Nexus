@@ -1,7 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RiderShell } from '@/components/shell/RiderShell'
-import { AcceptJobButton, CompleteDeliveryForm, PickUpButton } from '@/components/rider/JobActions'
+import {
+  AcceptJobButton,
+  CompleteDeliveryForm,
+  DeclineJobButton,
+  PickUpButton,
+} from '@/components/rider/JobActions'
 import {
   Badge,
   Card,
@@ -257,7 +262,12 @@ function JobCard({ job, mode }: { job: DeliveryJob; mode: 'open' | 'active' }) {
 
       <div className="flex flex-wrap gap-2 border-t border-line-soft pt-3">
         {mode === 'open' && <AcceptJobButton deliveryId={job.id} />}
-        {mode === 'active' && job.status === 'assigned' && <PickUpButton deliveryId={job.id} />}
+        {mode === 'active' && job.status === 'assigned' && (
+          <>
+            <PickUpButton deliveryId={job.id} />
+            <DeclineJobButton deliveryId={job.id} />
+          </>
+        )}
         {mode === 'active' && ['picked_up', 'in_transit'].includes(job.status) && (
           <CompleteDeliveryForm deliveryId={job.id} />
         )}

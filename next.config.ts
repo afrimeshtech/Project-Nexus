@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
   // Add a real device's LAN IP here when testing on one; it will need
   // updating if DHCP hands out a different address later.
   allowedDevOrigins: ['192.168.1.63', '192.168.43.153'],
+  // The dev-tools badge floats in the bottom-left corner, which on a phone is
+  // exactly where the bottom navigation's Home tab sits - it swallowed every
+  // tap on Home in development. Every other corner covers the menu, the basket
+  // or Profile instead, so it is switched off. Dev only: production builds
+  // never render it, and build/runtime errors still show their overlay.
+  devIndicators: false,
   experimental: {
     // The commerce, payment and inventory modules all run server-side only.
     serverActions: { bodySizeLimit: '2mb' },

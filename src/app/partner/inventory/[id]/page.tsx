@@ -1,10 +1,11 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { AddBatchForm, AdjustStockForm, PricingForm } from '@/components/partner/InventoryForms'
 import { ProductImageUpload } from '@/components/media/ImageUpload'
 import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { Breadcrumb, Badge, Card, SectionHeading, Stat } from '@/components/ui'
-import { requireUser, currentOrganisation } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
+import { can } from '@/lib/org-access'
 import { formatMoney } from '@/lib/money'
 import { getInventoryItem, inventoryLedger, listBatches } from '@/modules/inventory/service'
 
@@ -25,14 +26,18 @@ const MOVEMENT_LABEL: Record<string, string> = {
 /** One listing: its live position, its pricing, its batches and its full history. */
 export default async function InventoryItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await requireUser('/partner/inventory')
-  const org = await currentOrganisation()
-  if (!org) redirect('/onboarding')
+  const { org } = await requireOrgCapability('inventory', '/partner/inventory')
+  // The movement log is the business's audit trail, and it stays with the
+  // owner; a sales rep sees the live position and the forms that change it.
+  const showLedger = can(org.member_role, 'analytics')
 
   const item = await getInventoryItem(id)
   if (!item || item.organisation_id !== org.id) notFound()
 
-  const [ledger, batches] = await Promise.all([inventoryLedger(id, 40), listBatches(id)])
+  const [ledger, batches] = await Promise.all([
+    showLedger ? inventoryLedger(id, 40) : Promise.resolve([]),
+    listBatches(id),
+  ])
 
   const isRetail = org.type === 'outlet'
   const price = (isRetail ? item.retail_price : item.wholesale_price) ?? 0
@@ -139,94 +144,96 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
           </Card>
         </div>
 
-        <Card>
-          <SectionHeading
-            title="Inventory ledger"
-            subtitle="Append-only. Every movement of this product, permanently."
-          />
-          {/* A real table at sm+; below it, a stacked card per row instead
+        {showLedger && (
+          <Card>
+            <SectionHeading
+              title="Inventory ledger"
+              subtitle="Append-only. Every movement of this product, permanently."
+            />
+            {/* A real table at sm+; below it, a stacked card per row instead
               of forcing a phone-primary user to scroll sideways to read
               their own stock history. Same data, two renderings — the
               pattern AdminShell/PartnerShell's own nav already uses for
               their desktop/mobile split. */}
-          <div className="hidden scroll-x sm:block">
-            <table className="w-full min-w-[34rem] text-sm">
-              <caption className="sr-only">Inventory ledger for {item.product_name}</caption>
-              <thead>
-                <tr className="border-b border-line-soft text-left text-xs uppercase tracking-wide text-muted">
-                  <th className="py-2 pr-3 font-medium">When</th>
-                  <th className="py-2 pr-3 font-medium">Movement</th>
-                  <th className="py-2 pr-3 text-right font-medium">Change</th>
-                  <th className="py-2 pr-3 text-right font-medium">Available after</th>
-                  <th className="py-2 font-medium">Reference</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ledger.map((row) => (
-                  <tr key={row.id} className="border-b border-line-soft last:border-0">
-                    <td className="whitespace-nowrap py-2.5 pr-3 font-technical text-xs text-muted">
+            <div className="hidden scroll-x sm:block">
+              <table className="w-full min-w-[34rem] text-sm">
+                <caption className="sr-only">Inventory ledger for {item.product_name}</caption>
+                <thead>
+                  <tr className="border-b border-line-soft text-left text-xs uppercase tracking-wide text-muted">
+                    <th className="py-2 pr-3 font-medium">When</th>
+                    <th className="py-2 pr-3 font-medium">Movement</th>
+                    <th className="py-2 pr-3 text-right font-medium">Change</th>
+                    <th className="py-2 pr-3 text-right font-medium">Available after</th>
+                    <th className="py-2 font-medium">Reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.map((row) => (
+                    <tr key={row.id} className="border-b border-line-soft last:border-0">
+                      <td className="whitespace-nowrap py-2.5 pr-3 font-technical text-xs text-muted">
+                        {new Date(row.created_at).toLocaleString('en-NG', {
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="py-2.5 pr-3 text-ink">
+                        {MOVEMENT_LABEL[row.movement] ?? row.movement}
+                        {row.note && <span className="block text-xs text-muted">{row.note}</span>}
+                      </td>
+                      <td
+                        className={`py-2.5 pr-3 text-right font-medium ${
+                          row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
+                        }`}
+                      >
+                        {row.qty_delta > 0 ? '+' : ''}
+                        {row.qty_delta}
+                      </td>
+                      <td className="py-2.5 pr-3 text-right text-muted">{row.qty_after}</td>
+                      <td className="py-2.5 font-technical text-xs text-muted">
+                        {row.reference_type ? `${row.reference_type}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <ul className="space-y-2 sm:hidden">
+              {ledger.map((row) => (
+                <li key={row.id} className="rounded-brand border border-line-soft p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="min-w-0 flex-1 text-sm text-ink">
+                      {MOVEMENT_LABEL[row.movement] ?? row.movement}
+                      {row.note && <span className="block text-xs text-muted">{row.note}</span>}
+                    </p>
+                    <p
+                      className={`shrink-0 font-medium ${
+                        row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
+                      }`}
+                    >
+                      {row.qty_delta > 0 ? '+' : ''}
+                      {row.qty_delta}
+                    </p>
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between font-technical text-xs text-muted">
+                    <span>
                       {new Date(row.created_at).toLocaleString('en-NG', {
                         day: '2-digit',
                         month: 'short',
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
-                    </td>
-                    <td className="py-2.5 pr-3 text-ink">
-                      {MOVEMENT_LABEL[row.movement] ?? row.movement}
-                      {row.note && <span className="block text-xs text-muted">{row.note}</span>}
-                    </td>
-                    <td
-                      className={`py-2.5 pr-3 text-right font-medium ${
-                        row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
-                      }`}
-                    >
-                      {row.qty_delta > 0 ? '+' : ''}
-                      {row.qty_delta}
-                    </td>
-                    <td className="py-2.5 pr-3 text-right text-muted">{row.qty_after}</td>
-                    <td className="py-2.5 font-technical text-xs text-muted">
-                      {row.reference_type ? `${row.reference_type}` : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <ul className="space-y-2 sm:hidden">
-            {ledger.map((row) => (
-              <li key={row.id} className="rounded-brand border border-line-soft p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 flex-1 text-sm text-ink">
-                    {MOVEMENT_LABEL[row.movement] ?? row.movement}
-                    {row.note && <span className="block text-xs text-muted">{row.note}</span>}
-                  </p>
-                  <p
-                    className={`shrink-0 font-medium ${
-                      row.qty_delta > 0 ? 'text-accent-strong' : 'text-ink'
-                    }`}
-                  >
-                    {row.qty_delta > 0 ? '+' : ''}
-                    {row.qty_delta}
-                  </p>
-                </div>
-                <div className="mt-1.5 flex items-center justify-between font-technical text-xs text-muted">
-                  <span>
-                    {new Date(row.created_at).toLocaleString('en-NG', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                    {row.reference_type ? ` · ${row.reference_type}` : ''}
-                  </span>
-                  <span>{row.qty_after} available after</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
+                      {row.reference_type ? ` · ${row.reference_type}` : ''}
+                    </span>
+                    <span>{row.qty_after} available after</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       </div>
     </PartnerShell>
   )

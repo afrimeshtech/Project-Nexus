@@ -14,7 +14,7 @@ import {
   Rating,
   SectionHeading,
 } from '@/components/ui'
-import { requireUser } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
 import { sourcingContext } from '@/lib/viewer'
 import { ORG_LABEL, supplierTypeFor } from '@/lib/tiers'
 import { formatDistance, formatEta } from '@/lib/geo'
@@ -41,7 +41,7 @@ export default async function SourcePage({
   searchParams: Promise<{ q?: string; radius?: string }>
 }) {
   const params = await searchParams
-  await requireUser('/partner/source')
+  await requireOrgCapability('sourcing', '/partner/source')
   const ctx = await sourcingContext()
   if (!ctx) redirect('/onboarding')
 

@@ -218,6 +218,12 @@ export async function checkoutAction(
   if (!payment.ok) {
     redirect(`/orders/${orderId}?payment=failed&reason=${encodeURIComponent(payment.error ?? '')}`)
   }
+  // An external provider has not taken the money yet — it has told us where to
+  // send the customer to do that. The order stays in pending_payment until its
+  // webhook says otherwise.
+  if (payment.actionRequired?.kind === 'redirect') {
+    redirect(payment.actionRequired.value)
+  }
   redirect(`/orders/${orderId}?payment=success`)
 }
 
@@ -235,7 +241,14 @@ export async function payOrderAction(
   const result = await payOrder(parsed.data.orderId, user.id, parsed.data.method)
   if (!result.ok) return { error: result.error }
 
+  if (result.actionRequired?.kind === 'redirect') {
+    redirect(result.actionRequired.value)
+  }
+
   revalidatePath(`/orders/${parsed.data.orderId}`)
+  if (result.awaitingProvider) {
+    return { notice: 'Waiting for the payment provider to confirm your payment.' }
+  }
   return { notice: 'Payment successful' }
 }
 

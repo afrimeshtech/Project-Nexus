@@ -9,7 +9,16 @@ import {
   returnStock,
   InsufficientStockError,
 } from '@/modules/inventory/service'
-import { createPayment, gateway, markPayment, type PaymentMethod } from '@/modules/payments/service'
+import {
+  attachProviderRef,
+  claimPendingPayment,
+  claimWebhookEvent,
+  createPayment,
+  findPaymentByProviderRef,
+  gateway,
+  markPayment,
+  type PaymentMethod,
+} from '@/modules/payments/service'
 import {
   ensureWallet,
   payForOrder,
@@ -335,6 +344,8 @@ export interface PayResult {
   order?: OrderDetail
   error?: string
   actionRequired?: { kind: string; value: string }
+  /** True when the provider has taken the attempt but not yet the money. */
+  awaitingProvider?: boolean
 }
 
 /**
@@ -342,6 +353,19 @@ export interface PayResult {
  * (card/transfer/USSD/QR) deposits into the buyer's wallet first, then the
  * wallet pays the order. One money path means one place where the ledger can
  * be reasoned about.
+ *
+ * Two shapes of gateway run through here:
+ *
+ *   synchronous (wallet, mock) - the outcome is known inside this transaction
+ *     and the order is confirmed before the function returns.
+ *   asynchronous (Paystack, and every real provider) - `charge()` answers
+ *     `pending` with somewhere to send the customer. Nothing is credited and
+ *     nothing is confirmed. The order stays in `pending_payment` holding its
+ *     reserved stock, and `settlePaymentByProviderRef` finishes the job when
+ *     the webhook arrives.
+ *
+ * The one thing this function must never do is confirm an order against money
+ * no provider has told us it received.
  */
 export async function payOrder(
   orderId: string,
@@ -355,6 +379,26 @@ export async function payOrder(
       if (order.buyer_user_id !== payerUserId) throw new BusinessRuleError('This is not your order')
       if (order.status !== 'pending_payment') {
         throw new BusinessRuleError('This order has already been paid or cancelled')
+      }
+
+      /*
+       * An attempt already in flight with a provider must not be duplicated.
+       * Two initialised references against one order are two ways to pay for
+       * it, and if the customer pays both, two webhooks arrive and each one
+       * legitimately settles its own payment row - crediting the wallet twice
+       * for one order. Cheaper to refuse the second attempt than to reconcile
+       * that afterwards.
+       */
+      const inFlight = await tx.one<{ id: string }>(
+        `SELECT id FROM payments
+          WHERE order_id = $1 AND status = 'pending' AND provider_ref IS NOT NULL`,
+        [order.id],
+      )
+      if (inFlight) {
+        throw new BusinessRuleError(
+          'A payment for this order is already awaiting confirmation. Give it a moment, ' +
+            'or cancel the order to start again.',
+        )
       }
 
       const payment = await createPayment(tx, {
@@ -376,116 +420,83 @@ export async function payOrder(
         tx,
       )
 
-      let actionRequired: ChargeAction | undefined
-
-      if (method !== 'wallet') {
-        const charge = await gateway().charge({
-          amount: order.total,
-          currency: order.currency,
-          method,
-          reference: order.order_number,
-          customer: { userId: payerUserId },
-          metadata: { orderId: order.id },
-        })
-
-        if (!charge.success) {
-          await markPayment(tx, payment.id, 'failed', {
-            providerRef: charge.providerRef,
-            failureReason: charge.failureReason,
-          })
-          await publish(
-            {
-              type: EVENT.PaymentFailed,
-              aggregateType: 'payment',
-              aggregateId: payment.id,
-              actorUserId: payerUserId,
-              payload: { orderId: order.id, reason: charge.failureReason },
-            },
-            tx,
-          )
-          throw new BusinessRuleError(charge.failureReason ?? 'Payment was declined')
-        }
-
-        actionRequired = charge.actionRequired
-        await markPayment(tx, payment.id, 'succeeded', { providerRef: charge.providerRef })
-        await deposit(
-          'user',
-          payerUserId,
-          order.total,
-          `Funding for order ${order.order_number}`,
-          tx,
-        )
-      } else {
+      // The wallet never reaches a gateway: it is settled against our own
+      // ledger, inside this transaction.
+      if (method === 'wallet') {
         await markPayment(tx, payment.id, 'succeeded', {
           providerRef: `WALLET-${order.order_number}`,
         })
+        await completeOrderPayment(tx, order, payment.id, payerUserId, method)
+        return { order: await loadOrder(tx, order.id) }
       }
 
-      const buyerWallet = await ensureWallet('user', payerUserId, order.currency, tx)
-      await payForOrder(tx, {
-        buyerWalletId: buyerWallet.id,
-        sellerOrgId: order.seller_org_id,
-        orderId: order.id,
-        orderNumber: order.order_number,
-        subtotal: order.subtotal,
-        deliveryFee: order.delivery_fee,
-        total: order.total,
-        platformFee: order.platform_fee,
+      const buyer = await tx.one<{ email: string | null; phone: string | null }>(
+        `SELECT email, phone FROM users WHERE id = $1`,
+        [payerUserId],
+      )
+
+      const charge = await gateway().charge({
+        amount: order.total,
+        currency: order.currency,
+        method,
+        /*
+         * The payment row's id, not the order number. A retry after a failed
+         * attempt is a new payment row, and so needs a new provider reference:
+         * reusing the order number would collide on the provider's side and
+         * leave one reference pointing at two attempts.
+         */
+        reference: payment.id,
+        customer: { userId: payerUserId, email: buyer?.email, phone: buyer?.phone },
+        metadata: { orderId: order.id, orderNumber: order.order_number },
       })
 
-      // Payment succeeded: the reservation becomes a sale.
-      await consumeReservations(order.id, tx)
+      if (charge.status === 'failed') {
+        await markPayment(tx, payment.id, 'failed', {
+          providerRef: charge.providerRef,
+          failureReason: charge.failureReason,
+        })
+        await publish(
+          {
+            type: EVENT.PaymentFailed,
+            aggregateType: 'payment',
+            aggregateId: payment.id,
+            actorUserId: payerUserId,
+            payload: { orderId: order.id, reason: charge.failureReason },
+          },
+          tx,
+        )
+        throw new BusinessRuleError(charge.failureReason ?? 'Payment was declined')
+      }
 
-      await tx.query(
-        `UPDATE orders SET status = 'confirmed', payment_status = 'succeeded', confirmed_at = now()
-          WHERE id = $1`,
-        [order.id],
-      )
-      await logOrderEvent(tx, order.id, 'confirmed', 'Payment received', payerUserId)
+      if (charge.status === 'pending') {
+        /*
+         * The provider has accepted the attempt and nothing more. Record the
+         * reference so the webhook can find this row, and stop: no deposit, no
+         * escrow, no confirmation. The order keeps its reserved stock until it
+         * is paid or the reservation expires.
+         */
+        await attachProviderRef(tx, payment.id, charge.providerRef)
+        return {
+          order: await loadOrder(tx, order.id),
+          actionRequired: charge.actionRequired,
+          awaitingProvider: true,
+        }
+      }
 
-      await publish(
-        {
-          type: EVENT.PaymentSucceeded,
-          aggregateType: 'payment',
-          aggregateId: payment.id,
-          actorUserId: payerUserId,
-          payload: { orderId: order.id, amount: order.total, method },
-        },
-        tx,
-      )
-      await publish(
-        {
-          type: EVENT.OrderConfirmed,
-          aggregateType: 'order',
-          aggregateId: order.id,
-          actorUserId: payerUserId,
-          payload: { orderNumber: order.order_number },
-        },
-        tx,
-      )
+      // Synchronous success: this gateway settled inline.
+      await markPayment(tx, payment.id, 'succeeded', { providerRef: charge.providerRef })
+      await deposit('user', payerUserId, order.total, `Funding for order ${order.order_number}`, tx)
+      await completeOrderPayment(tx, order, payment.id, payerUserId, method)
 
-      await notifySeller(
-        tx,
-        order,
-        'Order paid',
-        `Order ${order.order_number} is paid and ready to prepare.`,
-      )
-      await queueNotification(
-        {
-          userId: payerUserId,
-          title: 'Payment successful',
-          body: `Order ${order.order_number} is confirmed.`,
-          category: 'order',
-          referenceType: 'order',
-          referenceId: order.id,
-        },
-        tx,
-      )
-
-      return { order: await loadOrder(tx, order.id), actionRequired }
+      return { order: await loadOrder(tx, order.id), actionRequired: charge.actionRequired }
     })
 
-    return { ok: true, order: result.order, actionRequired: result.actionRequired }
+    return {
+      ok: true,
+      order: result.order,
+      actionRequired: result.actionRequired,
+      awaitingProvider: result.awaitingProvider,
+    }
   } catch (err) {
     if (err instanceof InsufficientFundsError) {
       return { ok: false, error: 'Your wallet balance is not enough for this order' }
@@ -499,7 +510,266 @@ export async function payOrder(
   }
 }
 
-type ChargeAction = { kind: string; value: string }
+/**
+ * Everything that happens once the money is genuinely ours.
+ *
+ * Extracted because it now has two callers that have to behave identically:
+ * the synchronous path above, and the webhook settling an asynchronous
+ * provider. Any divergence would mean an order paid by card ends up in a
+ * different state than the same order paid from a wallet - a missing cashback,
+ * an unreleased reservation, a seller never notified.
+ *
+ * The caller must already have credited the buyer's wallet, and must be inside
+ * a transaction.
+ */
+async function completeOrderPayment(
+  tx: Sql,
+  order: Order,
+  paymentId: string,
+  payerUserId: string,
+  method: PaymentMethod,
+): Promise<void> {
+  const buyerWallet = await ensureWallet('user', payerUserId, order.currency, tx)
+  await payForOrder(tx, {
+    buyerWalletId: buyerWallet.id,
+    sellerOrgId: order.seller_org_id,
+    orderId: order.id,
+    orderNumber: order.order_number,
+    subtotal: order.subtotal,
+    deliveryFee: order.delivery_fee,
+    total: order.total,
+    platformFee: order.platform_fee,
+  })
+
+  // Payment succeeded: the reservation becomes a sale.
+  await consumeReservations(order.id, tx)
+
+  await tx.query(
+    `UPDATE orders SET status = 'confirmed', payment_status = 'succeeded', confirmed_at = now()
+      WHERE id = $1`,
+    [order.id],
+  )
+  await logOrderEvent(tx, order.id, 'confirmed', 'Payment received', payerUserId)
+
+  await publish(
+    {
+      type: EVENT.PaymentSucceeded,
+      aggregateType: 'payment',
+      aggregateId: paymentId,
+      actorUserId: payerUserId,
+      payload: { orderId: order.id, amount: order.total, method },
+    },
+    tx,
+  )
+  await publish(
+    {
+      type: EVENT.OrderConfirmed,
+      aggregateType: 'order',
+      aggregateId: order.id,
+      actorUserId: payerUserId,
+      payload: { orderNumber: order.order_number },
+    },
+    tx,
+  )
+
+  await notifySeller(
+    tx,
+    order,
+    'Order paid',
+    `Order ${order.order_number} is paid and ready to prepare.`,
+  )
+  await queueNotification(
+    {
+      userId: payerUserId,
+      title: 'Payment successful',
+      body: `Order ${order.order_number} is confirmed.`,
+      category: 'order',
+      referenceType: 'order',
+      referenceId: order.id,
+    },
+    tx,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Asynchronous settlement - what a verified webhook calls
+// ---------------------------------------------------------------------------
+
+export type SettlementOutcome =
+  'settled' | 'already_settled' | 'unknown_reference' | 'amount_mismatch' | 'order_not_payable'
+
+/**
+ * Identifies one delivery of one provider event.
+ *
+ * Claimed inside the settling transaction, never before it. Claiming in a
+ * transaction of its own would let the process die between the claim and the
+ * settlement, leaving an event marked handled that moved no money — and the
+ * provider's retry, which is the only thing that would have fixed it, gets
+ * turned away by the claim.
+ */
+export interface WebhookEventKey {
+  provider: string
+  id: string
+  type: string
+}
+
+/**
+ * Complete a payment the provider has confirmed it collected.
+ *
+ * `confirmed` is what the *provider* says it took, and it is checked against
+ * what we asked for before any money moves. A payload claiming 100 kobo
+ * against a 10,000,000 kobo order must not confirm that order, whether it got
+ * there by tampering or by a provider-side mistake - the signature proves who
+ * sent the message, not that the message is right.
+ *
+ * Safe to call repeatedly with one reference: the pending-row claim means
+ * exactly one call does the work.
+ */
+export async function settlePaymentByProviderRef(
+  providerRef: string,
+  confirmed: { amount: number; currency: string },
+  event?: WebhookEventKey,
+): Promise<SettlementOutcome> {
+  return withTx(async (tx) => {
+    if (event && !(await claimWebhookEvent(tx, event.provider, event.id, event.type))) {
+      return 'already_settled'
+    }
+    const payment = await findPaymentByProviderRef(tx, providerRef)
+    if (!payment) return 'unknown_reference'
+    if (payment.status !== 'pending') return 'already_settled'
+
+    if (payment.amount !== confirmed.amount || payment.currency !== confirmed.currency) {
+      await claimPendingPayment(tx, payment.id, 'failed', {
+        failureReason: `Provider reported ${confirmed.amount} ${confirmed.currency}, expected ${payment.amount} ${payment.currency}`,
+      })
+      console.error(
+        `[payments] amount mismatch on ${providerRef}: expected ${payment.amount} ${payment.currency}, provider said ${confirmed.amount} ${confirmed.currency}`,
+      )
+      return 'amount_mismatch'
+    }
+
+    /*
+     * No order attached means a wallet top-up: the money is the point, not a
+     * purchase. Credit the wallet the payment was raised against — which is
+     * not always the payer's own, since someone topping up a business account
+     * is funding the organisation, not themselves.
+     */
+    if (!payment.order_id) {
+      const claimed = await claimPendingPayment(tx, payment.id, 'succeeded')
+      if (!claimed) return 'already_settled'
+      await deposit(
+        payment.credit_owner_type ?? 'user',
+        payment.credit_owner_id ?? payment.payer_user_id,
+        payment.amount,
+        'Wallet top-up',
+        tx,
+      )
+      await queueNotification(
+        {
+          userId: payment.payer_user_id,
+          title: 'Wallet topped up',
+          body: 'Your top-up has been confirmed and added to your balance.',
+          category: 'wallet',
+          referenceType: 'payment',
+          referenceId: payment.id,
+        },
+        tx,
+      )
+      return 'settled'
+    }
+
+    const order = await tx.one<Order>(`SELECT * FROM orders WHERE id = $1`, [payment.order_id])
+    if (!order) return 'unknown_reference'
+
+    /*
+     * A customer who pays after cancelling, or after the reservation lapsed,
+     * has given us money with no order left to put it against. Take the money
+     * into their wallet and tell them, rather than confirming an order whose
+     * stock is no longer held - the goods may genuinely be gone.
+     */
+    if (order.status !== 'pending_payment') {
+      const claimed = await claimPendingPayment(tx, payment.id, 'succeeded')
+      if (!claimed) return 'already_settled'
+      await deposit(
+        'user',
+        payment.payer_user_id,
+        payment.amount,
+        `Payment for ${order.order_number}, received after the order was ${order.status}`,
+        tx,
+      )
+      await queueNotification(
+        {
+          userId: payment.payer_user_id,
+          title: 'Payment added to your wallet',
+          body: `Order ${order.order_number} was already ${order.status}, so your payment went to your wallet balance instead.`,
+          category: 'wallet',
+          referenceType: 'order',
+          referenceId: order.id,
+        },
+        tx,
+      )
+      return 'order_not_payable'
+    }
+
+    // The claim is the idempotency barrier: whoever wins it settles.
+    const claimed = await claimPendingPayment(tx, payment.id, 'succeeded')
+    if (!claimed) return 'already_settled'
+
+    await deposit(
+      'user',
+      payment.payer_user_id,
+      payment.amount,
+      `Funding for order ${order.order_number}`,
+      tx,
+    )
+    await completeOrderPayment(tx, order, payment.id, payment.payer_user_id, payment.method)
+    return 'settled'
+  })
+}
+
+/**
+ * Record a provider-reported failure. The order stays in `pending_payment` so
+ * the buyer can try again against the stock it still holds.
+ */
+export async function failPaymentByProviderRef(
+  providerRef: string,
+  reason: string,
+  event?: WebhookEventKey,
+): Promise<SettlementOutcome> {
+  return withTx(async (tx) => {
+    if (event && !(await claimWebhookEvent(tx, event.provider, event.id, event.type))) {
+      return 'already_settled'
+    }
+    const payment = await findPaymentByProviderRef(tx, providerRef)
+    if (!payment) return 'unknown_reference'
+
+    const claimed = await claimPendingPayment(tx, payment.id, 'failed', { failureReason: reason })
+    if (!claimed) return 'already_settled'
+
+    await publish(
+      {
+        type: EVENT.PaymentFailed,
+        aggregateType: 'payment',
+        aggregateId: payment.id,
+        actorUserId: payment.payer_user_id,
+        payload: { orderId: payment.order_id, reason },
+      },
+      tx,
+    )
+    await queueNotification(
+      {
+        userId: payment.payer_user_id,
+        title: 'Payment failed',
+        body: reason,
+        category: 'order',
+        referenceType: 'order',
+        referenceId: payment.order_id,
+      },
+      tx,
+    )
+    return 'settled'
+  })
+}
 
 // ---------------------------------------------------------------------------
 // Fulfilment transitions

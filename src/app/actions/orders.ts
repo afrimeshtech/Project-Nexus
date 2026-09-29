@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { currentUser, currentOrganisation } from '@/lib/auth'
+import { currentUser, currentOrganisation, organisationFor } from '@/lib/auth'
+import { assignRider, riderIsAvailable, DeliveryError } from '@/modules/logistics/service'
 import {
   advanceOrder,
   cancelOrder,
@@ -37,6 +38,67 @@ const advanceSchema = z.object({
     { message: 'That is not a valid order status.' },
   ),
 })
+
+const dispatchSchema = z.object({
+  orderId: uuid('order'),
+  // Empty means "put it on the open board" rather than a named rider.
+  riderId: uuid('rider').optional().or(z.literal('')),
+})
+
+/**
+ * Hand an order to a delivery partner.
+ *
+ * From `preparing`, this dispatches the order (which raises the delivery job)
+ * and, if a rider was chosen, gives the job straight to them. From
+ * `dispatched`, with the job still unclaimed on the board, it only assigns -
+ * the "nobody has picked it up, send Musa" case.
+ *
+ * The rider is checked before the order moves, so choosing someone who cannot
+ * take it does not leave the order dispatched with nobody named.
+ */
+export async function dispatchOrderAction(
+  _prev: OrderActionState,
+  formData: FormData,
+): Promise<OrderActionState> {
+  const user = await currentUser()
+  if (!user) redirect('/login')
+
+  const parsed = parseForm(dispatchSchema, formData)
+  if (!parsed.ok) return { error: parsed.error }
+  const { orderId } = parsed.data
+  const riderId = parsed.data.riderId || null
+
+  const org = await organisationFor('dispatch')
+  const order = await getOrder(orderId)
+  if (!order || !org || order.seller_org_id !== org.id) {
+    return { error: 'You are not allowed to dispatch this order' }
+  }
+
+  try {
+    if (riderId && !(await riderIsAvailable(riderId))) {
+      return { error: 'That rider is not available. Choose another, or use the open job board.' }
+    }
+    if (order.status === 'preparing') {
+      await advanceOrder(orderId, 'dispatched', user.id)
+    } else if (order.status !== 'dispatched') {
+      return { error: 'Only an order being prepared can be dispatched.' }
+    } else if (!riderId) {
+      return { error: 'Choose a rider to assign.' }
+    }
+    if (riderId) await assignRider(orderId, org.id, riderId, user.id)
+  } catch (err) {
+    if (err instanceof BusinessRuleError || err instanceof DeliveryError) {
+      return { error: err.message }
+    }
+    console.error('[orders] dispatch failed', err)
+    return { error: 'We could not dispatch that order.' }
+  }
+
+  revalidatePath(`/orders/${orderId}`)
+  revalidatePath('/partner/orders')
+  revalidatePath(`/partner/orders/${orderId}`)
+  return { notice: riderId ? 'Dispatched to your rider.' : 'Dispatched to the open job board.' }
+}
 
 /** Buyer rates a delivered order. Verified transactions only (PRD §12). */
 export async function rateOrderAction(

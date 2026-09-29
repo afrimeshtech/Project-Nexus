@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { OrderDetailView } from '@/components/commerce/OrderDetailView'
 import { requireUser, currentOrganisation } from '@/lib/auth'
+import { can } from '@/lib/org-access'
 import { getOrder } from '@/modules/orders/service'
 import { expireStaleReservations } from '@/modules/inventory/service'
 
@@ -34,7 +35,11 @@ export default async function OrderDetailPage({
     <ConsumerShell search={false}>
       <OrderDetailView
         order={order}
-        viewer={{ isBuyer, isSeller }}
+        viewer={{
+          isBuyer,
+          isSeller,
+          canSeeFunds: org ? can(org.member_role, 'funds') : true,
+        }}
         payment={{ status: query.payment, reason: query.reason }}
       />
     </ConsumerShell>

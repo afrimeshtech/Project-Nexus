@@ -4,6 +4,7 @@ import { Wordmark } from '@/components/brand/Logo'
 import { Thumb, inputWithIconClass } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentOrganisation, currentUser } from '@/lib/auth'
+import { can, MEMBER_ROLE_LABEL, type OrgCapability } from '@/lib/org-access'
 import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // FUTURE-DASHBOARD: both of these fed the sourcing nav entry only.
 // import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
@@ -90,12 +91,19 @@ export async function PartnerShell({
    * where you go on purpose and rarely, so it stays a plain list below the
    * rule. Splitting them is what stops eleven identical rows reading as a wall.
    */
+  /*
+   * Entries a sales rep may not use are left out rather than shown disabled.
+   * The pages and actions behind them refuse a rep regardless; this only
+   * keeps the rail from advertising rooms they cannot enter.
+   */
+  const allowed = (capability: OrgCapability) => can(org.member_role, capability)
+
   const work: NavItem[] = [
     { href: '/partner', label: 'Overview', icon: 'chart' },
     { href: '/partner/orders', label: `Orders from ${sellsTo}`, short: 'Orders', icon: 'inbox' },
     { href: '/partner/inventory', label: 'Inventory', icon: 'box' },
     { href: '/partner/catalogue', label: 'Add products', icon: 'plus' },
-    ...(audienceForSeller(org.type)
+    ...(audienceForSeller(org.type) && allowed('analytics')
       ? [{ href: '/partner/locations', label: 'Buyer locations', icon: 'pin' as const }]
       : []),
     { href: '/messages', label: 'Messages', icon: 'chat', badge: unreadMessages },
@@ -117,10 +125,19 @@ export async function PartnerShell({
   //   : []),
 
   const account: NavItem[] = [
-    { href: '/partner/wallet', label: 'Wallet', icon: 'wallet' },
-    { href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' },
-    { href: '/partner/api', label: 'API access', icon: 'lock' },
-    { href: '/partner/settings', label: 'Settings', icon: 'settings' },
+    ...(allowed('funds')
+      ? [{ href: '/partner/wallet', label: 'Wallet', icon: 'wallet' as const }]
+      : []),
+    ...(allowed('team') ? [{ href: '/partner/team', label: 'Team', icon: 'user' as const }] : []),
+    ...(allowed('rewards')
+      ? [{ href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' as const }]
+      : []),
+    ...(allowed('api')
+      ? [{ href: '/partner/api', label: 'API access', icon: 'lock' as const }]
+      : []),
+    ...(allowed('settings')
+      ? [{ href: '/partner/settings', label: 'Settings', icon: 'settings' as const }]
+      : []),
     { href: '/contact?from=partner', label: 'Contact us', icon: 'mail' },
   ]
 
@@ -215,7 +232,9 @@ export async function PartnerShell({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-ink">{org.name}</p>
               <p className="truncate text-xs text-muted">
-                {ORG_LABEL[org.type as OrgType]} · tier {org.tier_level}
+                {org.member_role === 'owner'
+                  ? `${ORG_LABEL[org.type as OrgType]} · tier ${org.tier_level}`
+                  : `${MEMBER_ROLE_LABEL[org.member_role]} · ${user.full_name}`}
               </p>
             </div>
           </div>

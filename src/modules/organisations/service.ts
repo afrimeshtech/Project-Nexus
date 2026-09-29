@@ -3,6 +3,7 @@ import { publish, EVENT } from '@/modules/events/service'
 import { queueNotification } from '@/modules/notifications/service'
 import { ensureWallet } from '@/modules/wallet/service'
 import { slugify } from '@/modules/catalog/service'
+import { normalisePhone, registerUser } from '@/modules/identity/service'
 import { tierOf, type OrgType } from '@/lib/tiers'
 
 /**
@@ -347,6 +348,167 @@ export async function updateOrganisation(
       patch.lng,
     ])
   }
+}
+
+// ---------------------------------------------------------------------------
+// Team - the owner and the sales reps who work the shop floor
+// ---------------------------------------------------------------------------
+
+export interface TeamMember {
+  user_id: string
+  full_name: string
+  phone: string | null
+  role_in_org: string
+  is_owner: boolean
+  last_login_at: Date | null
+  joined_at: Date
+}
+
+export class TeamError extends Error {}
+
+export async function listTeam(orgId: string): Promise<TeamMember[]> {
+  const sql = await getSql()
+  // The owner is joined from `owner_user_id` as well as the membership table:
+  // businesses created before owners were written as members have no row.
+  return sql.query<TeamMember>(
+    `SELECT u.id AS user_id, u.full_name, u.phone,
+            COALESCE(m.role_in_org, 'owner') AS role_in_org,
+            (o.owner_user_id = u.id) AS is_owner,
+            u.last_login_at, COALESCE(m.created_at, o.created_at) AS joined_at
+       FROM organisations o
+       JOIN users u ON u.id = o.owner_user_id
+                    OR u.id IN (SELECT user_id FROM organisation_members WHERE organisation_id = o.id)
+       LEFT JOIN organisation_members m ON m.organisation_id = o.id AND m.user_id = u.id
+      WHERE o.id = $1
+      ORDER BY (o.owner_user_id = u.id) DESC, COALESCE(m.created_at, o.created_at) ASC`,
+    [orgId],
+  )
+}
+
+/**
+ * Put a sales rep on the business, by phone number.
+ *
+ * The rep signs in with that number (OTP), so an owner can add someone who has
+ * never opened AfriMesh: the account is created here and is theirs from the
+ * first code they receive. An existing account is attached as it is.
+ *
+ * A person works for one business. `currentOrganisation` resolves a single
+ * business per person, so a second membership would silently put them in
+ * whichever one sorts first - refused here instead.
+ */
+export async function addSalesRep(
+  orgId: string,
+  input: { fullName: string; phone: string },
+  actorUserId: string,
+): Promise<TeamMember> {
+  const phone = normalisePhone(input.phone)
+  if (!phone) throw new TeamError('Enter a valid phone number.')
+
+  const sql = await getSql()
+  let user = await sql.one<{ id: string; role: string; full_name: string }>(
+    `SELECT id, role, full_name FROM users WHERE phone = $1`,
+    [phone],
+  )
+
+  if (user) {
+    if (user.id === actorUserId) throw new TeamError('You are already the owner of this business.')
+    // Riders, administrators and other businesses have dashboards of their
+    // own; folding them into a shop's team would hand them a second identity.
+    if (user.role !== 'consumer') {
+      throw new TeamError('That number belongs to another business or delivery account.')
+    }
+    const elsewhere = await sql.one<{ name: string; same: boolean }>(
+      `SELECT o.name, (o.id = $2) AS same
+         FROM organisation_members m JOIN organisations o ON o.id = m.organisation_id
+        WHERE m.user_id = $1
+        LIMIT 1`,
+      [user.id, orgId],
+    )
+    if (elsewhere?.same) throw new TeamError(`${user.full_name} is already on your team.`)
+    if (elsewhere) throw new TeamError('That person already works for another business.')
+  } else {
+    user = await registerUser({ fullName: input.fullName, phone })
+  }
+
+  const memberId = user.id
+  return withTx(async (tx) => {
+    await tx.query(
+      `INSERT INTO organisation_members (organisation_id, user_id, role_in_org)
+       VALUES ($1, $2, 'sales_rep')`,
+      [orgId, memberId],
+    )
+    const org = await tx.one<{ name: string }>(`SELECT name FROM organisations WHERE id = $1`, [
+      orgId,
+    ])
+
+    await publish(
+      {
+        type: EVENT.MemberAdded,
+        aggregateType: 'organisation',
+        aggregateId: orgId,
+        actorUserId,
+        payload: { userId: memberId, role: 'sales_rep' },
+      },
+      tx,
+    )
+    await queueNotification(
+      {
+        userId: memberId,
+        title: `You have been added to ${org?.name ?? 'a business'}`,
+        body: 'You can now manage stock and fulfil orders from the business dashboard.',
+        category: 'account',
+        referenceType: 'organisation',
+        referenceId: orgId,
+      },
+      tx,
+    )
+
+    const member = await tx.one<TeamMember>(
+      `SELECT u.id AS user_id, u.full_name, u.phone, m.role_in_org, FALSE AS is_owner,
+              u.last_login_at, m.created_at AS joined_at
+         FROM organisation_members m JOIN users u ON u.id = m.user_id
+        WHERE m.organisation_id = $1 AND m.user_id = $2`,
+      [orgId, memberId],
+    )
+    if (!member) throw new Error('Failed to add team member')
+    return member
+  })
+}
+
+/**
+ * Take a sales rep off the business. Access ends on their next request:
+ * every partner page and action re-resolves membership, so there is no cached
+ * permission to outlive the row. The owner cannot be removed this way.
+ */
+export async function removeTeamMember(
+  orgId: string,
+  memberUserId: string,
+  actorUserId: string,
+): Promise<void> {
+  await withTx(async (tx) => {
+    const removed = await tx.one<{ user_id: string }>(
+      `DELETE FROM organisation_members m
+        USING organisations o
+        WHERE m.organisation_id = $1 AND m.user_id = $2
+          AND o.id = m.organisation_id
+          AND m.role_in_org <> 'owner'
+          AND o.owner_user_id IS DISTINCT FROM m.user_id
+        RETURNING m.user_id`,
+      [orgId, memberUserId],
+    )
+    if (!removed) throw new TeamError('That person is not a sales rep on this business.')
+
+    await publish(
+      {
+        type: EVENT.MemberRemoved,
+        aggregateType: 'organisation',
+        aggregateId: orgId,
+        actorUserId,
+        payload: { userId: memberUserId },
+      },
+      tx,
+    )
+  })
 }
 
 export async function ratingsFor(orgId: string, limit = 20) {

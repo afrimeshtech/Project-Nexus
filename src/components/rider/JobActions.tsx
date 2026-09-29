@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import {
   acceptJobAction,
   completeDeliveryAction,
+  declineJobAction,
   pickUpAction,
   type DeliveryActionState,
 } from '@/app/actions/logistics'
@@ -43,6 +44,28 @@ export function PickUpButton({ deliveryId }: { deliveryId: string }) {
         className="rounded-brand bg-accent-500 px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-600 disabled:opacity-60"
       >
         {pending ? 'Saving…' : 'I have collected it'}
+      </button>
+      {state.error && <p className="mt-1.5 text-xs text-coral-ink">{state.error}</p>}
+    </form>
+  )
+}
+
+/** A shop assigned this job directly; the rider can give it back before pickup. */
+export function DeclineJobButton({ deliveryId }: { deliveryId: string }) {
+  const [state, formAction, pending] = useActionState<DeliveryActionState, FormData>(
+    declineJobAction,
+    {},
+  )
+  if (state.notice) return <p className="self-center text-xs text-muted">{state.notice}</p>
+  return (
+    <form action={formAction}>
+      <input type="hidden" name="deliveryId" value={deliveryId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-brand border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-surface-muted disabled:opacity-60"
+      >
+        {pending ? 'Handing back…' : 'I can’t take this'}
       </button>
       {state.error && <p className="mt-1.5 text-xs text-coral-ink">{state.error}</p>}
     </form>

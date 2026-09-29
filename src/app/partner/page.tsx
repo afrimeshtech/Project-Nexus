@@ -8,7 +8,7 @@ import {
   Badge,
   Card,
   EmptyState,
-  // FUTURE-DASHBOARD: LinkButton, for the sourcing shortcut below.
+  LinkButton,
   Rating,
   SectionHeading,
   Stat,
@@ -16,6 +16,7 @@ import {
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { formatMoney } from '@/lib/money'
+import { can, MEMBER_ROLE_LABEL } from '@/lib/org-access'
 import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // FUTURE-DASHBOARD: import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import {
@@ -42,12 +43,16 @@ export const metadata = { title: 'Dashboard' }
 export default async function PartnerHome({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string }>
+  searchParams: Promise<{ welcome?: string; restricted?: string }>
 }) {
-  const { welcome } = await searchParams
+  const { welcome, restricted } = await searchParams
   const user = await requireUser('/partner')
   const org = await currentOrganisation()
   if (!org) redirect('/onboarding')
+
+  if (!can(org.member_role, 'funds')) {
+    return <SalesRepHome org={org} restricted={Boolean(restricted)} />
+  }
 
   const [kpis, stock, series, top, orders, wallet, lowStock, expiring, demand, points, referrals] =
     await Promise.all([
@@ -208,109 +213,11 @@ export default async function PartnerHome({
         )}
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
-          <Card>
-            <SectionHeading
-              title="Recent orders"
-              action={
-                <Link
-                  href="/partner/orders"
-                  className="text-sm font-medium text-accent-strong hover:underline"
-                >
-                  All orders
-                </Link>
-              }
-            />
-            {orders.length ? (
-              <ul className="space-y-2">
-                {orders.map((order) => (
-                  <li key={order.id}>
-                    <Link
-                      href={`/partner/orders/${order.id}`}
-                      className="flex items-center justify-between gap-3 rounded-brand px-2 py-2 hover:bg-surface-muted"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-ink">
-                          {order.first_item}
-                          {order.item_count > 1 && ` +${order.item_count - 1}`}
-                        </span>
-                        <span className="block font-technical text-xs text-muted">
-                          {order.order_number} · {order.buyer_org_name ?? order.buyer_name}
-                        </span>
-                      </span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <OrderStatusBadge status={order.status} />
-                        <span className="text-sm font-semibold">{formatMoney(order.total)}</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                icon="inbox"
-                title="No orders yet"
-                body="They will appear here as buyers order."
-              />
-            )}
-          </Card>
+          <RecentOrdersCard orders={orders} />
 
           <div className="space-y-4">
-            <Card>
-              <SectionHeading
-                title="Needs restocking"
-                subtitle="At or below your reorder level"
-                // FUTURE-DASHBOARD: the sourcing shortcut, restored with the
-                // merchant tier —
-                //   action={
-                //     supplier ? (
-                //       <LinkButton href="/partner/source" variant="ghost">
-                //         Source now
-                //       </LinkButton>
-                //     ) : null
-                //   }
-              />
-              {lowStock.length ? (
-                <ul className="space-y-1.5">
-                  {lowStock.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
-                      <Link
-                        href={`/partner/inventory/${item.id}`}
-                        className="min-w-0 truncate text-ink hover:text-accent-strong"
-                      >
-                        {item.product_name}
-                      </Link>
-                      <Badge
-                        className="shrink-0"
-                        tone={item.qty_available === 0 ? 'danger' : 'warning'}
-                      >
-                        {item.qty_available === 0 ? 'Out of stock' : `${item.qty_available} left`}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-muted">Everything is above its reorder level.</p>
-              )}
-            </Card>
-
-            {expiring.length > 0 && (
-              <Card>
-                <SectionHeading title="Expiring soon" subtitle="Batches within 60 days of expiry" />
-                <ul className="space-y-1.5">
-                  {expiring.slice(0, 5).map((batch) => (
-                    <li key={batch.id} className="flex items-center justify-between gap-3 text-sm">
-                      <span className="min-w-0 truncate text-ink">{batch.product_name}</span>
-                      <Badge
-                        className="shrink-0"
-                        tone={batch.days_left < 30 ? 'danger' : 'warning'}
-                      >
-                        {batch.days_left} days
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            )}
+            <RestockCard lowStock={lowStock} />
+            <ExpiringCard expiring={expiring} />
           </div>
         </div>
 
@@ -356,6 +263,194 @@ export default async function PartnerHome({
         </div>
       </div>
     </PartnerShell>
+  )
+}
+
+type PartnerOrg = NonNullable<Awaited<ReturnType<typeof currentOrganisation>>>
+
+/**
+ * The sales rep's home: the shop floor, not the books.
+ *
+ * Built from what a rep acts on - orders waiting, stock running out, batches
+ * about to expire. Revenue, the wallet, reward points and demand analytics are
+ * the owner's, and are not fetched here at all, so they cannot leak through a
+ * component that forgets to hide them.
+ */
+async function SalesRepHome({ org, restricted }: { org: PartnerOrg; restricted: boolean }) {
+  const [confirmed, preparing, stock, orders, lowStock, expiring] = await Promise.all([
+    ordersForSeller(org.id, { status: 'confirmed', limit: 100 }),
+    ordersForSeller(org.id, { status: 'preparing', limit: 100 }),
+    inventoryStats(org.id),
+    ordersForSeller(org.id, { limit: 6 }),
+    listInventory(org.id, { lowOnly: true, limit: 6 }),
+    expiringBatches(org.id, 60),
+  ])
+
+  return (
+    <PartnerShell active="/partner">
+      <div className="space-y-8">
+        {restricted && (
+          <Alert tone="info">
+            That part of the dashboard is kept for the business owner. Ask them if you need
+            something from it.
+          </Alert>
+        )}
+
+        <div className="border-b border-line-soft pb-5">
+          <Breadcrumb trail={[{ label: 'Home', href: '/' }, { label: 'Dashboard' }]} />
+          <h1 className="text-display-sm text-ink">{org.name}</h1>
+          <p className="mt-1 text-sm text-muted">
+            {MEMBER_ROLE_LABEL[org.member_role]} · {ORG_LABEL[org.type as OrgType]} ·{' '}
+            {org.city ?? '—'}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <Stat
+            label="Orders to fulfil"
+            value={confirmed.length + preparing.length}
+            hint={`${confirmed.length} new · ${preparing.length} being prepared`}
+          />
+          <Stat label="Products listed" value={stock.skus} icon="box" />
+          <Stat
+            label="Low stock"
+            value={stock.low_stock}
+            tone={stock.low_stock ? 'warning' : 'neutral'}
+          />
+          <Stat
+            label="Out of stock"
+            value={stock.out_of_stock}
+            tone={stock.out_of_stock ? 'danger' : 'neutral'}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <LinkButton href="/partner/orders">Open orders</LinkButton>
+          <LinkButton href="/partner/inventory" variant="secondary">
+            Restock
+          </LinkButton>
+          <LinkButton href="/partner/catalogue" variant="secondary">
+            Add products
+          </LinkButton>
+        </div>
+
+        <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
+          <RecentOrdersCard orders={orders} />
+          <div className="space-y-4">
+            <RestockCard lowStock={lowStock} />
+            <ExpiringCard expiring={expiring} />
+          </div>
+        </div>
+      </div>
+    </PartnerShell>
+  )
+}
+
+function RecentOrdersCard({ orders }: { orders: Awaited<ReturnType<typeof ordersForSeller>> }) {
+  return (
+    <Card>
+      <SectionHeading
+        title="Recent orders"
+        action={
+          <Link
+            href="/partner/orders"
+            className="text-sm font-medium text-accent-strong hover:underline"
+          >
+            All orders
+          </Link>
+        }
+      />
+      {orders.length ? (
+        <ul className="space-y-2">
+          {orders.map((order) => (
+            <li key={order.id}>
+              <Link
+                href={`/partner/orders/${order.id}`}
+                className="flex items-center justify-between gap-3 rounded-brand px-2 py-2 hover:bg-surface-muted"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {order.first_item}
+                    {order.item_count > 1 && ` +${order.item_count - 1}`}
+                  </span>
+                  <span className="block font-technical text-xs text-muted">
+                    {order.order_number} · {order.buyer_org_name ?? order.buyer_name}
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <OrderStatusBadge status={order.status} />
+                  <span className="text-sm font-semibold">{formatMoney(order.total)}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          icon="inbox"
+          title="No orders yet"
+          body="They will appear here as buyers order."
+        />
+      )}
+    </Card>
+  )
+}
+
+function RestockCard({ lowStock }: { lowStock: Awaited<ReturnType<typeof listInventory>> }) {
+  return (
+    <Card>
+      <SectionHeading
+        title="Needs restocking"
+        subtitle="At or below your reorder level"
+        // FUTURE-DASHBOARD: the sourcing shortcut, restored with the
+        // merchant tier —
+        //   action={
+        //     supplier ? (
+        //       <LinkButton href="/partner/source" variant="ghost">
+        //         Source now
+        //       </LinkButton>
+        //     ) : null
+        //   }
+      />
+      {lowStock.length ? (
+        <ul className="space-y-1.5">
+          {lowStock.map((item) => (
+            <li key={item.id} className="flex items-center justify-between gap-3 text-sm">
+              <Link
+                href={`/partner/inventory/${item.id}`}
+                className="min-w-0 truncate text-ink hover:text-accent-strong"
+              >
+                {item.product_name}
+              </Link>
+              <Badge className="shrink-0" tone={item.qty_available === 0 ? 'danger' : 'warning'}>
+                {item.qty_available === 0 ? 'Out of stock' : `${item.qty_available} left`}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted">Everything is above its reorder level.</p>
+      )}
+    </Card>
+  )
+}
+
+function ExpiringCard({ expiring }: { expiring: Awaited<ReturnType<typeof expiringBatches>> }) {
+  if (!expiring.length) return null
+  return (
+    <Card>
+      <SectionHeading title="Expiring soon" subtitle="Batches within 60 days of expiry" />
+      <ul className="space-y-1.5">
+        {expiring.slice(0, 5).map((batch) => (
+          <li key={batch.id} className="flex items-center justify-between gap-3 text-sm">
+            <span className="min-w-0 truncate text-ink">{batch.product_name}</span>
+            <Badge className="shrink-0" tone={batch.days_left < 30 ? 'danger' : 'warning'}>
+              {batch.days_left} days
+            </Badge>
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 

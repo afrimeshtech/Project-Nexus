@@ -44,15 +44,44 @@ describe('no hardcoded hosts', () => {
     )
   })
 
-  test('every fetch() target is a relative path', () => {
+  /*
+   * Third-party APIs we are allowed to call outbound, by the constant that
+   * holds their base URL.
+   *
+   * The rule this test enforces is about *same-origin* requests: hardcoding
+   * our own host breaks every environment that is not the one it was written
+   * in. A payment provider's API is a different thing entirely — it has one
+   * address everywhere, and it cannot be relative.
+   *
+   * Kept as an explicit list so that reaching a new third party from inside
+   * this codebase is a deliberate edit to this file, visible in review, rather
+   * than something a fetch call can do quietly.
+   */
+  const OUTBOUND_APIS = ['PAYSTACK_API']
+
+  test('every fetch() target is a relative path or a declared third-party API', () => {
     for (const file of sourceFiles) {
       for (const match of file.content.matchAll(/fetch\(\s*[`'"]([^`'"]*)/g)) {
         const url = match[1]
+        if (OUTBOUND_APIS.some((api) => url.startsWith('${' + api + '}'))) continue
         assert.ok(
           url.startsWith('/'),
-          `${file.path} fetches an absolute URL (${url}); same-origin requests must be relative`,
+          `${file.path} fetches an absolute URL (${url}); same-origin requests must be ` +
+            `relative, and a third-party base URL must be a constant listed in OUTBOUND_APIS`,
         )
       }
+    }
+  })
+
+  test('each declared outbound API is a constant over https', () => {
+    // An entry in the allowlist that does not exist, or that points somewhere
+    // plaintext, would make the exemption above meaningless.
+    for (const api of OUTBOUND_APIS) {
+      const declaration = sourceFiles
+        .map((f) => f.content.match(new RegExp(`const ${api}\\s*=\\s*['"]([^'"]+)['"]`)))
+        .find(Boolean)
+      assert.ok(declaration, `${api} is allowlisted but never declared`)
+      assert.match(declaration![1], /^https:\/\//, `${api} must be https`)
     }
   })
 })

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { getSql } from '@/db/client'
-import { currentUser, currentOrganisation, ADMIN_ROLES } from '@/lib/auth'
+import { currentUser, currentOrganisation, organisationFor, ADMIN_ROLES } from '@/lib/auth'
 import { parseForm, z, uuid } from '@/lib/forms'
 import {
   storeImage,
@@ -116,8 +116,8 @@ export async function uploadOrgLogoAction(
   const user = await currentUser()
   if (!user) redirect('/login?next=/partner/settings')
 
-  const org = await currentOrganisation()
-  if (!org) return { error: 'No business account found.' }
+  const org = await organisationFor('settings')
+  if (!org) return { error: 'Only the business owner can change the logo.' }
 
   const file = formData.get('image')
   if (!(file instanceof File)) return { error: 'Choose an image to upload.' }

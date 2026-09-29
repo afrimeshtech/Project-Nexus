@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { PartnerShell } from '@/components/shell/PartnerShell'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
 import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
-import { requireUser, currentOrganisation } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import {
   audienceForSeller,
@@ -35,9 +35,7 @@ export default async function PartnerLocationsPage({
 }: {
   searchParams: Promise<{ days?: string }>
 }) {
-  await requireUser('/partner/locations')
-  const org = await currentOrganisation()
-  if (!org) redirect('/onboarding')
+  const { org } = await requireOrgCapability('analytics', '/partner/locations')
 
   const audience = audienceForSeller(org.type)
   if (!audience) redirect('/partner')

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { currentUser, currentOrganisation } from '@/lib/auth'
+import { currentUser, organisationFor } from '@/lib/auth'
 import { issueKey, revokeKey, API_SCOPES, type ApiScope } from '@/modules/api/service'
 
 import { parseForm, z, requiredText, uuid } from '@/lib/forms'
@@ -35,8 +35,8 @@ export async function issueKeyAction(
   const user = await currentUser()
   if (!user) redirect('/login?next=/partner/api')
 
-  const org = await currentOrganisation()
-  if (!org) return { error: 'No business account found' }
+  const org = await organisationFor('api')
+  if (!org) return { error: 'Only the business owner can manage API keys' }
 
   const parsed = parseForm(issueSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
@@ -72,7 +72,7 @@ export async function issueKeyAction(
 }
 
 export async function revokeKeyAction(formData: FormData) {
-  const org = await currentOrganisation()
+  const org = await organisationFor('api')
   if (!org) return
 
   const parsed = parseForm(revokeSchema, formData)

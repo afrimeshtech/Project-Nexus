@@ -3,7 +3,7 @@ import { PartnerShell } from '@/components/shell/PartnerShell'
 import { EditBusinessForm } from '@/components/partner/BusinessForm'
 import { LogoUpload } from '@/components/media/ImageUpload'
 import { Badge, Card, PageHeader, Rating, SectionHeading } from '@/components/ui'
-import { requireUser, currentOrganisation } from '@/lib/auth'
+import { requireOrgCapability } from '@/lib/auth'
 import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
 
@@ -11,9 +11,7 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Business settings' }
 
 export default async function PartnerSettingsPage() {
-  await requireUser('/partner/settings')
-  const current = await currentOrganisation()
-  if (!current) redirect('/onboarding')
+  const { org: current } = await requireOrgCapability('settings', '/partner/settings')
 
   const [org, reviews] = await Promise.all([
     getOrganisation(current.id),

@@ -69,6 +69,8 @@ export type IconName =
   | 'info'
   | 'bookmark'
   | 'mail'
+  | 'eye'
+  | 'eye-off'
 
 /** Every path is stroked; `fill` stays none so the set reads as outlined. */
 const PATHS: Record<IconName, string> = {
@@ -130,6 +132,9 @@ const PATHS: Record<IconName, string> = {
   close: 'M6 6l12 12M18 6L6 18',
   info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 11v5.5M12 7.75h.01',
   bookmark: 'M6.5 4h11a1 1 0 0 1 1 1v15l-6.5-4.5L5.5 20V5a1 1 0 0 1 1-1Z',
+  eye: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12ZM12 14.75a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5Z',
+  'eye-off':
+    'M4 4l16 16M10.6 6.1A9.6 9.6 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-2.9 3.6M14 14.2a2.75 2.75 0 0 1-4.2-4.2M6.6 7.7C4 9.4 2.5 12 2.5 12s3.5 6.5 9.5 6.5a9.3 9.3 0 0 0 4.4-1.1',
   mail: 'M4 6.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 6.5v11A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5v-11ZM4.5 6.5l7.5 6 7.5-6',
 }
 

@@ -10,6 +10,7 @@ import {
   type FormState,
 } from '@/app/actions/session'
 import { FormError, Alert, Field, inputClass } from '@/components/ui'
+import { Icon } from '@/components/Icon'
 
 /**
  * Sign-in supports both methods the SAD lists for launch: email/password and
@@ -117,20 +118,16 @@ function PasswordLogin({ next }: { next: string }) {
           id="identifier"
           name="identifier"
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           className={inputClass}
           placeholder="08030000001 or you@example.ng"
           required
         />
       </Field>
       <Field label="Password" htmlFor="password">
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          className={inputClass}
-          required
-        />
+        <PasswordInput id="password" autoComplete="current-password" required />
       </Field>
 
       <button
@@ -183,6 +180,9 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
               id="otp-identifier"
               name="identifier"
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className={inputClass}
               placeholder="08030000001 or you@example.ng"
               required
@@ -331,18 +331,14 @@ export function RegisterForm({
           name="email"
           type="email"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           className={inputClass}
         />
       </Field>
       <Field label="Password" hint="At least 8 characters." htmlFor="reg-password">
-        <input
-          id="reg-password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          className={inputClass}
-          minLength={8}
-        />
+        <PasswordInput id="reg-password" autoComplete="new-password" minLength={8} />
       </Field>
       <Field
         label="Invite code"
@@ -380,5 +376,50 @@ export function RegisterForm({
         </Link>
       </p>
     </form>
+  )
+}
+
+/**
+ * A password field with a show/hide toggle. On a phone keyboard a stray
+ * capital or trailing space is easy to type and impossible to see behind the
+ * dots, so the person needs a way to check what they entered.
+ */
+function PasswordInput({
+  id,
+  autoComplete,
+  required,
+  minLength,
+}: {
+  id: string
+  autoComplete: 'current-password' | 'new-password'
+  required?: boolean
+  minLength?: number
+}) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        name="password"
+        type={visible ? 'text' : 'password'}
+        autoComplete={autoComplete}
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className={inputClass.replace('px-3', 'pl-3 pr-12')}
+        required={required}
+        minLength={minLength}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        aria-controls={id}
+        aria-pressed={visible}
+        className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-brand text-muted hover:text-ink"
+      >
+        <Icon name={visible ? 'eye-off' : 'eye'} size={18} />
+      </button>
+    </div>
   )
 }

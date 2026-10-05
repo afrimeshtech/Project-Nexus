@@ -132,9 +132,9 @@ export default async function HomePage() {
               {location.label}
             </p>
             <p className="mt-3 max-w-[46ch] text-base text-muted">
-              Search once to see what&rsquo;s really in stock nearby, pay safely, and get it
-              delivered. Sellers restock as they sell, so everything below is what a verified seller
-              near you actually has right now.
+              Search once to see what&rsquo;s really in stock nearby, pay safely, and collect it
+              from the shop. Sellers restock as they sell, so everything below is what a verified
+              seller near you actually has right now.
             </p>
           </div>
 

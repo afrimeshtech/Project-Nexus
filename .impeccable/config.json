@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "codex-grid-background",
+        "value": "*",
+        "files": [
+          "src/app/globals.css"
+        ],
+        "createdAt": "2026-10-05T15:23:35.320Z",
+        "reason": "user confirmed: mesh-surface is the deliberate AfriMesh brand mesh motif"
+      }
+    ]
+  }
+}

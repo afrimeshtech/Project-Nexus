@@ -98,7 +98,7 @@ export async function AdminShell({
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className={`block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                    className={`block whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ${
                       active === item.href
                         ? 'bg-accent-500 text-accent-ink'
                         : 'border border-line bg-surface text-muted'

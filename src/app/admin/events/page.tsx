@@ -38,7 +38,7 @@ export default async function EventsPage({
           <div className="flex flex-wrap gap-1.5">
             <Link
               href="/admin/events"
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
+              className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                 !params.type
                   ? 'bg-accent-500 text-accent-ink'
                   : 'border border-line bg-surface text-muted'
@@ -50,7 +50,7 @@ export default async function EventsPage({
               <Link
                 key={c.event_type}
                 href={`/admin/events?type=${encodeURIComponent(c.event_type)}`}
-                className={`rounded-full px-3 py-1 font-technical text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 font-technical text-xs font-medium ${
                   params.type === c.event_type
                     ? 'bg-surface-deep text-white'
                     : 'border border-line bg-surface text-muted'
@@ -115,8 +115,7 @@ export default async function EventsPage({
                     </span>
                   </div>
                   <p className="mt-1.5 font-technical text-xs text-muted">
-                    {event.aggregate_type} · {String(event.aggregate_id).slice(0, 8)}… ·{' '}
-                    {event.id}
+                    {event.aggregate_type} · {String(event.aggregate_id).slice(0, 8)}… · {event.id}
                   </p>
                   <code className="mt-1 block truncate font-technical text-xs text-muted">
                     {JSON.stringify(event.payload)}

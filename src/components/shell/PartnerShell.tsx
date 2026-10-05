@@ -348,7 +348,7 @@ export async function PartnerShell({
                   <Link
                     href={item.href}
                     aria-current={active === item.href ? 'page' : undefined}
-                    className={`block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                    className={`block whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ${
                       active === item.href
                         ? 'bg-brand-deep text-white'
                         : 'border border-line bg-surface text-muted'
@@ -364,7 +364,7 @@ export async function PartnerShell({
                   <Link
                     href={item.href}
                     aria-current={active === item.href ? 'page' : undefined}
-                    className={`block whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
+                    className={`block whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ${
                       active === item.href
                         ? 'bg-brand-deep text-white'
                         : 'border border-line bg-surface text-muted'

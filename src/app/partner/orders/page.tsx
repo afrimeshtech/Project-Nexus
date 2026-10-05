@@ -68,7 +68,7 @@ export default async function PartnerOrdersPage({
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/partner/orders"
-            className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+            className={`rounded-full px-3.5 py-2 text-xs font-medium ${
               !showPurchases
                 ? 'bg-accent-500 text-accent-ink'
                 : 'border border-line bg-surface text-muted'
@@ -83,7 +83,7 @@ export default async function PartnerOrdersPage({
 
               <Link
                 href="/partner/orders?view=purchases"
-                className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                   showPurchases
                     ? 'bg-accent-500 text-accent-ink'
                     : 'border border-line bg-surface text-muted'
@@ -100,7 +100,7 @@ export default async function PartnerOrdersPage({
                 <Link
                   key={f.key}
                   href={f.key === 'all' ? '/partner/orders' : `/partner/orders?status=${f.key}`}
-                  className={`rounded-full px-3 py-1.5 text-xs font-medium ${
+                  className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                     filter.key === f.key
                       ? 'bg-surface-deep text-white'
                       : 'border border-line bg-surface text-muted'

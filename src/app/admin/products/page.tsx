@@ -123,7 +123,7 @@ export default async function AdminProductsPage({
           <div className="flex flex-wrap gap-1.5">
             <Link
               href={href({ category: '' })}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
+              className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                 !params.category
                   ? 'bg-accent-500 text-accent-ink'
                   : 'border border-line bg-surface text-muted'
@@ -135,7 +135,7 @@ export default async function AdminProductsPage({
               <Link
                 key={c.id}
                 href={href({ category: c.id })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                   params.category === c.id
                     ? 'bg-accent-500 text-accent-ink'
                     : 'border border-line bg-surface text-muted'
@@ -149,7 +149,7 @@ export default async function AdminProductsPage({
               <Link
                 key={s || 'any'}
                 href={href({ status: s })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                   (params.status ?? '') === s
                     ? 'bg-surface-deep text-white'
                     : 'border border-line bg-surface text-muted'

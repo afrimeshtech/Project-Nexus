@@ -102,7 +102,10 @@ export function Breadcrumb({ trail, className = '' }: { trail: Crumb[]; classNam
                 </span>
               )}
               {crumb.href && !last ? (
-                <Link href={crumb.href} className="hover:text-ink hover:underline">
+                <Link
+                  href={crumb.href}
+                  className="-my-2 inline-block py-2 hover:text-ink hover:underline"
+                >
                   {crumb.label}
                 </Link>
               ) : (
@@ -192,7 +195,7 @@ export function SegmentedLinks<T extends string>({
             key={opt.value}
             href={hrefFor(opt.value)}
             aria-current={active === opt.value ? 'true' : undefined}
-            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-3.5 py-2 text-xs font-medium transition-colors ${
               active === opt.value
                 ? 'bg-accent-500 text-accent-ink'
                 : 'text-muted hover:text-accent-strong'
@@ -553,8 +556,19 @@ export function Stat({
   /** Overrides the icon derived from the label. */
   icon?: IconName
 }) {
+  // A long figure such as ₦2,600,166.30 is wider than a half-width tile on a
+  // 360px phone. It shrinks just enough to fit its own tile - about 0.6em per
+  // character of tabular figures - and never grows past the stat size, so
+  // short values keep full weight.
+  const fit =
+    typeof value === 'string' || typeof value === 'number'
+      ? {
+          fontSize: `min(var(--text-stat), calc(100cqi / ${(String(value).length * 0.6).toFixed(2)}))`,
+        }
+      : undefined
+
   return (
-    <div className="stat-card p-4 hover:stat-card-hover">
+    <div className="stat-card @container p-4 hover:stat-card-hover">
       {/* The eyebrow register, from the type scale rather than three arbitrary
           values that happen to land near it — the token exists precisely so
           stat labels, column headers and eyebrows stay in step. */}
@@ -564,7 +578,9 @@ export function Stat({
       </p>
       {/* Tabular figures so a column of numbers lines up, and tight tracking
           so a large figure does not read as loose at display size. */}
-      <p className="mt-2 text-stat tabular-nums text-stat-value">{value}</p>
+      <p className="mt-2 text-stat tabular-nums text-stat-value" style={fit}>
+        {value}
+      </p>
       {hint && (
         <p
           className={`mt-1 text-xs ${

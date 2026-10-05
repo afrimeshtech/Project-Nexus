@@ -50,7 +50,9 @@ export default async function ThreadPage({ params }: { params: Promise<{ orderId
           ) : (
             <Thumb alt={counterpart} size="md" />
           )}
-          <div className="min-w-0 flex-1">
+          {/* min-w-40: on a phone the badge and button wrap below rather than
+              squeezing the order number into a sliver. */}
+          <div className="min-w-40 flex-1">
             <p className="truncate font-semibold text-ink">{counterpart}</p>
             <p className="font-technical text-xs text-muted">
               {order.order_number} · {formatMoney(order.total, order.currency)}

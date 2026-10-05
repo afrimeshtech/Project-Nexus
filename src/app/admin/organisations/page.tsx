@@ -79,7 +79,7 @@ export default async function AdminOrganisationsPage({
               <Link
                 key={type}
                 href={href({ type: type === 'all' ? '' : type })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                   (params.type ?? 'all') === type
                     ? 'bg-accent-500 text-accent-ink'
                     : 'border border-line bg-surface text-muted'
@@ -93,7 +93,7 @@ export default async function AdminOrganisationsPage({
               <Link
                 key={v || 'any'}
                 href={href({ verification: v })}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                   (params.verification ?? '') === v
                     ? 'bg-surface-deep text-white'
                     : 'border border-line bg-surface text-muted'

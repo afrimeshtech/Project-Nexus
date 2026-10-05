@@ -247,7 +247,7 @@ function FilterChip({
       aria-current={active ? 'true' : undefined}
       // py-1.5 rather than py-1: at the smaller padding the chip is a hair
       // under the 24px minimum a pointer target has to clear.
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`rounded-full px-3.5 py-2 text-xs font-medium transition-colors ${
         active
           ? 'bg-accent-500 text-accent-ink'
           : 'border border-line bg-surface text-muted hover:border-accent-500 hover:text-accent-strong'

@@ -157,7 +157,7 @@ export default async function RiderPage({
                   <Link
                     key={km}
                     href={`/rider?radius=${km}`}
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                       radius === km
                         ? 'bg-accent-500 text-accent-ink'
                         : 'border border-line bg-surface text-muted'

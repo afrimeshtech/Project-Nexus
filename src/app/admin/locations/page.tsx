@@ -57,7 +57,7 @@ export default async function AdminLocationsPage({
                 <Link
                   key={option}
                   href={`/admin/locations?days=${option}`}
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  className={`rounded-full px-3.5 py-2 text-xs font-medium ${
                     days === option
                       ? 'bg-accent-500 text-accent-ink'
                       : 'border border-line bg-surface text-muted'

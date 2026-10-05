@@ -133,10 +133,6 @@ export default function ShowcasePage() {
 
         <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-5 pb-16 pt-6 sm:px-8 lg:flex-row lg:items-center lg:gap-6 lg:pb-24">
           <div className="max-w-lg lg:w-2/5 lg:shrink-0">
-            {/* Was a kicker above the h1 — DESIGN.md bans an eyebrow
-                introducing a page heading. "Proximity commerce" is AfriMesh's
-                own positioning line (PRODUCT.md), so it now reads as a
-                caption under the headline instead of a label above it. */}
             <h1 className="text-display font-bold leading-[0.98] tracking-[-0.045em] text-white">
               Real stock.
               <br />
@@ -144,13 +140,9 @@ export default function ShowcasePage() {
               <br />
               Real fast.
             </h1>
-            <p className="mt-3 flex items-center gap-2 font-technical text-[11px] uppercase tracking-[0.18em] text-white/60">
-              <Icon name="pin" size={13} />
-              Proximity commerce
-            </p>
             <p className="mt-4 max-w-[38ch] text-base leading-relaxed text-white/75">
               See what verified sellers near you actually have on the shelf before you leave the
-              house — paid for safely, delivered fast.
+              house — paid for safely.
             </p>
             <p className="mt-3 font-technical text-xs uppercase tracking-[0.1em] text-white/50">
               Piloting now in Ikeja, Lagos
@@ -217,8 +209,7 @@ export default function ShowcasePage() {
                   </text>
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-white">Arriving in ~12 min</p>
-                  <p className="mt-0.5 text-xs text-white/60">Grace Stores · 320 m away</p>
+                  <p className="text-xs text-white/60">Grace Stores · 320 m away</p>
                 </div>
               </div>
             </div>
@@ -311,12 +302,12 @@ export default function ShowcasePage() {
               {
                 icon: 'scale' as const,
                 title: 'Compare and choose',
-                body: 'See price, distance, and delivery time side by side across every shop that actually has it in stock.',
+                body: 'See price and distance side by side across every shop that actually has it in stock.',
               },
               {
-                icon: 'scooter' as const,
-                title: 'Pay and get it delivered',
-                body: 'Your money sits in escrow until delivery is confirmed, so neither side has to trust the other first.',
+                icon: 'store' as const,
+                title: 'Pay and collect in store',
+                body: 'Your money sits in escrow until you confirm you have collected your order, so neither side has to trust the other first.',
               },
             ].map((step) => (
               <div key={step.title} className="text-center">

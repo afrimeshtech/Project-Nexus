@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     template: '%s · AfriMesh',
   },
   description:
-    "Africa's proximity commerce and payment infrastructure. Find what you need from trusted sellers nearby, pay securely, and get it delivered.",
+    'See what verified shops near you have in stock, pay securely online, and collect your order in store.',
   applicationName: 'AfriMesh Commerce',
 }
 

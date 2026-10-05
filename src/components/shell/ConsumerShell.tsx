@@ -278,9 +278,7 @@ function SiteFooter() {
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-6 px-4 py-8 text-sm text-bar-muted">
         <Wordmark size="sm" orientation="stacked" />
-        <p className="font-technical text-xs">
-          AfriMesh Technologies · Project Nexus · Proximity Commerce &amp; Payment Infrastructure
-        </p>
+        <p className="font-technical text-xs">AfriMesh Technologies · Project Nexus</p>
         <Link href="/contact?from=consumer" className="font-medium text-bar-ink hover:underline">
           Contact us
         </Link>

@@ -4,6 +4,7 @@ import { EditBusinessForm } from '@/components/partner/BusinessForm'
 import { LogoUpload } from '@/components/media/ImageUpload'
 import { Badge, Card, PageHeader, Rating, SectionHeading } from '@/components/ui'
 import { requireOrgCapability } from '@/lib/auth'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
 
@@ -35,7 +36,7 @@ export default async function PartnerSettingsPage() {
         <PageHeader
           breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Settings' }]}
           title="Business settings"
-          subtitle="Your location and dispatch time directly affect where you rank with buyers."
+          subtitle="Your shop details, as buyers see them."
         />
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
@@ -87,11 +88,14 @@ export default async function PartnerSettingsPage() {
                 </div>
                 <Row label="CAC number" value={org.registration_number ?? 'Not provided'} />
               </div>
-              <p className="mt-3 border-t border-line-soft pt-3 text-xs text-muted">
-                Trust, rating and fulfilment reliability are inputs to the recommendation engine.
-                Dispatching quickly and fulfilling what you list is what moves you up the rankings —
-                there is no paid placement.
-              </p>
+              {/* FUTURE-RANKING: what moves a shop up, once shops are ranked. */}
+              {RANKING_LAUNCHED && (
+                <p className="mt-3 border-t border-line-soft pt-3 text-xs text-muted">
+                  Trust, rating and fulfilment reliability are inputs to the recommendation engine.
+                  Dispatching quickly and fulfilling what you list is what moves you up the rankings
+                  — there is no paid placement.
+                </p>
+              )}
             </Card>
 
             {reviews.length > 0 && (

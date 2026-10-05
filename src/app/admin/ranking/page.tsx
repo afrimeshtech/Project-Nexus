@@ -1,7 +1,9 @@
 import { AdminShell } from '@/components/shell/AdminShell'
 import { RankingWeightsForm } from '@/components/admin/AdminForms'
 import { Card, PageHeader, SectionHeading } from '@/components/ui'
+import { notFound } from 'next/navigation'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { DEFAULT_WEIGHTS, getWeights, type RankingScope } from '@/modules/recommendation/service'
 
 export const dynamic = 'force-dynamic'
@@ -34,6 +36,8 @@ const SCOPES: { key: RankingScope; title: string; subtitle: string }[] = [
  */
 export default async function RankingPage() {
   const admin = await requireRole(ADMIN_ROLES, '/admin/ranking')
+  // FUTURE-RANKING: nothing reads the weights while shops are unranked.
+  if (!RANKING_LAUNCHED) notFound()
   const readOnly = admin.role === 'auditor'
 
   const weights = await Promise.all(SCOPES.map((scope) => getWeights(scope.key)))

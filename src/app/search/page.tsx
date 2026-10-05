@@ -46,7 +46,7 @@ export async function generateMetadata({
   return {
     title,
     description: q
-      ? `Sellers near you with ${q} in stock right now, ranked by availability, distance, price and delivery time.`
+      ? `Sellers near you with ${q} in stock right now, nearest first.`
       : 'Search real stock held by verified sellers near you on AfriMesh.',
     robots: { index: false, follow: true },
   }
@@ -196,10 +196,8 @@ export default async function SearchPage({
 
         {results.length > 0 && (
           <section>
-            <SectionHeading
-              title="How these are ranked"
-              subtitle="Availability 30% · Distance 25% · Price 15% · Rating 10% · Delivery time 10% · Trust 5% · Your history 5%"
-            />
+            {/* FUTURE-RANKING: the published weights return with ranking. */}
+            <SectionHeading title="About these results" subtitle="Nearest shops first." />
             <p className="text-xs text-muted">
               Only stock that a verified seller has on the shelf right now is shown. Reserved units
               are excluded, so what you see is what you can actually buy.

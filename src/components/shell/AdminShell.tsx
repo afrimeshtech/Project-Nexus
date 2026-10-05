@@ -4,13 +4,17 @@ import { Wordmark } from '@/components/brand/Logo'
 import { Badge } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentUser } from '@/lib/auth'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: '/admin', label: 'Overview', icon: 'chart' },
   { href: '/admin/organisations', label: 'Businesses', icon: 'store' },
   { href: '/admin/products', label: 'Catalogue', icon: 'tag' },
   { href: '/admin/locations', label: 'Demand map', icon: 'pin' },
-  { href: '/admin/ranking', label: 'Ranking engine', icon: 'scale' },
+  // FUTURE-RANKING: the weights console, once the weights order anything.
+  ...(RANKING_LAUNCHED
+    ? [{ href: '/admin/ranking', label: 'Ranking engine', icon: 'scale' as const }]
+    : []),
   { href: '/admin/rewards', label: 'Referral programme', icon: 'star-filled' },
   { href: '/admin/fraud', label: 'Risk & fraud', icon: 'shield' },
   { href: '/admin/events', label: 'Event log', icon: 'list' },

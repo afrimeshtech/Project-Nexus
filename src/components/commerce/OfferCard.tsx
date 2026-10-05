@@ -6,6 +6,8 @@ import { Badge, ItemCard, Rating, ScoreBar, StatusPill, stockState } from '@/com
 import { AddToCart } from '@/components/commerce/AddToCart'
 import { formatMoney } from '@/lib/money'
 import { formatDistance, formatEta } from '@/lib/geo'
+import { deliveryLaunched } from '@/lib/launch-fulfilment'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import type { Offer } from '@/modules/recommendation/service'
 import type { ProductResult } from '@/modules/search/service'
 
@@ -44,6 +46,10 @@ export function OfferCard({
 }) {
   const low = offer.qty_available <= 5
   const leadsWithProduct = lead === 'product'
+  // FUTURE-RANKING: position, "Best match" and the score bar all say one shop
+  // ranks above another.
+  const shownRank = RANKING_LAUNCHED ? rank : undefined
+  const scored = RANKING_LAUNCHED && showScore
 
   return (
     <article
@@ -51,15 +57,15 @@ export function OfferCard({
       style={{ animationDelay: `${Math.min(index, 9) * 80}ms` }}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3">
-        {rank !== undefined && (
+        {shownRank !== undefined && (
           <span
             className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-bold ${
-              rank === 1
+              shownRank === 1
                 ? 'bg-accent-500 text-accent-ink shadow-[0_0_0_3px_var(--color-accent-glow)]'
                 : 'bg-surface-muted text-muted'
             }`}
           >
-            {rank}
+            {shownRank}
           </span>
         )}
         {leadsWithProduct ? (
@@ -118,7 +124,7 @@ export function OfferCard({
                 {offer.seller_name}
               </Link>
             )}
-            {rank === 1 && <Badge tone="brand">Best match</Badge>}
+            {shownRank === 1 && <Badge tone="brand">Best match</Badge>}
             {offer.on_promo && <Badge tone="sand">Promo</Badge>}
             {offer.prior_orders > 0 && <Badge tone="neutral">You&rsquo;ve shopped here</Badge>}
           </div>
@@ -128,17 +134,20 @@ export function OfferCard({
               <Icon name="pin" size={13} />
               {formatDistance(offer.distance_km)}
             </span>
-            <span className="inline-flex items-center gap-1">
-              <Icon name="scooter" size={13} />
-              {formatEta(offer.eta_minutes)}
-            </span>
+            {/* FUTURE-DELIVERY: an arrival time means nothing to a shopper who collects. */}
+            {deliveryLaunched() && (
+              <span className="inline-flex items-center gap-1">
+                <Icon name="scooter" size={13} />
+                {formatEta(offer.eta_minutes)}
+              </span>
+            )}
             <Rating value={offer.rating} count={offer.rating_count} />
             <span className={low ? 'font-medium text-warning-ink' : ''}>
               {low ? `Only ${offer.qty_available} left` : `${offer.qty_available} in stock`}
             </span>
           </div>
 
-          {showScore && (
+          {scored && (
             <div className="mt-2 max-w-xs">
               <ScoreBar score={offer.score} breakdown={offer.score_breakdown} />
             </div>
@@ -222,7 +231,9 @@ export function ProductResultCard({ result }: { result: ProductResult }) {
         },
         {
           label: 'Nearest',
-          value: `${formatDistance(result.nearest_km)} · ${formatEta(result.fastest_eta)}`,
+          value: deliveryLaunched()
+            ? `${formatDistance(result.nearest_km)} · ${formatEta(result.fastest_eta)}`
+            : formatDistance(result.nearest_km),
         },
       ]}
       footer={

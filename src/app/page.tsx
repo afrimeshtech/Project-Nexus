@@ -133,16 +133,14 @@ export default async function HomePage() {
             </p>
             <p className="mt-3 max-w-[46ch] text-base text-muted">
               Search once to see what&rsquo;s really in stock nearby, pay safely, and get it
-              delivered. Sellers restock as they sell, so everything below is what a verified
-              seller near you actually has right now.
+              delivered. Sellers restock as they sell, so everything below is what a verified seller
+              near you actually has right now.
             </p>
           </div>
 
           {trending.length > 0 && (
             <aside className="lg:border-l lg:border-line-soft lg:pl-6">
-              <p className="font-technical text-eyebrow uppercase text-muted">
-                {searchRailLabel}
-              </p>
+              <p className="font-technical text-eyebrow uppercase text-muted">{searchRailLabel}</p>
               <ul className="mt-2.5 space-y-1">
                 {trending.map((t) => (
                   <li key={t.query}>
@@ -176,7 +174,7 @@ export default async function HomePage() {
         <section>
           <SectionHeading
             title="Popular nearby"
-            subtitle="In stock right now, ranked by availability, distance and price"
+            subtitle="In stock right now, nearest first"
             action={
               <Link
                 href="/search"

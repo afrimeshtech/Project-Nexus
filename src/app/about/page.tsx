@@ -1,6 +1,7 @@
 import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { Card, SectionHeading } from '@/components/ui'
 import { getWeights } from '@/modules/recommendation/service'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'How the network works' }
@@ -39,37 +40,40 @@ export default async function AboutPage() {
           </p>
         </section>
 
-        <section>
-          <SectionHeading
-            title="How results are ranked"
-            subtitle="No paid placement. Every result is scored by the same public formula."
-          />
-          <Card>
-            <ul className="space-y-3">
-              {Object.entries(weights)
-                .sort((a, b) => b[1] - a[1])
-                .map(([factor, weight]) => (
-                  <li key={factor}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium capitalize text-ink">
-                        {factor.replace(/_/g, ' ')}
-                      </span>
-                      <span className="font-technical text-sm text-muted">
-                        {Math.round((weight / total) * 100)}%
-                      </span>
-                    </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                      <div
-                        className="h-full rounded-full bg-accent-500"
-                        style={{ width: `${(weight / total) * 100}%` }}
-                      />
-                    </div>
-                    <p className="mt-1 text-xs text-muted">{EXPLAIN[factor]}</p>
-                  </li>
-                ))}
-            </ul>
-          </Card>
-        </section>
+        {/* FUTURE-RANKING: the public formula, shown once results are ranked by it. */}
+        {RANKING_LAUNCHED && (
+          <section>
+            <SectionHeading
+              title="How results are ranked"
+              subtitle="No paid placement. Every result is scored by the same public formula."
+            />
+            <Card>
+              <ul className="space-y-3">
+                {Object.entries(weights)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([factor, weight]) => (
+                    <li key={factor}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium capitalize text-ink">
+                          {factor.replace(/_/g, ' ')}
+                        </span>
+                        <span className="font-technical text-sm text-muted">
+                          {Math.round((weight / total) * 100)}%
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                        <div
+                          className="h-full rounded-full bg-accent-500"
+                          style={{ width: `${(weight / total) * 100}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">{EXPLAIN[factor]}</p>
+                    </li>
+                  ))}
+              </ul>
+            </Card>
+          </section>
+        )}
 
         <section>
           <SectionHeading title="The rules of the network" />

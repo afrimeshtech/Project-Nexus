@@ -97,7 +97,7 @@ export async function searchProducts(
       existing.highest_price = Math.max(existing.highest_price, offer.unit_price)
       existing.nearest_km = Math.min(existing.nearest_km, offer.distance_km)
       existing.fastest_eta = Math.min(existing.fastest_eta, offer.eta_minutes)
-      // offers arrive score-ordered, so the first one seen is the top offer.
+      // offers arrive in display order, so the first one seen is the top offer.
     }
   }
 

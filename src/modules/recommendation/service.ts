@@ -1,5 +1,6 @@
 import { getSql } from '@/db/client'
 import { distanceKmSql } from '@/lib/geo'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { priceColumnFor, rankingScopeFor, supplierTypeFor, tierOf } from '@/lib/tiers'
 
 /**
@@ -344,7 +345,8 @@ export async function rankOffers(
       ${expr} AS score
       ${parts.length ? ', ' + parts.join(', ') : ''}
     FROM normalised
-    ORDER BY score DESC, distance_km ASC
+    -- FUTURE-RANKING: unranked, the nearest shop comes first and price breaks ties.
+    ORDER BY ${RANKING_LAUNCHED ? 'score DESC, distance_km ASC' : 'distance_km ASC, unit_price ASC'}
     LIMIT ${limitParam}
     `,
     params,

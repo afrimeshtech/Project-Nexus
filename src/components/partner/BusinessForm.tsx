@@ -277,7 +277,7 @@ export function EditBusinessForm({
         </Field>
         <Field
           label="Dispatch time (min)"
-          hint="Feeds your delivery-time score"
+          hint="How long you usually take to get an order ready"
           htmlFor="edit-dispatch"
         >
           <input

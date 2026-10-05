@@ -166,7 +166,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <section>
           <SectionHeading
             title={`${offers.length} ${offers.length === 1 ? 'seller has' : 'sellers have'} this in stock`}
-            subtitle={`Within 40 km of ${location.label}, ranked by availability, distance, price, rating and delivery time`}
+            subtitle={`Within 40 km of ${location.label}, nearest first`}
           />
 
           {offers.length ? (

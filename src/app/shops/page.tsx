@@ -33,7 +33,7 @@ export async function generateMetadata({
     title: q ? `Shops matching "${q}"` : 'Nearby outlets',
     description: q
       ? `Verified sellers near you named "${q}".`
-      : 'Every verified shop within range of you on AfriMesh, ranked by distance.',
+      : 'Every verified shop within range of you on AfriMesh, nearest first.',
     // Personal to the viewer's location, same reasoning as /search.
     robots: { index: false, follow: true },
   }

@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { checkoutAction, type CartActionState } from '@/app/actions/cart'
 import { FormError, Field, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
+import { LAUNCH_FULFILMENT } from '@/lib/launch-fulfilment'
 
 /**
  * Checkout. Payment methods come from the PRD's launch list (wallet, bank
@@ -15,15 +16,20 @@ export function CheckoutForm({
   total,
   defaultAddress,
   pickupAvailable = true,
+  collectFrom,
 }: {
   walletBalance: number
   total: number
   defaultAddress: string
   pickupAvailable?: boolean
+  /** The shop the buyer collects from - shown when collection is the only option. */
+  collectFrom: { name: string; address: string | null }
 }) {
   const [state, formAction, pending] = useActionState<CartActionState, FormData>(checkoutAction, {})
   const [method, setMethod] = useState<string>(walletBalance >= total ? 'wallet' : 'card')
-  const [fulfilment, setFulfilment] = useState<'delivery' | 'pickup'>('delivery')
+  const [fulfilment, setFulfilment] = useState<'delivery' | 'pickup'>(LAUNCH_FULFILMENT[0])
+  // FUTURE-DELIVERY: with one way to receive an order there is nothing to choose.
+  const choosable = LAUNCH_FULFILMENT.length > 1
 
   const walletShort = walletBalance < total
 
@@ -31,42 +37,57 @@ export function CheckoutForm({
     <form action={formAction} className="space-y-4">
       <FormError>{state.error}</FormError>
 
-      <fieldset>
-        <legend className="mb-1.5 text-sm font-medium text-ink">How do you want it?</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {(['delivery', 'pickup'] as const).map((option) => {
-            /*
-             * `pointer-events-none` only stops a mouse. The radio underneath it
-             * stayed focusable and arrow-selectable, so a keyboard user could
-             * choose collection from a seller that does not offer it and submit
-             * the order. Unavailability has to be on the control itself.
-             */
-            const unavailable = option === 'pickup' && !pickupAvailable
-            return (
-              <label
-                key={option}
-                className={`rounded-brand border px-3 py-2.5 text-sm ${
-                  fulfilment === option
-                    ? 'border-accent-500 bg-accent-soft font-semibold text-accent-strong'
-                    : 'border-line bg-surface text-ink'
-                } ${unavailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-              >
-                <input
-                  type="radio"
-                  name="fulfilment"
-                  value={option}
-                  checked={fulfilment === option}
-                  disabled={unavailable}
-                  onChange={() => setFulfilment(option)}
-                  className="sr-only"
-                />
-                {option === 'delivery' ? 'Deliver to me' : 'I will collect'}
-                {unavailable && <span className="sr-only"> — not offered by this seller</span>}
-              </label>
-            )
-          })}
+      {!choosable && (
+        <div className="rounded-brand border border-line bg-surface-muted px-3 py-2.5 text-sm">
+          <input type="hidden" name="fulfilment" value={fulfilment} />
+          <p className="font-medium text-ink">Collect from {collectFrom.name}</p>
+          {collectFrom.address && (
+            <p className="mt-0.5 text-xs text-muted">{collectFrom.address}</p>
+          )}
+          <p className="mt-1 text-xs text-muted">
+            We will tell you when your order is ready to collect.
+          </p>
         </div>
-      </fieldset>
+      )}
+
+      {choosable && (
+        <fieldset>
+          <legend className="mb-1.5 text-sm font-medium text-ink">How do you want it?</legend>
+          <div className="grid grid-cols-2 gap-2">
+            {(['delivery', 'pickup'] as const).map((option) => {
+              /*
+               * `pointer-events-none` only stops a mouse. The radio underneath it
+               * stayed focusable and arrow-selectable, so a keyboard user could
+               * choose collection from a seller that does not offer it and submit
+               * the order. Unavailability has to be on the control itself.
+               */
+              const unavailable = option === 'pickup' && !pickupAvailable
+              return (
+                <label
+                  key={option}
+                  className={`rounded-brand border px-3 py-2.5 text-sm ${
+                    fulfilment === option
+                      ? 'border-accent-500 bg-accent-soft font-semibold text-accent-strong'
+                      : 'border-line bg-surface text-ink'
+                  } ${unavailable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                >
+                  <input
+                    type="radio"
+                    name="fulfilment"
+                    value={option}
+                    checked={fulfilment === option}
+                    disabled={unavailable}
+                    onChange={() => setFulfilment(option)}
+                    className="sr-only"
+                  />
+                  {option === 'delivery' ? 'Deliver to me' : 'I will collect'}
+                  {unavailable && <span className="sr-only"> — not offered by this seller</span>}
+                </label>
+              )
+            })}
+          </div>
+        </fieldset>
+      )}
 
       {fulfilment === 'delivery' && (
         <Field label="Delivery address" htmlFor="address">
@@ -126,7 +147,9 @@ export function CheckoutForm({
       </button>
 
       <p className="text-center text-xs text-muted">
-        Your payment is held in escrow and only released to the seller once the order is delivered.
+        {fulfilment === 'pickup'
+          ? 'Your payment is held in escrow and only released to the seller once you confirm you have collected your order.'
+          : 'Your payment is held in escrow and only released to the seller once the order is delivered.'}
       </p>
     </form>
   )

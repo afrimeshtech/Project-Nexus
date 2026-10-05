@@ -378,7 +378,7 @@ function RecentOrdersCard({ orders }: { orders: Awaited<ReturnType<typeof orders
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <OrderStatusBadge status={order.status} />
+                  <OrderStatusBadge status={order.status} fulfilment={order.fulfilment} />
                   <span className="text-sm font-semibold">{formatMoney(order.total)}</span>
                 </span>
               </Link>

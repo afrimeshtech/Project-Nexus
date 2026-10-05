@@ -30,7 +30,8 @@ const updateQtySchema = z.object({
 })
 
 const checkoutSchema = z.object({
-  fulfilment: fulfilment.catch('delivery'),
+  // FUTURE-DELIVERY: no fallback once delivery is launched - the buyer chooses.
+  fulfilment: fulfilment.catch('pickup'),
   method: paymentMethod.catch('wallet'),
   address: optionalText(300),
 })

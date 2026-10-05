@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { LAUNCH_FULFILMENT } from '@/lib/launch-fulfilment'
 
 /**
  * Input validation for server actions.
@@ -109,8 +110,9 @@ export const paymentMethod = z.enum(['wallet', 'card', 'bank_transfer', 'ussd', 
   message: 'Choose a payment method.',
 })
 
-export const fulfilment = z.enum(['delivery', 'pickup'], {
-  message: 'Choose delivery or collection.',
+// FUTURE-DELIVERY: narrowed to what launches - see lib/launch-fulfilment.ts.
+export const fulfilment = z.enum(LAUNCH_FULFILMENT, {
+  message: 'Choose how you will receive your order.',
 })
 
 /**

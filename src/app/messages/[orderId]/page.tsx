@@ -56,7 +56,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ orderId
               {order.order_number} · {formatMoney(order.total, order.currency)}
             </p>
           </div>
-          <OrderStatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status} fulfilment={order.fulfilment} />
           <Link
             href={thread.side === 'seller' ? `/partner/orders/${order.id}` : `/orders/${order.id}`}
             className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"

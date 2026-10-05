@@ -13,7 +13,7 @@ import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { Alert, Badge, Card, Rating, SectionHeading } from '@/components/ui'
 import { formatMoney } from '@/lib/money'
 import { formatDistance, formatEta } from '@/lib/geo'
-import { ORDER_STATUS_LABEL, orderTimeline, type OrderDetail } from '@/modules/orders/service'
+import { orderStatusLabel, orderTimeline, type OrderDetail } from '@/modules/orders/service'
 import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
 
@@ -48,6 +48,7 @@ export async function OrderDetailView({
     canDispatch && order.status === 'dispatched' && delivery?.status === 'unassigned'
   const canCancel = !['delivered', 'completed', 'cancelled', 'refunded'].includes(order.status)
   const pendingCashback = cashbackFor(order.subtotal)
+  const pickup = order.fulfilment === 'pickup'
 
   return (
     <div className="space-y-7">
@@ -64,13 +65,15 @@ export async function OrderDetailView({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-technical text-sm text-muted">{order.order_number}</p>
-          <h1 className="text-xl font-semibold text-ink">{ORDER_STATUS_LABEL[order.status]}</h1>
+          <h1 className="text-xl font-semibold text-ink">
+            {orderStatusLabel(order.status, order.fulfilment)}
+          </h1>
         </div>
-        <OrderStatusBadge status={order.status} />
+        <OrderStatusBadge status={order.status} fulfilment={order.fulfilment} />
       </div>
 
       <Card>
-        <OrderProgress status={order.status} />
+        <OrderProgress status={order.status} fulfilment={order.fulfilment} />
       </Card>
 
       <div className="grid gap-5 [&>*]:min-w-0 lg:grid-cols-[1fr_22rem]">
@@ -148,7 +151,7 @@ export async function OrderDetailView({
                   <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-500" />
                   <div>
                     <p className="text-sm font-medium text-ink">
-                      {ORDER_STATUS_LABEL[entry.status]}
+                      {orderStatusLabel(entry.status, order.fulfilment)}
                     </p>
                     {entry.note && <p className="text-xs text-muted">{entry.note}</p>}
                     <p className="font-technical text-xs text-muted">
@@ -180,7 +183,11 @@ export async function OrderDetailView({
             <SectionHeading title="Summary" />
             <dl className="space-y-2 text-sm">
               <Row label="Subtotal" value={formatMoney(order.subtotal, order.currency)} />
-              <Row label="Delivery" value={formatMoney(order.delivery_fee, order.currency)} />
+              {pickup ? (
+                <Row label="Collection" value="Free" />
+              ) : (
+                <Row label="Delivery" value={formatMoney(order.delivery_fee, order.currency)} />
+              )}
               {sellerNet && (
                 <Row
                   label="Platform fee"
@@ -200,7 +207,9 @@ export async function OrderDetailView({
             </dl>
             {['confirmed', 'preparing', 'dispatched', 'delivered'].includes(order.status) && (
               <p className="mt-3 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
-                Held in escrow. Released to the seller when the buyer confirms delivery.
+                {pickup
+                  ? 'Held in escrow. Released to the seller when the buyer confirms collection.'
+                  : 'Held in escrow. Released to the seller when the buyer confirms delivery.'}
               </p>
             )}
             {viewer.isBuyer && pendingCashback > 0 && order.status !== 'completed' && (
@@ -266,12 +275,18 @@ export async function OrderDetailView({
             )}
 
             <div className="mt-3 space-y-1.5 border-t border-line-soft pt-3 text-xs text-muted">
+              {/* A collection order's delivery_address is where the buyer was when
+                  they ordered; where they collect from is the shop. */}
               <p>
-                {order.fulfilment === 'delivery' ? 'Deliver to' : 'Collect from'}:{' '}
-                <span className="text-ink">{order.delivery_address}</span>
+                {pickup ? 'Collect from' : 'Deliver to'}:{' '}
+                <span className="text-ink">
+                  {pickup ? (order.seller_address ?? order.seller_name) : order.delivery_address}
+                </span>
               </p>
               <p>
-                {formatDistance(Number(order.distance_km))} · about {formatEta(order.eta_minutes)}
+                {pickup
+                  ? `${formatDistance(Number(order.distance_km))} from the buyer`
+                  : `${formatDistance(Number(order.distance_km))} · about ${formatEta(order.eta_minutes)}`}
               </p>
               {order.buyer_tier < 5 && (
                 <Badge tone="info">
@@ -302,20 +317,28 @@ export async function OrderDetailView({
                   <AdvanceOrderButton
                     orderId={order.id}
                     next="dispatched"
-                    label="Mark dispatched"
+                    label={pickup ? 'Mark ready to collect' : 'Mark dispatched'}
                   />
                 ))}
               {awaitingRider && (
                 <DispatchForm orderId={order.id} riders={riders ?? []} assignOnly />
               )}
               {viewer.isSeller && order.status === 'dispatched' && (
-                <AdvanceOrderButton orderId={order.id} next="delivered" label="Mark delivered" />
+                <AdvanceOrderButton
+                  orderId={order.id}
+                  next="delivered"
+                  label={pickup ? 'Mark collected' : 'Mark delivered'}
+                />
               )}
               {viewer.isBuyer && order.status === 'delivered' && (
                 <AdvanceOrderButton
                   orderId={order.id}
                   next="completed"
-                  label="Confirm receipt & release payment"
+                  label={
+                    pickup
+                      ? 'Confirm collection & release payment'
+                      : 'Confirm receipt & release payment'
+                  }
                 />
               )}
             </div>

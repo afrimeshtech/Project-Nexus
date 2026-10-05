@@ -9,6 +9,7 @@ import { toggleFavouriteSellerAction } from '@/app/actions/cart'
 import { requireUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { hydrateCart } from '@/lib/cart'
+import { deliveryLaunched } from '@/lib/launch-fulfilment'
 import { TIER, ORG_LABEL, type OrgType } from '@/lib/tiers'
 import { formatDistance, formatEta, haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
@@ -100,12 +101,20 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
                 <Icon name="pin" size={13} />
                 {formatDistance(distance)} away
               </span>
-              <span className="inline-flex items-center gap-1">
-                <Icon name="scooter" size={13} />
-                about {formatEta(eta)}
-              </span>
+              {/* FUTURE-DELIVERY: a delivery time and radius mean nothing to a
+                  shopper who collects. */}
+              {deliveryLaunched() && (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="scooter" size={13} />
+                  about {formatEta(eta)}
+                </span>
+              )}
               <span>Fulfils {Number(org.fulfilment_rate).toFixed(0)}% of orders</span>
-              <span>Delivers within {Number(org.delivery_radius_km).toFixed(0)} km</span>
+              {deliveryLaunched() ? (
+                <span>Delivers within {Number(org.delivery_radius_km).toFixed(0)} km</span>
+              ) : (
+                <span>Order online, collect in store</span>
+              )}
             </div>
           </div>
 

@@ -13,6 +13,7 @@ import { formatMoney, platformFee } from '@/lib/money'
 import { formatDistance, formatEta, haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { TIER } from '@/lib/tiers'
 import { deliveryFeeFor } from '@/modules/orders/service'
+import { LAUNCH_FULFILMENT } from '@/lib/launch-fulfilment'
 import { getBalance } from '@/modules/wallet/service'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,10 @@ export default async function CartPage() {
 
   const isConsumerBasket = cart.tier === TIER.consumer
   const distance = haversineKm(location, { lat: cart.seller.lat, lng: cart.seller.lng })
-  const deliveryFee = deliveryFeeFor(distance, 'delivery')
+  // FUTURE-DELIVERY: quotes the first way to receive an order that launches -
+  // collection is free, so the basket total is the goods alone.
+  const fulfilment = LAUNCH_FULFILMENT[0]
+  const deliveryFee = deliveryFeeFor(distance, fulfilment)
   const fee = platformFee(cart.subtotal)
   const total = cart.subtotal + deliveryFee
   const eta = estimateEtaMinutes(distance, cart.seller.avg_dispatch_minutes)
@@ -63,7 +67,9 @@ export default async function CartPage() {
 
         {!isConsumerBasket && (
           <Alert tone="info">
-            This is a business restock basket at wholesale prices, delivered to your premises.
+            {fulfilment === 'pickup'
+              ? 'This is a business restock basket at wholesale prices, collected from the seller.'
+              : 'This is a business restock basket at wholesale prices, delivered to your premises.'}
           </Alert>
         )}
 
@@ -85,7 +91,9 @@ export default async function CartPage() {
                   {cart.seller.name}
                 </Link>
                 <p className="text-xs text-muted">
-                  {formatDistance(distance)} away · about {formatEta(eta)}
+                  {fulfilment === 'pickup'
+                    ? `${formatDistance(distance)} away${cart.seller.address ? ` · ${cart.seller.address}` : ''}`
+                    : `${formatDistance(distance)} away · about ${formatEta(eta)}`}
                 </p>
               </div>
             </Card>
@@ -139,7 +147,11 @@ export default async function CartPage() {
               <h2 className="mb-3 font-semibold text-ink">Order summary</h2>
               <dl className="space-y-2 text-sm">
                 <Row label="Subtotal" value={formatMoney(cart.subtotal)} />
-                <Row label="Delivery" value={formatMoney(deliveryFee)} />
+                {fulfilment === 'pickup' ? (
+                  <Row label="Collection" value="Free" />
+                ) : (
+                  <Row label="Delivery" value={formatMoney(deliveryFee)} />
+                )}
                 <Row
                   label="Platform fee"
                   value={formatMoney(fee)}
@@ -169,6 +181,7 @@ export default async function CartPage() {
                         ? (user.default_address ?? location.label)
                         : (cart.seller.address ?? '')
                     }
+                    collectFrom={{ name: cart.seller.name, address: cart.seller.address }}
                   />
                 </>
               ) : (

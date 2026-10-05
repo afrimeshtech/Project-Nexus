@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui'
-import { ORDER_STATUS_LABEL, type OrderStatus } from '@/modules/orders/service'
+import { orderStatusLabel, type Order, type OrderStatus } from '@/modules/orders/service'
 
 const TONE: Record<OrderStatus, Parameters<typeof Badge>[0]['tone']> = {
   pending_payment: 'warning',
@@ -12,17 +12,30 @@ const TONE: Record<OrderStatus, Parameters<typeof Badge>[0]['tone']> = {
   refunded: 'danger',
 }
 
-export function OrderStatusBadge({ status }: { status: OrderStatus }) {
-  return <Badge tone={TONE[status]}>{ORDER_STATUS_LABEL[status]}</Badge>
+export function OrderStatusBadge({
+  status,
+  fulfilment,
+}: {
+  status: OrderStatus
+  fulfilment: Order['fulfilment']
+}) {
+  return <Badge tone={TONE[status]}>{orderStatusLabel(status, fulfilment)}</Badge>
 }
 
 /** The lifecycle, drawn. Shows the buyer exactly where their order is. */
-export function OrderProgress({ status }: { status: OrderStatus }) {
+export function OrderProgress({
+  status,
+  fulfilment,
+}: {
+  status: OrderStatus
+  fulfilment: Order['fulfilment']
+}) {
+  const pickup = fulfilment === 'pickup'
   const steps: { key: OrderStatus; label: string }[] = [
     { key: 'confirmed', label: 'Paid' },
     { key: 'preparing', label: 'Preparing' },
-    { key: 'dispatched', label: 'On the way' },
-    { key: 'delivered', label: 'Delivered' },
+    { key: 'dispatched', label: pickup ? 'Ready' : 'On the way' },
+    { key: 'delivered', label: pickup ? 'Collected' : 'Delivered' },
     { key: 'completed', label: 'Completed' },
   ]
 

@@ -51,7 +51,7 @@ export default async function OrdersPage() {
                       <span className="font-technical text-xs text-muted">
                         {order.order_number}
                       </span>
-                      <OrderStatusBadge status={order.status} />
+                      <OrderStatusBadge status={order.status} fulfilment={order.fulfilment} />
                     </div>
                     <p className="mt-0.5 truncate font-medium text-ink">
                       {order.first_item}

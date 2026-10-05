@@ -61,7 +61,7 @@ export default async function PartnerOrdersPage({
           <Stat
             label="Fulfilment rate"
             value={`${Number(kpis.fulfilment_rate).toFixed(0)}%`}
-            hint="Feeds your ranking with buyers"
+            hint="Orders you fulfil out of those you accept"
           />
         </div>
 
@@ -128,7 +128,7 @@ export default async function PartnerOrdersPage({
                       <span className="font-technical text-xs text-muted">
                         {order.order_number}
                       </span>
-                      <OrderStatusBadge status={order.status} />
+                      <OrderStatusBadge status={order.status} fulfilment={order.fulfilment} />
                     </div>
                     <p className="mt-0.5 truncate font-medium text-ink">
                       {order.first_item}

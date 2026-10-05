@@ -832,8 +832,15 @@ export async function advanceOrder(
       await queueNotification(
         {
           userId: order.buyer_user_id,
-          title: 'Your order is on the way',
-          body: `Order ${order.order_number} has been dispatched.`,
+          ...(order.fulfilment === 'pickup'
+            ? {
+                title: 'Your order is ready to collect',
+                body: `Order ${order.order_number} is packed and waiting for you at the shop.`,
+              }
+            : {
+                title: 'Your order is on the way',
+                body: `Order ${order.order_number} has been dispatched.`,
+              }),
           category: 'order',
           referenceType: 'order',
           referenceId: orderId,
@@ -854,8 +861,15 @@ export async function advanceOrder(
       await queueNotification(
         {
           userId: order.buyer_user_id,
-          title: 'Order delivered',
-          body: `Order ${order.order_number} was delivered. Tap to rate the seller.`,
+          ...(order.fulfilment === 'pickup'
+            ? {
+                title: 'Order collected',
+                body: `Order ${order.order_number} was handed over. Confirm receipt to release payment and rate the seller.`,
+              }
+            : {
+                title: 'Order delivered',
+                body: `Order ${order.order_number} was delivered. Tap to rate the seller.`,
+              }),
           category: 'order',
           referenceType: 'order',
           referenceId: orderId,
@@ -1242,4 +1256,18 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   completed: 'Completed',
   cancelled: 'Cancelled',
   refunded: 'Refunded',
+}
+
+/**
+ * A collection order moves through the same states as a delivery - the shop
+ * marks it ready (`dispatched`) and handed over (`delivered`) - but nothing is
+ * on the way and no one delivers it, so those two read differently.
+ */
+const PICKUP_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
+  dispatched: 'Ready to collect',
+  delivered: 'Collected',
+}
+
+export function orderStatusLabel(status: OrderStatus, fulfilment: Order['fulfilment']): string {
+  return (fulfilment === 'pickup' && PICKUP_STATUS_LABEL[status]) || ORDER_STATUS_LABEL[status]
 }

@@ -80,8 +80,19 @@ export default async function PartnerSettingsPage() {
                     <Badge tone="warning">{org.verification}</Badge>
                   )}
                 </div>
-                <Row label="Trust score" value={`${Number(org.trust_score).toFixed(0)} / 100`} />
-                <Row label="Fulfilment rate" value={`${Number(org.fulfilment_rate).toFixed(0)}%`} />
+                {/* FUTURE-RANKING: both are inputs to shop ranking, shown again with it. */}
+                {RANKING_LAUNCHED && (
+                  <>
+                    <Row
+                      label="Trust score"
+                      value={`${Number(org.trust_score).toFixed(0)} / 100`}
+                    />
+                    <Row
+                      label="Fulfilment rate"
+                      value={`${Number(org.fulfilment_rate).toFixed(0)}%`}
+                    />
+                  </>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted">Rating</span>
                   <Rating value={org.rating} count={org.rating_count} />

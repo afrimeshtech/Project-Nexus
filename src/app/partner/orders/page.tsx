@@ -7,6 +7,7 @@ import { Card, EmptyState, PageHeader, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { deliveryLaunched } from '@/lib/launch-fulfilment'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { ordersForBuyerOrg, ordersForSeller, type OrderStatus } from '@/modules/orders/service'
 import { sellerKpis } from '@/modules/analytics/service'
 
@@ -61,15 +62,20 @@ export default async function PartnerOrdersPage({
           }
         />
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div
+          className={`grid grid-cols-2 gap-4 ${RANKING_LAUNCHED ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+        >
           <Stat label="Open orders" value={kpis.orders_open} />
           <Stat label="Orders (30 days)" value={kpis.orders_30d} />
           <Stat label="Average order" value={formatMoney(kpis.aov)} />
-          <Stat
-            label="Fulfilment rate"
-            value={`${Number(kpis.fulfilment_rate).toFixed(0)}%`}
-            hint="Orders you fulfil out of those you accept"
-          />
+          {/* FUTURE-RANKING: fulfilment rate is a ranking input, shown with ranking. */}
+          {RANKING_LAUNCHED && (
+            <Stat
+              label="Fulfilment rate"
+              value={`${Number(kpis.fulfilment_rate).toFixed(0)}%`}
+              hint="Orders you fulfil out of those you accept"
+            />
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

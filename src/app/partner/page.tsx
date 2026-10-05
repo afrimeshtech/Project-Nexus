@@ -32,6 +32,7 @@ import { pointsBalance, referralSummary } from '@/modules/rewards/service'
 import { audienceForSeller } from '@/modules/territory/service'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
 import { formatPoints } from '@/lib/points'
+import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Dashboard' }
@@ -121,7 +122,12 @@ export default async function PartnerHome({
           <Stat
             label="Rating"
             value={<Rating value={kpis.rating} count={kpis.rating_count} />}
-            hint={`Fulfils ${Number(kpis.fulfilment_rate).toFixed(0)}% of orders`}
+            // FUTURE-RANKING: fulfilment rate is a ranking input, shown with ranking.
+            hint={
+              RANKING_LAUNCHED
+                ? `Fulfils ${Number(kpis.fulfilment_rate).toFixed(0)}% of orders`
+                : undefined
+            }
           />
           <Stat
             label="Reward points"

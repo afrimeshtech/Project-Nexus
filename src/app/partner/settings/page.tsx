@@ -5,6 +5,7 @@ import { LogoUpload } from '@/components/media/ImageUpload'
 import { Badge, Card, PageHeader, Rating, SectionHeading } from '@/components/ui'
 import { requireOrgCapability } from '@/lib/auth'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
 
@@ -93,10 +94,13 @@ export default async function PartnerSettingsPage() {
                     />
                   </>
                 )}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted">Rating</span>
-                  <Rating value={org.rating} count={org.rating_count} />
-                </div>
+                {/* FUTURE-RATINGS */}
+                {RATINGS_LAUNCHED && (
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted">Rating</span>
+                    <Rating value={org.rating} count={org.rating_count} />
+                  </div>
+                )}
                 <Row label="CAC number" value={org.registration_number ?? 'Not provided'} />
               </div>
               {/* FUTURE-RANKING: what moves a shop up, once shops are ranked. */}
@@ -109,7 +113,8 @@ export default async function PartnerSettingsPage() {
               )}
             </Card>
 
-            {reviews.length > 0 && (
+            {/* FUTURE-RATINGS */}
+            {RATINGS_LAUNCHED && reviews.length > 0 && (
               <Card>
                 <SectionHeading title="Recent ratings" />
                 <ul className="space-y-2.5">

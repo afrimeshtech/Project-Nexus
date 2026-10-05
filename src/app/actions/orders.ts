@@ -14,6 +14,7 @@ import {
 } from '@/modules/orders/service'
 
 import { parseForm, z, uuid, stars, requiredText } from '@/lib/forms'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
 export interface OrderActionState {
   error?: string
@@ -107,6 +108,9 @@ export async function rateOrderAction(
 ): Promise<OrderActionState> {
   const user = await currentUser()
   if (!user) redirect('/login')
+  // FUTURE-RATINGS: refused here too, not only hidden, so a posted form cannot
+  // rate while rating is off.
+  if (!RATINGS_LAUNCHED) return { error: 'Rating sellers is not available yet.' }
 
   const parsed = parseForm(rateSchema, formData)
   if (!parsed.ok) return { error: parsed.error }

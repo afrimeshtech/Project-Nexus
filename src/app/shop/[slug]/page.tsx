@@ -10,6 +10,7 @@ import { requireUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { hydrateCart } from '@/lib/cart'
 import { deliveryLaunched } from '@/lib/launch-fulfilment'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 import { TIER, ORG_LABEL, type OrgType } from '@/lib/tiers'
 import { formatDistance, formatEta, haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { getOrganisation, ratingsFor } from '@/modules/organisations/service'
@@ -165,7 +166,8 @@ export default async function ShopPage({ params }: { params: Promise<{ slug: str
           </Card>
         )}
 
-        {reviews.length > 0 && (
+        {/* FUTURE-RATINGS */}
+        {RATINGS_LAUNCHED && reviews.length > 0 && (
           <section>
             <SectionHeading
               title="Ratings"

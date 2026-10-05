@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { Badge, Card, Rating } from '@/components/ui'
 import { formatDistance, formatEta } from '@/lib/geo'
+import { deliveryLaunched } from '@/lib/launch-fulfilment'
 import type { rankSellers } from '@/modules/recommendation/service'
 
 type Outlet = Awaited<ReturnType<typeof rankSellers>>[number]
@@ -29,7 +30,8 @@ export function OutletCard({ outlet }: { outlet: Outlet }) {
           <p className="truncate text-xs text-muted">{outlet.address ?? outlet.city}</p>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
             <span>{formatDistance(outlet.distance_km)}</span>
-            <span>· {formatEta(outlet.eta_minutes)}</span>
+            {/* FUTURE-DELIVERY: an arrival time means nothing to a shopper who collects. */}
+            {deliveryLaunched() && <span>· {formatEta(outlet.eta_minutes)}</span>}
             <Rating value={outlet.rating} count={outlet.rating_count} />
           </div>
           <Badge tone="neutral" className="mt-1.5">

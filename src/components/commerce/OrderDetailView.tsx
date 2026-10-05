@@ -17,6 +17,7 @@ import { orderStatusLabel, orderTimeline, type OrderDetail } from '@/modules/ord
 import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
 import { deliveryLaunched } from '@/lib/launch-fulfilment'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
 /**
  * The order, rendered identically for whoever is looking at it - only the
@@ -165,19 +166,22 @@ export async function OrderDetailView({
             </ol>
           </Card>
 
-          {viewer.isBuyer && ['delivered', 'completed'].includes(order.status) && (
-            <Card>
-              <SectionHeading title="Rate this seller" />
-              {order.rating_stars ? (
-                <div className="flex items-center gap-2">
-                  <Rating value={order.rating_stars} />
-                  <span className="text-sm text-muted">You already rated this order.</span>
-                </div>
-              ) : (
-                <RateOrderForm orderId={order.id} />
-              )}
-            </Card>
-          )}
+          {/* FUTURE-RATINGS: no rating prompt while rating is off. */}
+          {RATINGS_LAUNCHED &&
+            viewer.isBuyer &&
+            ['delivered', 'completed'].includes(order.status) && (
+              <Card>
+                <SectionHeading title="Rate this seller" />
+                {order.rating_stars ? (
+                  <div className="flex items-center gap-2">
+                    <Rating value={order.rating_stars} />
+                    <span className="text-sm text-muted">You already rated this order.</span>
+                  </div>
+                ) : (
+                  <RateOrderForm orderId={order.id} />
+                )}
+              </Card>
+            )}
         </div>
 
         <aside className="space-y-4">

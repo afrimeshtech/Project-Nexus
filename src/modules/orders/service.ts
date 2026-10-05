@@ -34,6 +34,7 @@ import { qualifyReferral } from '@/modules/rewards/service'
 import { canTrade, priceColumnFor, TIER } from '@/lib/tiers'
 import { haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { platformFee, cashbackFor, DEFAULT_CURRENCY } from '@/lib/money'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
 /**
  * MODULE: orders
@@ -864,11 +865,11 @@ export async function advanceOrder(
           ...(order.fulfilment === 'pickup'
             ? {
                 title: 'Order collected',
-                body: `Order ${order.order_number} was handed over. Confirm receipt to release payment and rate the seller.`,
+                body: `Order ${order.order_number} was handed over. Confirm receipt to release payment${RATINGS_LAUNCHED ? ' and rate the seller' : ''}.`,
               }
             : {
                 title: 'Order delivered',
-                body: `Order ${order.order_number} was delivered. Tap to rate the seller.`,
+                body: `Order ${order.order_number} was delivered.${RATINGS_LAUNCHED ? ' Tap to rate the seller.' : ''}`,
               }),
           category: 'order',
           referenceType: 'order',

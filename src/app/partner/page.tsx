@@ -33,6 +33,7 @@ import { audienceForSeller } from '@/modules/territory/service'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
 import { formatPoints } from '@/lib/points'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Dashboard' }
@@ -119,16 +120,19 @@ export default async function PartnerHome({
             value={formatMoney(wallet.available)}
             hint={`${formatMoney(wallet.locked)} in escrow`}
           />
-          <Stat
-            label="Rating"
-            value={<Rating value={kpis.rating} count={kpis.rating_count} />}
-            // FUTURE-RANKING: fulfilment rate is a ranking input, shown with ranking.
-            hint={
-              RANKING_LAUNCHED
-                ? `Fulfils ${Number(kpis.fulfilment_rate).toFixed(0)}% of orders`
-                : undefined
-            }
-          />
+          {/* FUTURE-RATINGS: the rating tile returns with rating. */}
+          {RATINGS_LAUNCHED && (
+            <Stat
+              label="Rating"
+              value={<Rating value={kpis.rating} count={kpis.rating_count} />}
+              // FUTURE-RANKING: fulfilment rate is a ranking input, shown with ranking.
+              hint={
+                RANKING_LAUNCHED
+                  ? `Fulfils ${Number(kpis.fulfilment_rate).toFixed(0)}% of orders`
+                  : undefined
+              }
+            />
+          )}
           <Stat
             label="Reward points"
             value={formatPoints(points.available)}

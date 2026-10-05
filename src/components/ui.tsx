@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/Icon'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 import type { ReactNode } from 'react'
 
 /**
@@ -738,6 +739,9 @@ export const inputWithIconClass = inputClass.replace('px-3', 'pl-10 pr-3')
  * No reviews is not a low score, so it is not drawn on the same scale.
  */
 export function Rating({ value, count }: { value: number; count?: number }) {
+  // FUTURE-RATINGS: no stars anywhere while rating is off - one switch here
+  // rather than one at every card that shows a seller.
+  if (!RATINGS_LAUNCHED) return null
   if (count === 0) {
     return <span className="text-xs font-medium text-muted">New seller</span>
   }

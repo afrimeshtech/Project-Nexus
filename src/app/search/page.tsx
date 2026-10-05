@@ -6,6 +6,7 @@ import { Card, EmptyState, PageHeader, SectionHeading } from '@/components/ui'
 import { currentUser } from '@/lib/auth'
 import { buyerLocation } from '@/lib/location'
 import { TIER } from '@/lib/tiers'
+import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 import { listCategories } from '@/modules/catalog/service'
 import { searchProducts } from '@/modules/search/service'
 
@@ -76,7 +77,8 @@ export default async function SearchPage({
     maxDistanceKm: radius,
     categoryId: params.category,
     maxPrice: params.maxPrice ? Number(params.maxPrice) * 100 : undefined,
-    minRating: params.minRating ? Number(params.minRating) : undefined,
+    // FUTURE-RATINGS: no rating filter while rating is off.
+    minRating: RATINGS_LAUNCHED && params.minRating ? Number(params.minRating) : undefined,
     maxEtaMinutes: params.eta ? Number(params.eta) : undefined,
   })
 
@@ -134,21 +136,23 @@ export default async function SearchPage({
             ))}
           </FilterRow>
 
-          <FilterRow label="Rating">
-            {[
-              { label: 'Any', value: '' },
-              { label: '3+ stars', value: '3' },
-              { label: '4+ stars', value: '4' },
-            ].map((opt) => (
-              <FilterChip
-                key={opt.label}
-                href={buildHref({ minRating: opt.value })}
-                active={(params.minRating ?? '') === opt.value}
-              >
-                {opt.label}
-              </FilterChip>
-            ))}
-          </FilterRow>
+          {RATINGS_LAUNCHED && (
+            <FilterRow label="Rating">
+              {[
+                { label: 'Any', value: '' },
+                { label: '3+ stars', value: '3' },
+                { label: '4+ stars', value: '4' },
+              ].map((opt) => (
+                <FilterChip
+                  key={opt.label}
+                  href={buildHref({ minRating: opt.value })}
+                  active={(params.minRating ?? '') === opt.value}
+                >
+                  {opt.label}
+                </FilterChip>
+              ))}
+            </FilterRow>
+          )}
 
           {categories.length > 0 && (
             <FilterRow label="Category">

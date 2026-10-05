@@ -16,6 +16,7 @@ import { formatDistance, formatEta } from '@/lib/geo'
 import { orderStatusLabel, orderTimeline, type OrderDetail } from '@/modules/orders/service'
 import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
+import { deliveryLaunched } from '@/lib/launch-fulfilment'
 
 /**
  * The order, rendered identically for whoever is looking at it - only the
@@ -102,7 +103,8 @@ export async function OrderDetailView({
             </div>
           </Card>
 
-          {delivery && delivery.status !== 'failed' && (
+          {/* FUTURE-DELIVERY: no rider status while there are no riders. */}
+          {deliveryLaunched() && delivery && delivery.status !== 'failed' && (
             <Card>
               <SectionHeading
                 title="Delivery"

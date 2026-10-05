@@ -6,6 +6,7 @@ import { ProductThumb } from '@/components/commerce/ProductThumb'
 import { Card, EmptyState, PageHeader, Stat } from '@/components/ui'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
+import { deliveryLaunched } from '@/lib/launch-fulfilment'
 import { ordersForBuyerOrg, ordersForSeller, type OrderStatus } from '@/modules/orders/service'
 import { sellerKpis } from '@/modules/analytics/service'
 
@@ -16,8 +17,14 @@ const FILTERS: { key: string; label: string; status?: OrderStatus }[] = [
   { key: 'all', label: 'All' },
   { key: 'confirmed', label: 'To prepare', status: 'confirmed' },
   { key: 'preparing', label: 'Preparing', status: 'preparing' },
-  { key: 'dispatched', label: 'On the way', status: 'dispatched' },
-  { key: 'delivered', label: 'Delivered', status: 'delivered' },
+  // FUTURE-DELIVERY: the same two states, named for collection while that is
+  // the only way an order leaves the shop.
+  {
+    key: 'dispatched',
+    label: deliveryLaunched() ? 'On the way' : 'Ready to collect',
+    status: 'dispatched',
+  },
+  { key: 'delivered', label: deliveryLaunched() ? 'Delivered' : 'Collected', status: 'delivered' },
   { key: 'completed', label: 'Completed', status: 'completed' },
 ]
 

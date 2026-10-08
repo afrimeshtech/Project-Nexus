@@ -65,8 +65,10 @@ On the server:
 sudo apt update && sudo apt -y upgrade
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker ubuntu
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 80 -j ACCEPT
-sudo iptables -I INPUT 6 -m state --state NEW -p tcp --dport 443 -j ACCEPT
+# The ACCEPT rules must sit above the image's catch-all REJECT rule.
+n=$(sudo iptables -L INPUT --line-numbers -n | awk '/REJECT/ {print $1; exit}')
+sudo iptables -I INPUT $n -m state --state NEW -p tcp --dport 443 -j ACCEPT
+sudo iptables -I INPUT $n -m state --state NEW -p tcp --dport 80 -j ACCEPT
 sudo netfilter-persistent save
 exit        # log out and back in so the docker group applies
 ```
@@ -79,7 +81,7 @@ git clone https://github.com/afrimeshtech/Project-Nexus.git afrimesh
 cd afrimesh/deploy
 cp .env.example .env
 openssl rand -hex 24          # copy this: it becomes POSTGRES_PASSWORD
-nano .env                     # fill ACME_EMAIL and POSTGRES_PASSWORD, save
+nano .env                     # fill POSTGRES_PASSWORD, save
 
 # 3. Build and start. The first build takes 5-10 minutes.
 docker compose up -d --build

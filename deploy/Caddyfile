@@ -1,9 +1,5 @@
 # HTTPS for the site. Caddy fetches and renews the certificate itself once the
-# domain's DNS points at this server.
-
-{
-	email {$ACME_EMAIL}
-}
+# domain's DNS points at this server. No account email is needed for that.
 
 {$SITE_DOMAIN} {
 	encode zstd gzip

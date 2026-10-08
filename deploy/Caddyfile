@@ -1,0 +1,30 @@
+# HTTPS for the site. Caddy fetches and renews the certificate itself once the
+# domain's DNS points at this server.
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# Uploaded images, straight from the shared volume. Sandboxed so a file
+	# served from our own origin can never run script.
+	handle /uploads/* {
+		root * /srv
+		header {
+			X-Content-Type-Options nosniff
+			Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
+			Cache-Control "public, max-age=86400"
+		}
+		file_server
+	}
+
+	handle {
+		reverse_proxy app:3000
+	}
+}
+
+www.{$SITE_DOMAIN} {
+	redir https://{$SITE_DOMAIN}{uri} permanent
+}

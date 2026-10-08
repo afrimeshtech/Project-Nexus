@@ -201,9 +201,18 @@ export async function requestOtp(
   const emailLive = channel === 'email' && emailTransport() === 'resend'
 
   // A code shown on screen is only acceptable on a developer's machine. On a
-  // live site it would let anyone sign in as any address they can type.
-  if (channel === 'email' && !emailLive && process.env.NODE_ENV === 'production') {
+  // live site it would let anyone sign in as any address they can type - an
+  // administrator's phone number included. Email was guarded; SMS has no live
+  // transport at all yet, so on a production server phone codes are refused
+  // outright rather than printed.
+  const production = process.env.NODE_ENV === 'production'
+  if (production && channel === 'email' && !emailLive) {
     throw new OtpDeliveryError('Email sign-in codes are not configured on this server.')
+  }
+  if (production && channel === 'sms') {
+    throw new OtpDeliveryError(
+      'Phone sign-in codes are not available yet. Sign in with your password or email instead.',
+    )
   }
 
   const code = String(randomInt(100_000, 999_999))
@@ -230,7 +239,8 @@ export async function requestOtp(
     payload: { purpose, channel },
   })
 
-  const devMode = !emailLive && (process.env.NOTIFICATION_TRANSPORT ?? 'console') === 'console'
+  const devMode =
+    !production && !emailLive && (process.env.NOTIFICATION_TRANSPORT ?? 'console') === 'console'
   if (devMode) console.log(`[otp] ${dest} -> ${code} (${purpose})`)
 
   return devMode

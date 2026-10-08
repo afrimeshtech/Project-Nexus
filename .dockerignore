@@ -2,10 +2,12 @@ node_modules
 .next
 .git
 .github
-.pgdata
+.pgdata*
 public/uploads
 npm-debug.log*
 .env
+**/.env
+deploy
 .env.local
 *.md
 docs

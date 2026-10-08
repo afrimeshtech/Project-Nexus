@@ -27,11 +27,7 @@ export function AuthLayout({
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-page px-4 py-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/brand/afrimesh-icon.png"
-          alt="AfriMesh"
-          className="mb-4 size-14 rounded-brand"
-        />
+        <img src="/brand/afrimesh-icon.png" alt="AfriMesh" className="mb-4 size-14 rounded-brand" />
         <div className="w-full max-w-sm">
           <h1 className="text-center text-display-sm">{title}</h1>
           <p className="mb-4 mt-1.5 text-center text-sm text-muted">{subtitle}</p>

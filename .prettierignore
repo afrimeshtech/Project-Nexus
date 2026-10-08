@@ -3,3 +3,4 @@ node_modules/
 .pgdata/
 package-lock.json
 *.md
+.impeccable/

@@ -231,7 +231,11 @@
      (`/about`'s three-word h1), which is precisely the condition under which
      this was scoped to be abandoned rather than forced through by loosening
      the tracking too. Back to 620. */
-  --text-display: clamp(2.25rem, 6vw, 4.5rem); /* 36 → 72px — trimmed from 40→80px, still read as too large on /about and /showcase */
+  --text-display: clamp(
+    2.25rem,
+    6vw,
+    4.5rem
+  ); /* 36 → 72px — trimmed from 40→80px, still read as too large on /about and /showcase */
   --text-display--line-height: 0.98;
   --text-display--letter-spacing: -0.045em;
   --text-display--font-weight: 620;

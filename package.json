@@ -16,6 +16,7 @@
     "db:seed": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/seed.ts",
     "db:reset": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/db-reset.ts",
     "db:demo-passwords": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/set-demo-passwords.ts",
+    "user:set-password": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/set-password.ts",
     "test": "node --experimental-strip-types --import ./scripts/register-alias.mjs --test \"src/**/*.test.ts\"",
     "verify": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/verify.ts",
     "dev:session": "node --experimental-strip-types --import ./scripts/register-alias.mjs scripts/dev-session.ts",

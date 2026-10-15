@@ -28,10 +28,10 @@ import {
 import { inventoryStats, listInventory, expiringBatches } from '@/modules/inventory/service'
 import { ordersForSeller } from '@/modules/orders/service'
 import { getBalance } from '@/modules/wallet/service'
-import { pointsBalance, referralSummary } from '@/modules/rewards/service'
+// FUTURE-REWARDS: import { pointsBalance, referralSummary } from '@/modules/rewards/service'
 import { audienceForSeller } from '@/modules/territory/service'
 import { ActivityPanel } from '@/components/territory/ActivityPanel'
-import { formatPoints } from '@/lib/points'
+// FUTURE-REWARDS: import { formatPoints } from '@/lib/points'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
@@ -48,7 +48,8 @@ export default async function PartnerHome({
   searchParams: Promise<{ welcome?: string; restricted?: string }>
 }) {
   const { welcome, restricted } = await searchParams
-  const user = await requireUser('/partner')
+  // Still the sign-in guard. FUTURE-REWARDS: `const user =` again for referralSummary.
+  await requireUser('/partner')
   const org = await currentOrganisation()
   if (!org) redirect('/onboarding')
 
@@ -56,20 +57,20 @@ export default async function PartnerHome({
     return <SalesRepHome org={org} restricted={Boolean(restricted)} />
   }
 
-  const [kpis, stock, series, top, orders, wallet, lowStock, expiring, demand, points, referrals] =
-    await Promise.all([
-      sellerKpis(org.id),
-      inventoryStats(org.id),
-      sellerSalesSeries(org.id, 14),
-      topSellingProducts(org.id, 5),
-      ordersForSeller(org.id, { limit: 6 }),
-      getBalance('organisation', org.id),
-      listInventory(org.id, { lowOnly: true, limit: 6 }),
-      expiringBatches(org.id, 60),
-      unmetDemand(org.id, 5),
-      pointsBalance('organisation', org.id),
-      referralSummary(user.id),
-    ])
+  // FUTURE-REWARDS: `points` and `referrals` fed the reward tiles below.
+  const [kpis, stock, series, top, orders, wallet, lowStock, expiring, demand] = await Promise.all([
+    sellerKpis(org.id),
+    inventoryStats(org.id),
+    sellerSalesSeries(org.id, 14),
+    topSellingProducts(org.id, 5),
+    ordersForSeller(org.id, { limit: 6 }),
+    getBalance('organisation', org.id),
+    listInventory(org.id, { lowOnly: true, limit: 6 }),
+    expiringBatches(org.id, 60),
+    unmetDemand(org.id, 5),
+    // pointsBalance('organisation', org.id),
+    // referralSummary(user.id),
+  ])
 
   // FUTURE-DASHBOARD: which tier this organisation restocks from. A retail
   // outlet sources from merchants, and that tier is not open yet, so there is
@@ -133,6 +134,8 @@ export default async function PartnerHome({
               }
             />
           )}
+          {/* FUTURE-REWARDS: the reward points and pending-invitation tiles,
+              restored with the rewards programme.
           <Stat
             label="Reward points"
             value={formatPoints(points.available)}
@@ -149,6 +152,7 @@ export default async function PartnerHome({
             hint="Businesses you invited that have not ordered yet"
             icon="user"
           />
+          */}
         </div>
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">

@@ -9,8 +9,8 @@
  * queued exactly as they would be in production. If the seed completes, the
  * commerce path works.
  *
- * Market: Lagos, matching the BRS short-term objective of launching in one
- * metropolitan area.
+ * Market: the MVP pilot towns - Jalingo (Taraba), Jimeta and Yola (Adamawa),
+ * where the first users are. Shops that trade with each other share a town.
  */
 import { assertDestructiveAllowed, DestructiveGuardError } from '../src/lib/destructive-guard.ts'
 import { getSql } from '@/db/client'
@@ -457,6 +457,7 @@ interface SeedOrg {
   lng: number
   address: string
   city: string
+  state: string
   dispatch: number
   /** Category slugs this business carries. */
   carries: string[]
@@ -466,25 +467,27 @@ const ORGS: SeedOrg[] = [
   // Tier 2 - dealer warehouses
   {
     key: 'apapa-hub',
-    name: 'Apapa Distribution Hub',
+    name: 'Jalingo Distribution Hub',
     type: 'warehouse',
     owner: { name: 'Tunde Bakare', phone: '08031000001', email: 'tunde@apapahub.ng' },
-    lat: 6.4491,
-    lng: 3.3592,
-    address: 'Wharf Road, Apapa',
-    city: 'Lagos',
+    lat: 8.87,
+    lng: 11.34,
+    address: 'Yola Road, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 240,
     carries: ['groceries', 'beverages', 'building-materials', 'personal-care', 'agro-inputs'],
   },
   {
     key: 'ikeja-warehouse',
-    name: 'Ikeja Central Warehouse',
+    name: 'Yola Central Warehouse',
     type: 'warehouse',
     owner: { name: 'Ngozi Eze', phone: '08031000002', email: 'ngozi@ikejacentral.ng' },
-    lat: 6.61,
-    lng: 3.34,
-    address: 'Acme Road, Ogba',
-    city: 'Lagos',
+    lat: 9.21,
+    lng: 12.488,
+    address: 'Numan Road, Yola',
+    city: 'Yola',
+    state: 'Adamawa',
     dispatch: 200,
     carries: ['groceries', 'pharmacy', 'electronics', 'home-kitchen', 'personal-care'],
   },
@@ -492,37 +495,40 @@ const ORGS: SeedOrg[] = [
   // Tier 3 - merchants (wholesalers)
   {
     key: 'alaba-wholesale',
-    name: 'Alaba Wholesale Ltd',
+    name: 'Jimeta Wholesale Ltd',
     type: 'merchant',
     owner: { name: 'Emeka Obi', phone: '08032000001', email: 'emeka@alabawholesale.ng' },
-    lat: 6.46,
-    lng: 3.19,
-    address: 'Alaba International Market',
-    city: 'Lagos',
+    lat: 9.276,
+    lng: 12.462,
+    address: 'Jimeta Modern Market',
+    city: 'Jimeta',
+    state: 'Adamawa',
     dispatch: 120,
     carries: ['electronics', 'home-kitchen', 'personal-care'],
   },
   {
     key: 'mushin-trade',
-    name: 'Mushin Trade Partners',
+    name: 'Jalingo Trade Partners',
     type: 'merchant',
     owner: { name: 'Fatima Yusuf', phone: '08032000002', email: 'fatima@mushintrade.ng' },
-    lat: 6.531,
-    lng: 3.349,
-    address: 'Agege Motor Road, Mushin',
-    city: 'Lagos',
+    lat: 8.887,
+    lng: 11.352,
+    address: 'Jalingo Main Market',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 90,
     carries: ['groceries', 'beverages', 'personal-care'],
   },
   {
     key: 'oshodi-bulk',
-    name: 'Oshodi Bulk Traders',
+    name: 'Yola Bulk Traders',
     type: 'merchant',
     owner: { name: 'Segun Adeyemi', phone: '08032000003', email: 'segun@oshodibulk.ng' },
-    lat: 6.556,
-    lng: 3.345,
-    address: 'Oshodi Market Road',
-    city: 'Lagos',
+    lat: 9.202,
+    lng: 12.499,
+    address: 'Yola Main Market',
+    city: 'Yola',
+    state: 'Adamawa',
     dispatch: 100,
     carries: ['groceries', 'building-materials', 'agro-inputs', 'pharmacy'],
   },
@@ -533,10 +539,11 @@ const ORGS: SeedOrg[] = [
     name: 'Grace Stores',
     type: 'outlet',
     owner: { name: 'Grace Aderinto', phone: '08033000001', email: 'grace@gracestores.ng' },
-    lat: 6.599,
-    lng: 3.352,
-    address: '14 Allen Avenue, Ikeja',
-    city: 'Lagos',
+    lat: 8.8925,
+    lng: 11.3612,
+    address: '14 Hammaruwa Way, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 25,
     carries: ['groceries', 'beverages', 'personal-care'],
   },
@@ -545,10 +552,11 @@ const ORGS: SeedOrg[] = [
     name: 'Jide Supermarket',
     type: 'outlet',
     owner: { name: 'Jide Olawale', phone: '08033000002', email: 'jide@jidesupermarket.ng' },
-    lat: 6.605,
-    lng: 3.348,
-    address: '7 Opebi Road, Ikeja',
-    city: 'Lagos',
+    lat: 8.8962,
+    lng: 11.3571,
+    address: '7 Barde Way, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 30,
     carries: ['groceries', 'beverages', 'home-kitchen', 'personal-care'],
   },
@@ -557,58 +565,63 @@ const ORGS: SeedOrg[] = [
     name: 'Adaobi Provisions',
     type: 'outlet',
     owner: { name: 'Adaobi Nnamdi', phone: '08033000003', email: 'adaobi@adaobistores.ng' },
-    lat: 6.592,
-    lng: 3.362,
-    address: '22 Awolowo Way, Ikeja',
-    city: 'Lagos',
+    lat: 9.278,
+    lng: 12.46,
+    address: '22 Bank Road, Jimeta',
+    city: 'Jimeta',
+    state: 'Adamawa',
     dispatch: 20,
     carries: ['groceries', 'beverages'],
   },
   {
     key: 'yaba-minimart',
-    name: 'Yaba Mini Mart',
+    name: 'Jalingo Mini Mart',
     type: 'outlet',
     owner: { name: 'Bola Ogundipe', phone: '08033000004', email: 'bola@yabaminimart.ng' },
-    lat: 6.51,
-    lng: 3.372,
-    address: '5 Herbert Macaulay Way, Yaba',
-    city: 'Lagos',
+    lat: 8.901,
+    lng: 11.365,
+    address: '5 Hospital Road, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 25,
     carries: ['groceries', 'beverages', 'personal-care'],
   },
   {
     key: 'surulere-fresh',
-    name: 'Surulere Fresh Foods',
+    name: 'Yola Fresh Foods',
     type: 'outlet',
     owner: { name: 'Kemi Balogun', phone: '08033000005', email: 'kemi@surulerefresh.ng' },
-    lat: 6.4975,
-    lng: 3.349,
-    address: '31 Adeniran Ogunsanya, Surulere',
-    city: 'Lagos',
+    lat: 9.204,
+    lng: 12.496,
+    address: '31 Main Market Road, Yola',
+    city: 'Yola',
+    state: 'Adamawa',
     dispatch: 30,
     carries: ['groceries', 'beverages', 'home-kitchen'],
   },
   {
     key: 'ikeja-pharmacy',
-    name: 'Ikeja Pharmacy Plus',
+    name: 'Jalingo Pharmacy Plus',
     type: 'outlet',
     owner: { name: 'Dr Chinedu Okeke', phone: '08033000006', email: 'chinedu@ikejapharmacy.ng' },
-    lat: 6.603,
-    lng: 3.356,
-    address: '9 Obafemi Awolowo Way, Ikeja',
-    city: 'Lagos',
+    lat: 8.8905,
+    lng: 11.358,
+    address: '9 Main Market Road, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 20,
     carries: ['pharmacy', 'personal-care'],
   },
   {
     key: 'lekki-home',
-    name: 'Lekki Home Essentials',
+    name: 'Jimeta Home Essentials',
     type: 'outlet',
     owner: { name: 'Ifeoma Chukwu', phone: '08033000007', email: 'ifeoma@lekkihome.ng' },
-    lat: 6.4478,
-    lng: 3.4723,
-    address: 'Admiralty Way, Lekki Phase 1',
-    city: 'Lagos',
+    lat: 9.283,
+    lng: 12.455,
+    address: 'Mubi Road, Jimeta',
+    city: 'Jimeta',
+    state: 'Adamawa',
     dispatch: 35,
     carries: ['home-kitchen', 'electronics', 'personal-care'],
   },
@@ -617,10 +630,11 @@ const ORGS: SeedOrg[] = [
     name: 'BuildRight Materials',
     type: 'outlet',
     owner: { name: 'Yakubu Danladi', phone: '08033000008', email: 'yakubu@buildright.ng' },
-    lat: 6.608,
-    lng: 3.33,
-    address: 'Oba Akran Avenue, Ikeja',
-    city: 'Lagos',
+    lat: 8.879,
+    lng: 11.37,
+    address: 'Mile Six, Jalingo',
+    city: 'Jalingo',
+    state: 'Taraba',
     dispatch: 60,
     carries: ['building-materials'],
   },
@@ -643,7 +657,7 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('\nSeeding AfriMesh pilot market (Lagos)\n')
+  console.log('\nSeeding AfriMesh pilot market (Jalingo, Jimeta, Yola)\n')
 
   // -- Ranking weights and platform settings -------------------------------
   console.log('· Configuration')
@@ -652,7 +666,7 @@ async function main() {
       await setWeight(scope as RankingScope, factor, weight)
     }
   }
-  await setSetting('launch_market', { city: 'Lagos', country: 'NG' })
+  await setSetting('launch_market', { city: 'Jalingo', country: 'NG' })
   await setSetting('support_contact', { phone: '+2348000000000', email: 'support@afrimesh.africa' })
   log('ranking weights + platform settings written')
 
@@ -725,37 +739,37 @@ async function main() {
       phone: '08030000001',
       email: 'ada@example.ng',
       password: 'afrimesh',
-      lat: 6.6018,
-      lng: 3.3515,
-      address: '12 Allen Avenue, Ikeja',
-      city: 'Lagos',
-      state: 'Lagos',
+      lat: 8.8937,
+      lng: 11.3596,
+      address: '12 Hammaruwa Way, Jalingo',
+      city: 'Jalingo',
+      state: 'Taraba',
     }),
     registerUser({
       fullName: 'Musa Bello',
       phone: '08030000002',
       email: 'musa@example.ng',
       password: 'afrimesh',
-      lat: 6.51,
-      lng: 3.372,
-      address: '3 Commercial Avenue, Yaba',
-      city: 'Lagos',
-      state: 'Lagos',
+      lat: 8.9005,
+      lng: 11.366,
+      address: '3 Hospital Road, Jalingo',
+      city: 'Jalingo',
+      state: 'Taraba',
     }),
     registerUser({
       fullName: 'Chidinma Okafor',
       phone: '08030000003',
       email: 'chidinma@example.ng',
       password: 'afrimesh',
-      lat: 6.4975,
-      lng: 3.349,
-      address: '18 Bode Thomas, Surulere',
-      city: 'Lagos',
-      state: 'Lagos',
+      lat: 9.205,
+      lng: 12.494,
+      address: '18 Galadima Road, Yola',
+      city: 'Yola',
+      state: 'Adamawa',
     }),
   ])
   // -- Delivery partners ---------------------------------------------------
-  // Positioned around the Ikeja and Yaba clusters so open jobs actually fall
+  // Positioned around the Jalingo and Yola clusters so open jobs actually fall
   // inside their radius on the job board.
   const riders = await Promise.all(
     [
@@ -763,17 +777,23 @@ async function main() {
         name: 'Sola Adeyinka',
         phone: '08034000001',
         email: 'sola@rider.ng',
-        lat: 6.6005,
-        lng: 3.3505,
+        lat: 8.893,
+        lng: 11.359,
       },
       {
         name: 'Ibrahim Sani',
         phone: '08034000002',
         email: 'ibrahim@rider.ng',
-        lat: 6.512,
-        lng: 3.37,
+        lat: 8.9,
+        lng: 11.3645,
       },
-      { name: 'Peter Okon', phone: '08034000003', email: 'peter@rider.ng', lat: 6.498, lng: 3.35 },
+      {
+        name: 'Peter Okon',
+        phone: '08034000003',
+        email: 'peter@rider.ng',
+        lat: 9.2045,
+        lng: 12.495,
+      },
     ].map((rider) =>
       registerUser({
         fullName: rider.name,
@@ -783,8 +803,8 @@ async function main() {
         role: 'delivery_partner',
         lat: rider.lat,
         lng: rider.lng,
-        city: 'Lagos',
-        state: 'Lagos',
+        city: rider.lat < 9 ? 'Jalingo' : 'Yola',
+        state: rider.lat < 9 ? 'Taraba' : 'Adamawa',
       }),
     ),
   )
@@ -806,7 +826,7 @@ async function main() {
       lng: spec.lng,
       address: spec.address,
       city: spec.city,
-      state: 'Lagos',
+      state: spec.state,
     })
     const org = await registerOrganisation({
       name: spec.name,
@@ -817,7 +837,7 @@ async function main() {
       lng: spec.lng,
       address: spec.address,
       city: spec.city,
-      state: 'Lagos',
+      state: spec.state,
       phone: spec.owner.phone,
       email: spec.owner.email,
     })
@@ -903,7 +923,7 @@ async function main() {
   // -- Demand signal -------------------------------------------------------
   console.log('· Demand intelligence')
   const ada = consumers[0]
-  const searchCtx = { lat: 6.6018, lng: 3.3515, tier: TIER.consumer, userId: ada.id }
+  const searchCtx = { lat: 8.8937, lng: 11.3596, tier: TIER.consumer, userId: ada.id }
   for (const term of [
     'peak milk',
     'cement',
@@ -1080,7 +1100,7 @@ async function main() {
       method: 'card' as const,
       finish: 'completed' as const,
       stars: 5,
-      comment: 'Cheapest around Yaba.',
+      comment: 'Cheapest around here.',
       daysAgo: 6,
       rider: 1,
     },
@@ -1130,9 +1150,9 @@ async function main() {
   ]
 
   const positions = [
-    { lat: 6.6018, lng: 3.3515, address: '12 Allen Avenue, Ikeja' },
-    { lat: 6.51, lng: 3.372, address: '3 Commercial Avenue, Yaba' },
-    { lat: 6.4975, lng: 3.349, address: '18 Bode Thomas, Surulere' },
+    { lat: 8.8937, lng: 11.3596, address: '12 Hammaruwa Way, Jalingo' },
+    { lat: 8.9005, lng: 11.366, address: '3 Hospital Road, Jalingo' },
+    { lat: 9.205, lng: 12.494, address: '18 Galadima Road, Yola' },
   ]
 
   let placed = 0
@@ -1173,9 +1193,9 @@ async function main() {
         { product: 'Peak Milk Powder 400g', qty: 24 },
         { product: 'Golden Penny Semovita 1kg', qty: 30 },
       ],
-      lat: 6.599,
-      lng: 3.352,
-      address: '14 Allen Avenue, Ikeja',
+      lat: 8.8925,
+      lng: 11.3612,
+      address: '14 Hammaruwa Way, Jalingo',
       daysAgo: 9,
       stars: 5,
     },
@@ -1185,9 +1205,9 @@ async function main() {
       tier: TIER.outlet,
       seller: mushinId,
       lines: [{ product: 'Kings Rice 5kg', qty: 20 }],
-      lat: 6.51,
-      lng: 3.372,
-      address: '5 Herbert Macaulay Way, Yaba',
+      lat: 8.901,
+      lng: 11.365,
+      address: '5 Hospital Road, Jalingo',
       daysAgo: 4,
       stars: 4,
     },
@@ -1200,9 +1220,9 @@ async function main() {
         { product: 'Peak Milk Powder 400g', qty: 200 },
         { product: 'Kings Rice 5kg', qty: 120 },
       ],
-      lat: 6.531,
-      lng: 3.349,
-      address: 'Agege Motor Road, Mushin',
+      lat: 8.887,
+      lng: 11.352,
+      address: 'Jalingo Main Market',
       daysAgo: 12,
       stars: 5,
     },
@@ -1273,7 +1293,7 @@ async function main() {
     threads++
   }
 
-  const openBoard = await openJobs({ lat: 6.6018, lng: 3.3515 }, { radiusKm: 30 })
+  const openBoard = await openJobs({ lat: 8.8937, lng: 11.3596 }, { radiusKm: 30 })
   log(`${threads} messages exchanged · ${openBoard.length} delivery job(s) open on the rider board`)
 
   // -- Integrity check -----------------------------------------------------

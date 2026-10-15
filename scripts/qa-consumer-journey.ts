@@ -157,7 +157,7 @@ async function main() {
       sellerOrgId: shop!.id,
       items: [{ inventoryItemId: item!.id, qty: 2 }],
       fulfilment: 'delivery',
-      deliveryAddress: '12 Allen Avenue, Ikeja',
+      deliveryAddress: '12 Hammaruwa Way, Jalingo',
       deliveryLat: shop!.lat + 0.004,
       deliveryLng: shop!.lng + 0.004,
     })

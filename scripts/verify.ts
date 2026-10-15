@@ -96,8 +96,8 @@ console.log('PRD §12 — Supply-chain business rules')
 
 const ada = await user('ada@example.ng')
 const grace = await org('grace-stores')
-const mushin = await org('mushin-trade-partners')
-const apapa = await org('apapa-distribution-hub')
+const mushin = await org('jalingo-trade-partners')
+const apapa = await org('jalingo-distribution-hub')
 const graceOwner = await user('grace@gracestores.ng')
 
 const warehouseListing = await listing(apapa.id, 'Peak Milk Powder 400g')
@@ -114,8 +114,8 @@ await expectRejection(
       sellerOrgId: apapa.id,
       items: [{ inventoryItemId: warehouseListing.id, qty: 1 }],
       fulfilment: 'delivery',
-      deliveryLat: 6.6018,
-      deliveryLng: 3.3515,
+      deliveryLat: 8.8937,
+      deliveryLng: 11.3596,
     }),
   'warehouses',
 )
@@ -130,8 +130,8 @@ await expectRejection(
       sellerOrgId: mushin.id,
       items: [{ inventoryItemId: merchantListing.id, qty: 1 }],
       fulfilment: 'delivery',
-      deliveryLat: 6.6018,
-      deliveryLng: 3.3515,
+      deliveryLat: 8.8937,
+      deliveryLng: 11.3596,
     }),
   'tier',
 )
@@ -198,8 +198,8 @@ const holdOrder = await placeOrder({
   sellerOrgId: grace.id,
   items: [{ inventoryItemId: outletListing.id, qty: 2 }],
   fulfilment: 'delivery',
-  deliveryLat: 6.6018,
-  deliveryLng: 3.3515,
+  deliveryLat: 8.8937,
+  deliveryLng: 11.3596,
 })
 
 const during = (await sql.one<{ qty_available: number; qty_reserved: number }>(
@@ -216,7 +216,7 @@ check(
 
 // Reserved units must be invisible to discovery.
 const offersWhileHeld = await rankOffers(
-  { lat: 6.6018, lng: 3.3515, tier: TIER.consumer },
+  { lat: 8.8937, lng: 11.3596, tier: TIER.consumer },
   {
     productId: (await sql.one<{ product_id: string }>(
       `SELECT product_id FROM inventory_items WHERE id = $1`,
@@ -302,8 +302,8 @@ const paidOrder = await placeOrder({
   sellerOrgId: grace.id,
   items: [{ inventoryItemId: outletListing.id, qty: 1 }],
   fulfilment: 'delivery',
-  deliveryLat: 6.6018,
-  deliveryLng: 3.3515,
+  deliveryLat: 8.8937,
+  deliveryLng: 11.3596,
 })
 const payment = await payOrder(paidOrder.id, ada.id, 'wallet')
 check('An order can be paid from the wallet', payment.ok, payment.error ?? paidOrder.order_number)
@@ -365,15 +365,15 @@ const riderOrder = await placeOrder({
   sellerOrgId: grace.id,
   items: [{ inventoryItemId: outletListing.id, qty: 1 }],
   fulfilment: 'delivery',
-  deliveryAddress: '12 Allen Avenue, Ikeja',
-  deliveryLat: 6.6018,
-  deliveryLng: 3.3515,
+  deliveryAddress: '12 Hammaruwa Way, Jalingo',
+  deliveryLat: 8.8937,
+  deliveryLng: 11.3596,
 })
 await payOrder(riderOrder.id, ada.id, 'wallet')
 await advanceOrder(riderOrder.id, 'preparing', ada.id)
 await advanceOrder(riderOrder.id, 'dispatched', ada.id)
 
-const board = await openJobs({ lat: 6.6005, lng: 3.3505 }, { radiusKm: 20 })
+const board = await openJobs({ lat: 8.893, lng: 11.359 }, { radiusKm: 20 })
 const job = board.find((j) => j.order_id === riderOrder.id)
 check(
   'Dispatching an order raises a job on the rider board',
@@ -478,7 +478,7 @@ console.log('\nSAD Recommendation Engine — Ranking behaviour')
 
 const searchStart = Date.now()
 const results = await searchProducts(
-  { lat: 6.6018, lng: 3.3515, tier: TIER.consumer, userId: ada.id },
+  { lat: 8.8937, lng: 11.3596, tier: TIER.consumer, userId: ada.id },
   'milk',
   {},
 )
@@ -503,7 +503,7 @@ const unverified = await sql.one<{ count: number }>(
     WHERE o.verification <> 'verified' AND i.qty_available > 0 AND i.is_listed`,
 )
 const allOffers = await rankOffers(
-  { lat: 6.6018, lng: 3.3515, tier: TIER.consumer },
+  { lat: 8.8937, lng: 11.3596, tier: TIER.consumer },
   {},
   { limit: 500 },
 )
@@ -526,7 +526,7 @@ const milkProductId = (await sql.one<{ product_id: string }>(
   `SELECT product_id FROM inventory_items WHERE id = $1`,
   [outletListing.id],
 ))!.product_id
-const buyerHere = { lat: 6.6018, lng: 3.3515, tier: TIER.consumer }
+const buyerHere = { lat: 8.8937, lng: 11.3596, tier: TIER.consumer }
 
 const original = await getWeights('consumer')
 

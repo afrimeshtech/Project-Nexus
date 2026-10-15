@@ -25,7 +25,7 @@ export default async function CartPage() {
     return (
       <ConsumerShell>
         <EmptyState
-          icon="basket"
+          icon="cart"
           title="Your basket is empty"
           body="Search for what you need and we will show you which nearby shops actually have it."
           action={<LinkButton href="/search">Start shopping</LinkButton>}

@@ -20,7 +20,6 @@ import type { SVGProps } from 'react'
 export type IconName =
   | 'home'
   | 'search'
-  | 'basket'
   | 'box'
   | 'wallet'
   | 'chat'
@@ -76,8 +75,6 @@ export type IconName =
 const PATHS: Record<IconName, string> = {
   home: 'M3 10.5 12 3l9 7.5M5.5 9.5V20a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1V9.5M9.5 21v-6h5v6',
   search: 'M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13ZM15.5 15.5 21 21',
-  basket:
-    'M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9ZM8 9 12 3l4 6M9.5 13v3.5M14.5 13v3.5',
   box: 'M20.5 8.5 12 4 3.5 8.5v7L12 20l8.5-4.5v-7ZM3.5 8.5 12 13l8.5-4.5M12 13v7',
   wallet:
     'M3.5 8.5A2 2 0 0 1 5.5 6.5h13a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-9ZM3.5 10.5h17M16 15h1.5',

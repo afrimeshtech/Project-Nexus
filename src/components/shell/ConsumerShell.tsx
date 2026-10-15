@@ -171,7 +171,7 @@ export async function ConsumerShell({
                 href="/cart"
                 className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
               >
-                <Icon name="basket" />
+                <Icon name="cart" />
                 <span className="sr-only">Basket</span>
                 {basket > 0 && (
                   <span className="pill-notify absolute -right-1 -top-1">{basket}</span>

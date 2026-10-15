@@ -227,7 +227,7 @@ export async function RewardsView({ userId, role }: { userId: string; role: stri
  * Names the invitation after who is being invited. "Invite" alone left a
  * retailer looking for the words "another retailer" and not finding them.
  */
-function inviteHeading(programme: Programme): string {
+export function inviteHeading(programme: Programme): string {
   switch (programme) {
     case 'outlet':
       return 'Invite another retail outlet'

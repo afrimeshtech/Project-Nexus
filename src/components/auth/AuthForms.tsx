@@ -164,8 +164,10 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
       {referralCode && (
         <Alert tone="success">
           You were invited with code{' '}
-          <strong className="font-technical">{referralCode.toUpperCase()}</strong>. If this is your
-          first time here, whoever invited you earns once your first order completes.
+          <strong className="font-technical">{referralCode.toUpperCase()}</strong>. Sign up and you
+          are linked to whoever invited you.
+          {/* FUTURE-REWARDS: "If this is your first time here, whoever invited
+              you earns once your first order completes." */}
         </Alert>
       )}
 
@@ -303,8 +305,10 @@ export function RegisterForm({
       {referralCode && (
         <Alert tone="success">
           You were invited with code{' '}
-          <strong className="font-technical">{referralCode.toUpperCase()}</strong>. Complete your
-          first order and whoever invited you earns their reward.
+          <strong className="font-technical">{referralCode.toUpperCase()}</strong>. Sign up and you
+          are linked to whoever invited you.
+          {/* FUTURE-REWARDS: "Complete your first order and whoever invited you
+              earns their reward." */}
         </Alert>
       )}
 

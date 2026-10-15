@@ -29,8 +29,8 @@ import { inventoryStats, listInventory, expiringBatches } from '@/modules/invent
 import { ordersForSeller } from '@/modules/orders/service'
 import { getBalance } from '@/modules/wallet/service'
 // FUTURE-REWARDS: import { pointsBalance, referralSummary } from '@/modules/rewards/service'
-import { audienceForSeller } from '@/modules/territory/service'
-import { ActivityPanel } from '@/components/territory/ActivityPanel'
+// FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
+// FUTURE-DEMAND-MAP: import { ActivityPanel } from '@/components/territory/ActivityPanel'
 // FUTURE-REWARDS: import { formatPoints } from '@/lib/points'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
@@ -76,7 +76,7 @@ export default async function PartnerHome({
   // outlet sources from merchants, and that tier is not open yet, so there is
   // nowhere for the "Source now" action below to lead.
   // const supplier = supplierTypeFor(org.tier_level)
-  const audience = audienceForSeller(org.type)
+  // FUTURE-DEMAND-MAP: const audience = audienceForSeller(org.type)
 
   /* Headline figures for the sales panel.
      Summed from the series already fetched rather than queried again — the
@@ -209,8 +209,9 @@ export default async function PartnerHome({
           </Card>
         </div>
 
-        {/* High on the page, not buried at the bottom: where the demand is
-            drives the restocking decisions in every section below it. */}
+        {/* FUTURE-DEMAND-MAP: "Where your buyers are", restored with the demand
+            map. High on the page, not buried at the bottom: where the demand is
+            drives the restocking decisions in every section below it.
         {audience && (
           <ActivityPanel
             audience={audience}
@@ -225,6 +226,7 @@ export default async function PartnerHome({
             moreHref="/partner/locations"
           />
         )}
+        */}
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-2">
           <RecentOrdersCard orders={orders} />

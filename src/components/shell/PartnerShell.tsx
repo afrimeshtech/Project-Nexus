@@ -10,7 +10,7 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 // import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
-import { audienceForSeller } from '@/modules/territory/service'
+// FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
   href: string
@@ -103,9 +103,11 @@ export async function PartnerShell({
     { href: '/partner/orders', label: `Orders from ${sellsTo}`, short: 'Orders', icon: 'inbox' },
     { href: '/partner/inventory', label: 'Inventory', icon: 'box' },
     { href: '/partner/catalogue', label: 'Add products', icon: 'plus' },
-    ...(audienceForSeller(org.type) && allowed('analytics')
-      ? [{ href: '/partner/locations', label: 'Buyer locations', icon: 'pin' as const }]
-      : []),
+    // FUTURE-DEMAND-MAP: where buyers are, by neighbourhood. /partner/locations
+    // and the territory module still build; only the way in is hidden.
+    // ...(audienceForSeller(org.type) && allowed('analytics')
+    //   ? [{ href: '/partner/locations', label: 'Buyer locations', icon: 'pin' as const }]
+    //   : []),
     { href: '/messages', label: 'Messages', icon: 'chat', badge: unreadMessages },
   ]
 
@@ -129,13 +131,18 @@ export async function PartnerShell({
       ? [{ href: '/partner/wallet', label: 'Wallet', icon: 'wallet' as const }]
       : []),
     ...(allowed('team') ? [{ href: '/partner/team', label: 'Team', icon: 'user' as const }] : []),
-    // FUTURE-REWARDS: restored with the rewards programme.
+    // Inviting peers stays open; the points it earns are hidden until rewards
+    // launch. FUTURE-REWARDS: swap this back for the Rewards entry below.
+    ...(allowed('rewards')
+      ? [{ href: '/partner/invite', label: 'Invite shops', icon: 'store' as const }]
+      : []),
     // ...(allowed('rewards')
     //   ? [{ href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' as const }]
     //   : []),
-    ...(allowed('api')
-      ? [{ href: '/partner/api', label: 'API access', icon: 'lock' as const }]
-      : []),
+    // FUTURE-API: machine access for integrations. /partner/api still builds.
+    // ...(allowed('api')
+    //   ? [{ href: '/partner/api', label: 'API access', icon: 'lock' as const }]
+    //   : []),
     ...(allowed('settings')
       ? [{ href: '/partner/settings', label: 'Settings', icon: 'settings' as const }]
       : []),

@@ -16,12 +16,20 @@ import { parseForm, z, uuid, quantity, fulfilment, paymentMethod, optionalText }
 export interface CartActionState {
   error?: string
   notice?: string
+  /**
+   * Set when the item is from a different seller than the basket already
+   * holds. Nothing was added: the shopper chooses between checking out the
+   * basket they have and replacing it (resubmitting with `replace`).
+   */
+  conflict?: { sellerName: string }
 }
 
 const addToCartSchema = z.object({
   inventoryItemId: uuid('item'),
   qty: quantity('Quantity', 1).default(1),
   mode: z.enum(['consumer', 'sourcing']).catch('consumer'),
+  /** The shopper confirmed throwing away their current basket for this seller. */
+  replace: z.literal('1').optional().catch(undefined),
 })
 
 const updateQtySchema = z.object({
@@ -49,7 +57,9 @@ const favouriteSellerSchema = z.object({ organisationId: uuid('business') })
  *
  * Two invariants are enforced here rather than at checkout, so the shopper
  * learns about a problem while they can still act on it:
- *   - one basket holds one seller, because one order settles with one seller;
+ *   - one basket holds one seller, because one order settles with one seller.
+ *     An item from another seller is refused, not silently swapped in: the
+ *     shopper either checks out what they have or confirms a new basket;
  *   - the seller must sit exactly one tier above the buyer (PRD §12).
  */
 export async function addToCartAction(
@@ -58,7 +68,7 @@ export async function addToCartAction(
 ): Promise<CartActionState> {
   const parsed = parseForm(addToCartSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
-  const { inventoryItemId, qty, mode } = parsed.data
+  const { inventoryItemId, qty, mode, replace } = parsed.data
 
   let tier: number = TIER.consumer
   let buyerOrgId: string | null = null
@@ -103,7 +113,24 @@ export async function addToCartAction(
   const cart = await readCart()
   let notice: string
 
-  if (cart.sellerOrgId && (cart.sellerOrgId !== item.organisation_id || cart.tier !== tier)) {
+  const otherSeller =
+    cart.items.length > 0 &&
+    cart.sellerOrgId !== null &&
+    (cart.sellerOrgId !== item.organisation_id || cart.tier !== tier)
+
+  if (otherSeller && !replace) {
+    const current = await sql.one<{ name: string }>(
+      `SELECT name FROM organisations WHERE id = $1`,
+      [cart.sellerOrgId],
+    )
+    const sellerName = current?.name ?? 'another seller'
+    return {
+      error: `Your basket has items from ${sellerName}. Each order goes to one seller.`,
+      conflict: { sellerName },
+    }
+  }
+
+  if (otherSeller) {
     await writeCart({
       sellerOrgId: item.organisation_id,
       items: [{ inventoryItemId, qty: wanted }],

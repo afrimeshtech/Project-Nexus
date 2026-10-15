@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState, useState, useTransition } from 'react'
+import Link from 'next/link'
+import { useActionState, useRef, useState, useSyncExternalStore, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { addToCartAction, updateCartQtyAction, type CartActionState } from '@/app/actions/cart'
 import { Icon } from '@/components/Icon'
 
@@ -77,9 +79,16 @@ function StandardAddToCart({
   )
   const [qty, setQty] = useState(minOrderQty)
   const ceiling = maxQty ?? 9999
+  const form = useRef<HTMLFormElement>(null)
+  const [, startTransition] = useTransition()
+
+  // Each new answer from the server reopens the prompt; "Keep my basket"
+  // closes it until the next one.
+  const [dismissed, setDismissed] = useState<CartActionState | null>(null)
+  const conflict = state.conflict && dismissed !== state ? state.conflict : null
 
   return (
-    <form action={formAction} className="w-full">
+    <form ref={form} action={formAction} className="w-full">
       <input type="hidden" name="inventoryItemId" value={inventoryItemId} />
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="qty" value={qty} />
@@ -118,13 +127,26 @@ function StandardAddToCart({
         </button>
       </div>
 
-      {(state.error || state.notice) && (
+      {!conflict && (state.error || state.notice) && (
         <p
           role="status"
           className={`mt-2 text-xs ${state.error ? 'text-coral-ink' : 'text-accent-strong'}`}
         >
           {state.error ?? state.notice}
         </p>
+      )}
+      {conflict && (
+        <FloatingConflict
+          sellerName={conflict.sellerName}
+          pending={pending}
+          onReplace={() => {
+            if (!form.current) return
+            const fd = new FormData(form.current)
+            fd.set('replace', '1')
+            startTransition(() => formAction(fd))
+          }}
+          onKeep={() => setDismissed(state)}
+        />
       )}
       {minOrderQty > 1 && !compact && (
         <p className="mt-1.5 text-xs text-muted">Minimum order: {minOrderQty} units</p>
@@ -157,29 +179,44 @@ function OverlayStepper({
 }) {
   const [qty, setQty] = useState(cartQty)
   const [pending, startTransition] = useTransition()
+  const [conflict, setConflict] = useState<string | null>(null)
+
+  const add = (replace: boolean) => {
+    setQty(minOrderQty)
+    setConflict(null)
+    startTransition(async () => {
+      const fd = new FormData()
+      fd.set('inventoryItemId', inventoryItemId)
+      fd.set('qty', String(minOrderQty))
+      fd.set('mode', mode)
+      if (replace) fd.set('replace', '1')
+      const result = await addToCartAction({}, fd)
+      if (result.error) setQty(0)
+      if (result.conflict) setConflict(result.conflict.sellerName)
+    })
+  }
 
   if (qty <= 0) {
     return (
-      <button
-        type="button"
-        aria-label="Add to basket"
-        disabled={pending}
-        onClick={() => {
-          const optimistic = minOrderQty
-          setQty(optimistic)
-          startTransition(async () => {
-            const fd = new FormData()
-            fd.set('inventoryItemId', inventoryItemId)
-            fd.set('qty', String(minOrderQty))
-            fd.set('mode', mode)
-            const result = await addToCartAction({}, fd)
-            if (result.error) setQty(0)
-          })
-        }}
-        className="grid size-11 place-items-center rounded-full border-2 border-surface bg-accent-500 text-accent-ink shadow-subtle transition-colors hover:bg-accent-600 disabled:opacity-60"
-      >
-        <Icon name="plus" size={18} />
-      </button>
+      <>
+        <button
+          type="button"
+          aria-label="Add to basket"
+          disabled={pending}
+          onClick={() => add(false)}
+          className="grid size-11 place-items-center rounded-full border-2 border-surface bg-accent-500 text-accent-ink shadow-subtle transition-colors hover:bg-accent-600 disabled:opacity-60"
+        >
+          <Icon name="plus" size={18} />
+        </button>
+        {conflict && (
+          <FloatingConflict
+            sellerName={conflict}
+            pending={pending}
+            onReplace={() => add(true)}
+            onKeep={() => setConflict(null)}
+          />
+        )}
+      </>
     )
   }
 
@@ -220,3 +257,101 @@ function OverlayStepper({
     </div>
   )
 }
+
+/**
+ * One basket, one shop. Shown instead of adding when the item is from a
+ * different seller than the basket already holds, because an order - and its
+ * payment - goes to exactly one seller. The basket is never swapped out
+ * without the shopper saying so.
+ */
+function BasketConflict({
+  sellerName,
+  pending,
+  onReplace,
+  onKeep,
+}: {
+  sellerName: string
+  pending: boolean
+  /** Without it, "Start a new basket" submits the surrounding add form. */
+  onReplace?: () => void
+  onKeep?: () => void
+}) {
+  const action =
+    'rounded-brand px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60'
+  return (
+    <div className="space-y-2 text-left">
+      <p className="text-xs text-ink">
+        Your basket has items from <strong>{sellerName}</strong>. Each order is paid to one shop, so
+        check out that basket first, or start a new one here.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/cart"
+          className={`${action} border border-line bg-surface text-ink hover:bg-surface-muted`}
+        >
+          View basket
+        </Link>
+        <button
+          type={onReplace ? 'button' : 'submit'}
+          name={onReplace ? undefined : 'replace'}
+          value={onReplace ? undefined : '1'}
+          onClick={onReplace}
+          disabled={pending}
+          className={`${action} bg-accent-500 text-accent-ink hover:bg-accent-600`}
+        >
+          Start a new basket
+        </button>
+        {onKeep && (
+          <button type="button" onClick={onKeep} className={`${action} text-muted hover:text-ink`}>
+            Keep my basket
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The basket-conflict prompt, floating at the foot of the screen for every
+ * add button. Inline, it had nowhere good to go: the compact button sits in a
+ * narrow price column and the overlay one on a photo's corner. Portalled to
+ * <body> because product cards are transformed, which would otherwise trap a
+ * fixed element inside the card.
+ */
+function FloatingConflict(props: {
+  sellerName: string
+  pending: boolean
+  onReplace: () => void
+  onKeep: () => void
+}) {
+  // A tap before the page is interactive submits the add form without
+  // JavaScript, so the server renders the conflict too. There is no portal on
+  // the server, and hydration must match it: render inline, with a plain
+  // submit for "Start a new basket", until the client has taken over.
+  const interactive = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  )
+  if (!interactive) {
+    return (
+      <div className="mt-2">
+        <BasketConflict sellerName={props.sellerName} pending={props.pending} />
+      </div>
+    )
+  }
+
+  return createPortal(
+    <div
+      role="alertdialog"
+      aria-label="Your basket is from another shop"
+      className="fixed inset-x-4 bottom-4 mx-auto max-w-md rounded-brand border border-line bg-surface p-4 shadow-subtle"
+      style={{ zIndex: 'var(--z-popover)' }}
+    >
+      <BasketConflict {...props} />
+    </div>,
+    document.body,
+  )
+}
+
+const noopSubscribe = () => () => {}

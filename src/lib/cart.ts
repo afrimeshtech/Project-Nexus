@@ -14,8 +14,9 @@ import { priceColumnFor, TIER } from '@/lib/tiers'
  * immediately"). Basket contents are therefore always re-priced and
  * re-checked against live stock before checkout.
  *
- * One basket = one seller, because one order = one seller. Adding an item from
- * a different shop starts a new basket, and the UI says so plainly.
+ * One basket = one seller, because one order = one seller, and the payment
+ * settles with that seller alone. An item from a different shop is refused
+ * until the shopper either checks out or confirms starting a new basket.
  */
 
 export const CART_COOKIE = 'afrimesh_cart'

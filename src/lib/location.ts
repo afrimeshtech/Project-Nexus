@@ -27,11 +27,15 @@ export interface BuyerLocation {
   source: 'gps' | 'saved' | 'chosen' | 'default'
 }
 
-/** Launch market: the first MVP pilot town (see PILOT_AREAS in lib/areas). */
+/**
+ * Launch market: Yola, the pilot town (see PILOT_AREAS in lib/areas) where the
+ * first real verified sellers are, so a visitor with no location yet lands on
+ * live stock rather than an empty marketplace.
+ */
 export const DEFAULT_LOCATION: BuyerLocation = {
-  lat: 8.8937,
-  lng: 11.3596,
-  label: 'Jalingo, Taraba',
+  lat: 9.2035,
+  lng: 12.4954,
+  label: 'Yola, Adamawa',
   source: 'default',
 }
 

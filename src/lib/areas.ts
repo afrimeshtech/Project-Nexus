@@ -20,6 +20,17 @@ export interface Area {
   lng: number
 }
 
+/**
+ * Where the MVP's first users actually are. The showcase names these when it
+ * says where AfriMesh is piloting, so this list is the claim - keep it honest.
+ */
+export const PILOT_AREAS: Area[] = [
+  { label: 'Jalingo, Taraba', lat: 8.8937, lng: 11.3596 },
+  { label: 'Wukari, Taraba', lat: 7.8711, lng: 9.7779 },
+  { label: 'Jimeta, Adamawa', lat: 9.2795, lng: 12.4584 },
+  { label: 'Yola, Adamawa', lat: 9.2035, lng: 12.4954 },
+]
+
 /** Areas offered in the location picker, and the vocabulary for place names. */
 export const KNOWN_AREAS: Area[] = [
   { label: 'Ikeja, Lagos', lat: 6.6018, lng: 3.3515 },
@@ -30,6 +41,7 @@ export const KNOWN_AREAS: Area[] = [
   { label: 'Wuse, Abuja', lat: 9.0765, lng: 7.4586 },
   { label: 'Sabon Gari, Kano', lat: 12.0022, lng: 8.5236 },
   { label: 'Port Harcourt', lat: 4.8156, lng: 7.0498 },
+  ...PILOT_AREAS,
 ]
 
 /** Within this, a point is simply *in* the area rather than near it. */
@@ -44,6 +56,15 @@ export function nearestArea(point: LatLng, areas: Area[] = KNOWN_AREAS) {
     if (!best || distanceKm < best.distanceKm) best = { area, distanceKm }
   }
   return best
+}
+
+/**
+ * The pilot area a point is in, or null when it is outside all of them. Close
+ * enough to count is the same radius `describeArea` is willing to name.
+ */
+export function pilotAreaFor(point: LatLng): Area | null {
+  const nearest = nearestArea(point, PILOT_AREAS)
+  return nearest && nearest.distanceKm <= NEARBY_KM ? nearest.area : null
 }
 
 /**

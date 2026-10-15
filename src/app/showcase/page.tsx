@@ -3,11 +3,32 @@ import { Wordmark } from '@/components/brand/Logo'
 import { Icon } from '@/components/Icon'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { LinkButton } from '@/components/ui'
+import { PILOT_AREAS, pilotAreaFor } from '@/lib/areas'
+import { buyerLocation } from '@/lib/location'
+
+/** "Jalingo, Wukari, Jimeta and Yola" - town names only, the states are noise in a list. */
+const PILOT_TOWNS = PILOT_AREAS.map((a) => a.label.split(',')[0]).reduce(
+  (list, town, i, all) =>
+    i === 0 ? town : `${list}${i === all.length - 1 ? ' and ' : ', '}${town}`,
+  '',
+)
 
 export const metadata = {
   title: 'AfriMesh — Real stock, real shops, real fast',
-  description:
-    'See what verified sellers near you actually have on the shelf before you leave the house. Piloting now in Ikeja, Lagos.',
+  description: `See what verified sellers near you actually have on the shelf before you leave the house. Piloting now in ${PILOT_TOWNS}.`,
+}
+
+/**
+ * Where we say we are piloting. A visitor whose location (GPS, picked, or
+ * saved) falls inside a pilot town sees that town; everyone else - including
+ * a first visit with no location yet, which resolves to the marketplace's
+ * default point, not to where they really are - sees the full pilot list.
+ * Naming a visitor's own city when we are not live there would be a false claim.
+ */
+async function pilotLine() {
+  const location = await buyerLocation()
+  const area = location.source === 'default' ? null : pilotAreaFor(location)
+  return area ? `Piloting now in ${area.label}` : `Piloting now in ${PILOT_TOWNS}`
 }
 
 const NAV_LINKS = [
@@ -37,7 +58,8 @@ const CATEGORY_RAIL = ['Groceries', 'Beverages']
  * nothing here claims a metric AfriMesh cannot back up. See PRODUCT.md:
  * "nothing may present pilot fixture data as evidence of traction."
  */
-export default function ShowcasePage() {
+export default async function ShowcasePage() {
+  const pilot = await pilotLine()
   return (
     <div className="bg-bar">
       <section className="mesh-surface mesh-parallax relative flex min-h-screen flex-col overflow-hidden">
@@ -145,7 +167,7 @@ export default function ShowcasePage() {
               house — paid for safely.
             </p>
             <p className="mt-3 font-technical text-xs uppercase tracking-[0.1em] text-white/50">
-              Piloting now in Ikeja, Lagos
+              {pilot}
             </p>
             {/* Secondary here too, matching the nav: "Sign in" up top is the
                 one orange action visible in this viewport. */}

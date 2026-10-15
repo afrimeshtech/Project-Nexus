@@ -29,12 +29,13 @@ export default async function AccountPage() {
   const links: { href: string; label: string; icon: IconName; hint: string }[] = [
     { href: '/orders', label: 'Orders', icon: 'box', hint: 'Track and review your purchases' },
     { href: '/wallet', label: 'Wallet', icon: 'wallet', hint: 'Balance, top-ups and statements' },
-    {
-      href: '/rewards',
-      label: 'Rewards',
-      icon: 'star-filled',
-      hint: 'Invite people and convert points to cash',
-    },
+    // FUTURE-REWARDS: restored with the rewards programme.
+    // {
+    //   href: '/rewards',
+    //   label: 'Rewards',
+    //   icon: 'star-filled',
+    //   hint: 'Invite people and convert points to cash',
+    // },
     {
       href: '/favourites',
       label: 'Saved',

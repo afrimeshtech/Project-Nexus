@@ -129,9 +129,10 @@ export async function PartnerShell({
       ? [{ href: '/partner/wallet', label: 'Wallet', icon: 'wallet' as const }]
       : []),
     ...(allowed('team') ? [{ href: '/partner/team', label: 'Team', icon: 'user' as const }] : []),
-    ...(allowed('rewards')
-      ? [{ href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' as const }]
-      : []),
+    // FUTURE-REWARDS: restored with the rewards programme.
+    // ...(allowed('rewards')
+    //   ? [{ href: '/partner/rewards', label: 'Rewards', icon: 'star-filled' as const }]
+    //   : []),
     ...(allowed('api')
       ? [{ href: '/partner/api', label: 'API access', icon: 'lock' as const }]
       : []),

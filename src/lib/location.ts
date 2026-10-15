@@ -27,11 +27,11 @@ export interface BuyerLocation {
   source: 'gps' | 'saved' | 'chosen' | 'default'
 }
 
-/** Launch market. The BRS short-term objective is one metropolitan area. */
+/** Launch market: the first MVP pilot town (see PILOT_AREAS in lib/areas). */
 export const DEFAULT_LOCATION: BuyerLocation = {
-  lat: 6.6018,
-  lng: 3.3515,
-  label: 'Ikeja, Lagos',
+  lat: 8.8937,
+  lng: 11.3596,
+  label: 'Jalingo, Taraba',
   source: 'default',
 }
 

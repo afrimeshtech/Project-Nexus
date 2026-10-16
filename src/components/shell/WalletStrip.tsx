@@ -10,6 +10,11 @@ import { formatMoney } from '@/lib/money'
  * as a slim line of its own, so the bar below keeps its room on a phone. It
  * scrolls away with the page; the header underneath is the part that pins.
  *
+ * Right-aligned, so the balance sits directly above the bar's own icons
+ * (messages, notifications, basket) - the corner where a person already looks
+ * for "what is waiting for me". The padding matches each header's, so the
+ * chevron lines up with the last icon below it.
+ *
  * The whole strip is the link to the wallet. Only the available balance is
  * the headline: escrow is money that is not spendable yet, so it is named as
  * such rather than added in.
@@ -34,8 +39,8 @@ export function WalletStrip({
       className="block border-b border-bar-line bg-bar text-bar-muted transition-colors hover:text-bar-ink"
     >
       <div
-        className={`flex w-full items-center gap-2 px-4 py-1.5 text-xs sm:px-6 ${
-          fullWidth ? '' : 'mx-auto max-w-6xl'
+        className={`flex w-full items-center justify-end gap-2 py-1.5 text-xs ${
+          fullWidth ? 'px-4 sm:px-6' : 'mx-auto max-w-6xl px-4'
         }`}
       >
         <Icon name="wallet" size={14} className="shrink-0" />
@@ -48,7 +53,7 @@ export function WalletStrip({
             · {formatMoney(locked)} in escrow
           </span>
         )}
-        <Icon name="chevron-down" size={14} className="ml-auto shrink-0 -rotate-90" />
+        <Icon name="chevron-down" size={14} className="shrink-0 -rotate-90" />
       </div>
     </Link>
   )

@@ -109,7 +109,7 @@ export default async function PartnerHome({
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat label="Revenue (30 days)" value={formatMoney(kpis.revenue_30d)} />
           <Stat
             label="Open orders"
@@ -321,7 +321,7 @@ async function SalesRepHome({ org, restricted }: { org: PartnerOrg; restricted: 
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat
             label="Orders to fulfil"
             value={confirmed.length + preparing.length}

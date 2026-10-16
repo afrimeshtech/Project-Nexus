@@ -63,7 +63,7 @@ export default async function PartnerOrdersPage({
         />
 
         <div
-          className={`grid grid-cols-2 gap-4 ${RANKING_LAUNCHED ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
+          className={`grid grid-cols-2 gap-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2 ${RANKING_LAUNCHED ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}
         >
           <Stat label="Open orders" value={kpis.orders_open} />
           <Stat label="Orders (30 days)" value={kpis.orders_30d} />

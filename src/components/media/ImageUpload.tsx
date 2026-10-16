@@ -84,10 +84,12 @@ function Picker({
         <input key={name} type="hidden" name={name} value={value} />
       ))}
 
-      <div className="flex items-center gap-3">
+      {/* Wraps rather than squeezes: on a phone card the file picker, its
+          filename and Save could not share one line, so Save drops below. */}
+      <div className="flex flex-wrap items-center gap-3">
         <Thumbnail url={shown} rounded={rounded} />
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[13.5rem] flex-1">
           <label className="block">
             <span className="sr-only">{label}</span>
             <input

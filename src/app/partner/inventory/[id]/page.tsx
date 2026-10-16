@@ -92,7 +92,7 @@ export default async function InventoryItemPage({ params }: { params: Promise<{ 
           />
         </Card>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat label="Available" value={item.qty_available} />
           <Stat label="Reserved" value={item.qty_reserved} hint="On live orders" />
           <Stat label="Sold" value={item.qty_sold} />

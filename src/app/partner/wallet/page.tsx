@@ -35,7 +35,7 @@ export default async function PartnerWalletPage() {
           subtitle="Sales settle here. Escrow releases when the buyer confirms delivery."
         />
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat
             label="Available"
             value={formatMoney(wallet.available)}

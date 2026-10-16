@@ -67,7 +67,7 @@ export default async function InventoryPage({
         }
       />
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
         <Stat label="Products" value={stats.skus} />
         <Stat label="Available" value={stats.units_available.toLocaleString()} />
         <Stat
@@ -91,7 +91,10 @@ export default async function InventoryPage({
           { label: 'Stock value', value: formatMoney(stats.stock_value) },
         ]}
       >
-        <form className="flex min-w-0 flex-1 items-center gap-2" action="/partner/inventory">
+        <form
+          className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:flex-1"
+          action="/partner/inventory"
+        >
           <div className="field-with-icon min-w-0 flex-1 sm:max-w-md">
             <Icon name="search" size={16} className="field-icon" />
             <label className="sr-only" htmlFor="inv-q">

@@ -61,15 +61,22 @@ export default async function AdminHome() {
         <section>
           <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">Commerce</h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat label="GMV" value={formatMoney(kpis.gmv)} hint="Paid orders, all tiers" />
+            <Stat
+              label="GMV"
+              value={formatMoney(kpis.gmv)}
+              hint="Paid orders, all tiers"
+              href="#gmv"
+            />
             <Stat label="Average order value" value={formatMoney(kpis.aov)} />
             <Stat
               label="Orders (30 days)"
+              href="/admin/events?type=order.placed"
               value={kpis.orders_30d}
               hint={`${kpis.orders_total} all time`}
             />
             <Stat
               label="Fulfilment rate"
+              href="/admin/events?type=order.completed"
               value={`${Number(kpis.fulfilment_rate).toFixed(1)}%`}
               tone={Number(kpis.fulfilment_rate) < 90 ? 'danger' : 'brand'}
             />
@@ -80,10 +87,22 @@ export default async function AdminHome() {
           <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">Network</h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <Stat label="Monthly active users" value={kpis.mau} hint={`${kpis.dau} today`} />
-            <Stat label="Consumers" value={kpis.consumers} />
-            <Stat label="Retail outlets" value={kpis.active_outlets} />
-            <Stat label="Merchants" value={kpis.active_merchants} />
-            <Stat label="Warehouses" value={kpis.active_warehouses} />
+            <Stat label="Consumers" value={kpis.consumers} href="/admin/locations#tier-consumer" />
+            <Stat
+              label="Retail outlets"
+              value={kpis.active_outlets}
+              href="/admin/organisations?type=outlet"
+            />
+            <Stat
+              label="Merchants"
+              value={kpis.active_merchants}
+              href="/admin/organisations?type=merchant"
+            />
+            <Stat
+              label="Warehouses"
+              value={kpis.active_warehouses}
+              href="/admin/organisations?type=warehouse"
+            />
           </div>
         </section>
 
@@ -92,14 +111,31 @@ export default async function AdminHome() {
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <Stat
               label="Open delivery jobs"
+              href="/admin/events?type=delivery.requested"
               value={logistics.open_jobs}
               tone={logistics.open_jobs > 20 ? 'danger' : 'neutral'}
               hint="Unclaimed by any rider"
             />
-            <Stat label="In progress" value={logistics.in_progress} />
-            <Stat label="Deliveries completed" value={logistics.completed} />
-            <Stat label="Delivery partners" value={logistics.riders} />
-            <Stat label="Average trip" value={`${Number(logistics.avg_distance).toFixed(1)} km`} />
+            <Stat
+              label="In progress"
+              value={logistics.in_progress}
+              href="/admin/events?type=delivery.accepted"
+            />
+            <Stat
+              label="Deliveries completed"
+              value={logistics.completed}
+              href="/admin/events?type=delivery.completed"
+            />
+            <Stat
+              label="Delivery partners"
+              value={logistics.riders}
+              href="/admin/locations#tier-rider"
+            />
+            <Stat
+              label="Average trip"
+              value={`${Number(logistics.avg_distance).toFixed(1)} km`}
+              href="/admin/locations#tier-rider"
+            />
           </div>
         </section>
 
@@ -119,18 +155,21 @@ export default async function AdminHome() {
         />
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">
-          <Card>
-            <SectionHeading
-              title="GMV, last 14 days"
-              subtitle={`Total ${formatMoneyCompact(kpis.gmv)} settled through the platform`}
-            />
-            <BarSeries
-              data={series}
-              valueKey="gmv"
-              caption="Daily gross merchandise value"
-              emptyLabel="No paid orders in the last 14 days"
-            />
-          </Card>
+          {/* The GMV tile's link lands here. */}
+          <div id="gmv" className="scroll-mt-4">
+            <Card>
+              <SectionHeading
+                title="GMV, last 14 days"
+                subtitle={`Total ${formatMoneyCompact(kpis.gmv)} settled through the platform`}
+              />
+              <BarSeries
+                data={series}
+                valueKey="gmv"
+                caption="Daily gross merchandise value"
+                emptyLabel="No paid orders in the last 14 days"
+              />
+            </Card>
+          </div>
 
           <Card>
             <SectionHeading title="Service levels" subtitle="Against PRD non-functional targets" />

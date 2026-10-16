@@ -3,6 +3,7 @@ import { publish, EVENT } from '@/modules/events/service'
 import { queueNotification } from '@/modules/notifications/service'
 import { payRider } from '@/modules/wallet/service'
 import { distanceKmSqlOn, haversineKm, estimateEtaMinutes } from '@/lib/geo'
+import { CASHBACK_LAUNCHED } from '@/lib/launch-cashback'
 
 /**
  * MODULE: logistics
@@ -570,7 +571,10 @@ export async function completeDelivery(
       {
         userId: order.buyer_user_id,
         title: 'Order delivered',
-        body: `Order ${order.order_number} has arrived. Confirm receipt to release payment and earn cashback.`,
+        // FUTURE-CASHBACK: "... and earn cashback" returns with cashback.
+        body: `Order ${order.order_number} has arrived. Confirm receipt to release payment${
+          CASHBACK_LAUNCHED ? ' and earn cashback' : ''
+        }.`,
         category: 'delivery',
         referenceType: 'order',
         referenceId: order.id,

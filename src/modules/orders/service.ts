@@ -34,6 +34,7 @@ import { qualifyReferral } from '@/modules/rewards/service'
 import { canTrade, priceColumnFor, TIER } from '@/lib/tiers'
 import { haversineKm, estimateEtaMinutes } from '@/lib/geo'
 import { platformFee, cashbackFor, DEFAULT_CURRENCY } from '@/lib/money'
+import { CASHBACK_LAUNCHED } from '@/lib/launch-cashback'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
 /**
@@ -900,7 +901,8 @@ export async function advanceOrder(
       }
 
       // Loyalty cashback on the goods value (SAD wallet; "Earn rewards").
-      const cashback = cashbackFor(order.subtotal)
+      // FUTURE-CASHBACK: nothing is paid until cashback launches.
+      const cashback = CASHBACK_LAUNCHED ? cashbackFor(order.subtotal) : 0
       if (cashback > 0) {
         await payCashback(tx, {
           userId: order.buyer_user_id,

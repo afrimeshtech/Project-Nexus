@@ -16,6 +16,7 @@ import { formatDistance, formatEta } from '@/lib/geo'
 import { orderStatusLabel, orderTimeline, type OrderDetail } from '@/modules/orders/service'
 import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
+import { CASHBACK_LAUNCHED } from '@/lib/launch-cashback'
 import { deliveryLaunched } from '@/lib/launch-fulfilment'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
@@ -49,7 +50,8 @@ export async function OrderDetailView({
   const awaitingRider =
     canDispatch && order.status === 'dispatched' && delivery?.status === 'unassigned'
   const canCancel = !['delivered', 'completed', 'cancelled', 'refunded'].includes(order.status)
-  const pendingCashback = cashbackFor(order.subtotal)
+  // FUTURE-CASHBACK: no cashback is promised until it launches.
+  const pendingCashback = CASHBACK_LAUNCHED ? cashbackFor(order.subtotal) : 0
   const pickup = order.fulfilment === 'pickup'
 
   return (

@@ -38,6 +38,7 @@ import {
 import { withTx } from '@/db/client'
 import { TIER } from '@/lib/tiers'
 import { cashbackFor, DEFAULT_CURRENCY } from '@/lib/money'
+import { CASHBACK_LAUNCHED } from '@/lib/launch-cashback'
 import { POINTS_CURRENCY, REFERRAL_MIN_ORDER_MINOR, programmeForRole } from '@/lib/points'
 
 /** Deterministic id of the platform logistics wallet (see wallet service). */
@@ -412,15 +413,18 @@ if (job) {
     deliveredOrder?.status,
   )
 
-  // Buyer confirms receipt: escrow releases and cashback lands.
+  // Buyer confirms receipt: escrow releases, and cashback lands once it has
+  // launched. FUTURE-CASHBACK: until then the buyer is paid nothing back.
   await advanceOrder(riderOrder.id, 'completed', ada.id)
 
   const adaWalletAfter = await getBalance('user', ada.id)
-  const expectedCashback = cashbackFor(riderOrder.subtotal)
+  const expectedCashback = CASHBACK_LAUNCHED ? cashbackFor(riderOrder.subtotal) : 0
   const spent = riderOrder.total
   check(
-    'Confirming receipt credits cashback to the buyer',
-    expectedCashback > 0 &&
+    CASHBACK_LAUNCHED
+      ? 'Confirming receipt credits cashback to the buyer'
+      : 'Confirming receipt pays no cashback while cashback is off',
+    (CASHBACK_LAUNCHED ? expectedCashback > 0 : true) &&
       adaWalletAfter.available === adaWalletBefore.available - spent + expectedCashback,
     `expected ${expectedCashback} cashback on a ${riderOrder.subtotal} subtotal`,
   )

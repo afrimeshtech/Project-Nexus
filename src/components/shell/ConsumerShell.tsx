@@ -10,6 +10,8 @@ import { buyerLocation, KNOWN_AREAS } from '@/lib/location'
 import { cartCount } from '@/lib/cart'
 import { unreadCount } from '@/modules/notifications/service'
 import { unreadMessageCount } from '@/modules/messaging/service'
+import { getBalance } from '@/modules/wallet/service'
+import { WalletStrip } from '@/components/shell/WalletStrip'
 import { ADMIN_ROLES } from '@/lib/auth'
 
 /**
@@ -30,9 +32,13 @@ export async function ConsumerShell({
     buyerLocation(),
     cartCount(),
   ])
-  const [unread, unreadMessages] = user
-    ? await Promise.all([unreadCount(user.id), unreadMessageCount(user.id, org?.id ?? null)])
-    : [0, 0]
+  const [unread, unreadMessages, wallet] = user
+    ? await Promise.all([
+        unreadCount(user.id),
+        unreadMessageCount(user.id, org?.id ?? null),
+        getBalance('user', user.id),
+      ])
+    : [0, 0, null]
   const isAdmin = user ? ADMIN_ROLES.includes(user.role) : false
   // FUTURE-DASHBOARD: delivery partner.
   // const isRider = user?.role === 'delivery_partner'
@@ -49,6 +55,9 @@ export async function ConsumerShell({
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
           layers — chrome, content, chrome — rather than three flat bands. */}
+
+      {/* A signed-in shopper's own wallet. A guest has none to show. */}
+      {wallet && <WalletStrip label="Wallet balance" available={wallet.available} href="/wallet" />}
 
       {/* Sits immediately above the header so the observer can tell when the
           header has pinned. One pixel, no visual effect. */}

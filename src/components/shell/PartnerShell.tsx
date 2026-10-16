@@ -12,6 +12,8 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { unreadCount } from '@/modules/notifications/service'
+import { getBalance } from '@/modules/wallet/service'
+import { WalletStrip } from '@/components/shell/WalletStrip'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
@@ -52,9 +54,13 @@ export async function PartnerShell({
   const [user, org] = await Promise.all([currentUser(), currentOrganisation()])
   if (!org || !user) return null
 
-  const [unreadMessages, unreadNotifications] = await Promise.all([
+  // A sales rep may not see the business's money (`funds`), so the balance is
+  // not even read for one.
+  const seesFunds = can(org.member_role, 'funds')
+  const [unreadMessages, unreadNotifications, wallet] = await Promise.all([
     unreadMessageCount(user.id, org.id),
     unreadCount(user.id),
+    seesFunds ? getBalance('organisation', org.id) : null,
   ])
 
   /*
@@ -155,147 +161,159 @@ export async function PartnerShell({
   ]
 
   return (
-    <div className="flex min-h-screen bg-page">
+    <div className="flex min-h-screen flex-col bg-page">
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      {/*
-       * The rail is its own scroll context and does not move with the page:
-       * on a dashboard you navigate from wherever you have scrolled to, and a
-       * sidebar that has to be scrolled back to is a sidebar you stop using.
-       */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line-soft bg-surface lg:flex">
+      {/* Above the rail and the bar alike, so it reads as one line across the
+          top of the dashboard at every width. */}
+      {wallet && (
+        <WalletStrip
+          label="Business wallet"
+          available={wallet.available}
+          locked={wallet.locked}
+          href="/partner/wallet"
+          fullWidth
+        />
+      )}
+      <div className="flex flex-1">
         {/*
-         * The supplied logo crops are baked onto the artwork's own #021614
-         * ground, so the mark gets a plate of that colour rather than being
-         * pasted onto white as a dark rectangle. It is sized to the content
-         * header opposite it, so the top of the app reads as one band.
+         * The rail is its own scroll context and does not move with the page:
+         * on a dashboard you navigate from wherever you have scrolled to, and a
+         * sidebar that has to be scrolled back to is a sidebar you stop using.
          */}
-        <div className="relative z-10 -mr-px flex h-16 shrink-0 items-center bg-surface-deep px-4">
-          <Link href="/partner" className="rounded-brand">
-            <Wordmark size="sm" priority />
-          </Link>
-        </div>
-
-        <div className="shrink-0 border-b border-line-soft px-3 py-2.5">
-          <form action="/partner/inventory" className="field-with-icon">
-            <Icon name="search" size={16} className="field-icon" />
-            <input
-              type="search"
-              name="q"
-              placeholder="Search inventory"
-              aria-label="Search inventory"
-              className={inputWithIconClass}
-            />
-          </form>
-        </div>
-
-        <nav aria-label="Dashboard" className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
-          <ul className="grid grid-cols-2 gap-2">
-            {work.map((item) => {
-              const current = active === item.href
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={current ? 'page' : undefined}
-                    title={item.label}
-                    aria-label={item.short ? item.label : undefined}
-                    className={`nav-tile ${current ? 'nav-tile-active' : 'hover:nav-tile-hover'}`}
-                  >
-                    <Icon name={item.icon} size={20} />
-                    <span className="line-clamp-2">{item.short ?? item.label}</span>
-                    {!!item.badge && item.badge > 0 && (
-                      <span className="pill-notify-sm absolute right-1.5 top-1.5">
-                        {item.badge}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-
-          <hr className="my-2.5 border-line-soft" />
-
-          <ul className="space-y-0.5">
-            {account.map((item) => {
-              const current = active === item.href
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={current ? 'page' : undefined}
-                    className={`nav-row ${current ? 'nav-row-active' : 'hover:nav-row-hover'}`}
-                  >
-                    <Icon name={item.icon} size={17} />
-                    <span className="flex-1">{item.label}</span>
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
-
-        {/* Who is signed in, and the way out. Pinned to the foot of the rail
-            because it is the one thing here that is not navigation. */}
-        <div className="shrink-0 border-t border-line-soft px-3 py-2.5">
-          <div className="flex items-center gap-2.5">
-            <Thumb src={null} alt={org.name} size="sm" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-ink">{org.name}</p>
-              <p className="truncate text-xs text-muted">
-                {org.member_role === 'owner'
-                  ? `${ORG_LABEL[org.type as OrgType]} · tier ${org.tier_level}`
-                  : `${MEMBER_ROLE_LABEL[org.member_role]} · ${user.full_name}`}
-              </p>
-            </div>
-          </div>
-          <form action={logoutAction} className="mt-2">
-            <button type="submit" className="nav-row w-full hover:nav-row-hover">
-              <Icon name="arrow-left" size={17} />
-              <span>Sign out</span>
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/*
-         * Forest Ground, like every other shell's header — DESIGN.md, Do:
-         * "frame every screen in Forest Ground" and Navigation: "Header:
-         * Forest Ground bar". This bar was `bg-surface`, which made the
-         * retailer's dashboard the one persona whose screen was not framed:
-         * on a desktop the green survived only as the plate behind the
-         * wordmark in the rail, and on a phone — where the rail is hidden
-         * outright — there was no brand ground anywhere on the page.
-         *
-         * The wordmark comes with it. The phone header used to carry a bare
-         * chart glyph, so the one surface a shopkeeper actually works on was
-         * also the one that never said whose product it was.
-         */}
-        <header
-          className="bar-depth sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-bar-line bg-bar px-4 sm:px-6"
-          style={{ zIndex: 'var(--z-bar)' }}
-        >
-          {/* On a phone the rail is hidden, so every destination lives in the
-              menu - the same hamburger the storefront uses. */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <HeaderMenu
-              accountLabel={org.name}
-              links={[
-                ...work,
-                ...account,
-                { href: '/', label: 'Storefront', icon: 'store' as const },
-              ]}
-            />
-            <Link href="/partner" className="flex items-center">
-              <span className="sr-only">AfriMesh partner dashboard</span>
+        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line-soft bg-surface lg:flex">
+          {/*
+           * The supplied logo crops are baked onto the artwork's own #021614
+           * ground, so the mark gets a plate of that colour rather than being
+           * pasted onto white as a dark rectangle. It is sized to the content
+           * header opposite it, so the top of the app reads as one band.
+           */}
+          <div className="relative z-10 -mr-px flex h-16 shrink-0 items-center bg-surface-deep px-4">
+            <Link href="/partner" className="rounded-brand">
               <Wordmark size="sm" priority />
             </Link>
           </div>
-          <div className="ml-auto flex items-center gap-2 sm:gap-3">
-            {/* Not `Badge`. Its tones are mixed for a light card — `success`
+
+          <div className="shrink-0 border-b border-line-soft px-3 py-2.5">
+            <form action="/partner/inventory" className="field-with-icon">
+              <Icon name="search" size={16} className="field-icon" />
+              <input
+                type="search"
+                name="q"
+                placeholder="Search inventory"
+                aria-label="Search inventory"
+                className={inputWithIconClass}
+              />
+            </form>
+          </div>
+
+          <nav aria-label="Dashboard" className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
+            <ul className="grid grid-cols-2 gap-2">
+              {work.map((item) => {
+                const current = active === item.href
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={current ? 'page' : undefined}
+                      title={item.label}
+                      aria-label={item.short ? item.label : undefined}
+                      className={`nav-tile ${current ? 'nav-tile-active' : 'hover:nav-tile-hover'}`}
+                    >
+                      <Icon name={item.icon} size={20} />
+                      <span className="line-clamp-2">{item.short ?? item.label}</span>
+                      {!!item.badge && item.badge > 0 && (
+                        <span className="pill-notify-sm absolute right-1.5 top-1.5">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <hr className="my-2.5 border-line-soft" />
+
+            <ul className="space-y-0.5">
+              {account.map((item) => {
+                const current = active === item.href
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={current ? 'page' : undefined}
+                      className={`nav-row ${current ? 'nav-row-active' : 'hover:nav-row-hover'}`}
+                    >
+                      <Icon name={item.icon} size={17} />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Who is signed in, and the way out. Pinned to the foot of the rail
+            because it is the one thing here that is not navigation. */}
+          <div className="shrink-0 border-t border-line-soft px-3 py-2.5">
+            <div className="flex items-center gap-2.5">
+              <Thumb src={null} alt={org.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-ink">{org.name}</p>
+                <p className="truncate text-xs text-muted">
+                  {org.member_role === 'owner'
+                    ? `${ORG_LABEL[org.type as OrgType]} · tier ${org.tier_level}`
+                    : `${MEMBER_ROLE_LABEL[org.member_role]} · ${user.full_name}`}
+                </p>
+              </div>
+            </div>
+            <form action={logoutAction} className="mt-2">
+              <button type="submit" className="nav-row w-full hover:nav-row-hover">
+                <Icon name="arrow-left" size={17} />
+                <span>Sign out</span>
+              </button>
+            </form>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/*
+           * Forest Ground, like every other shell's header — DESIGN.md, Do:
+           * "frame every screen in Forest Ground" and Navigation: "Header:
+           * Forest Ground bar". This bar was `bg-surface`, which made the
+           * retailer's dashboard the one persona whose screen was not framed:
+           * on a desktop the green survived only as the plate behind the
+           * wordmark in the rail, and on a phone — where the rail is hidden
+           * outright — there was no brand ground anywhere on the page.
+           *
+           * The wordmark comes with it. The phone header used to carry a bare
+           * chart glyph, so the one surface a shopkeeper actually works on was
+           * also the one that never said whose product it was.
+           */}
+          <header
+            className="bar-depth sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-bar-line bg-bar px-4 sm:px-6"
+            style={{ zIndex: 'var(--z-bar)' }}
+          >
+            {/* On a phone the rail is hidden, so every destination lives in the
+              menu - the same hamburger the storefront uses. */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <HeaderMenu
+                accountLabel={org.name}
+                links={[
+                  ...work,
+                  ...account,
+                  { href: '/', label: 'Storefront', icon: 'store' as const },
+                ]}
+              />
+              <Link href="/partner" className="flex items-center">
+                <span className="sr-only">AfriMesh partner dashboard</span>
+                <Wordmark size="sm" priority />
+              </Link>
+            </div>
+            <div className="ml-auto flex items-center gap-2 sm:gap-3">
+              {/* Not `Badge`. Its tones are mixed for a light card — `success`
                 is a #1a6b45 tint under #14603f ink, which on Forest Ground is
                 green on green and gone. Verified reads as plain bar ink in an
                 outlined chip; pending keeps the solid amber, whose dark ink
@@ -304,114 +322,115 @@ export async function PartnerShell({
                 Hidden below `sm`: at 360px the bar is already carrying the
                 lockup, messages, notifications and sign-out, and an unverified retailer is
                 told so by that full-width banner two lines further down. */}
-            {org.verification === 'verified' ? (
-              <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
-                Verified
-              </span>
-            ) : (
-              <span className="hidden items-center rounded-full bg-warning px-2 py-0.5 text-xs font-medium text-warning-ink sm:inline-flex">
-                Pending review
-              </span>
-            )}
-            {/* Two alerts, two jobs: messages are conversations with buyers
-                about their orders; notifications are the site telling the
-                retailer about orders and order activity. */}
-            <Link
-              href="/messages"
-              className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
-              aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
-            >
-              <Icon name="chat" size={18} />
-              {unreadMessages > 0 && (
-                <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
-              )}
-            </Link>
-            <Link
-              href="/notifications"
-              className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
-              aria-label={
-                unreadNotifications > 0
-                  ? `Notifications, ${unreadNotifications} unread`
-                  : 'Notifications'
-              }
-            >
-              <Icon name="bell" size={18} />
-              {unreadNotifications > 0 && (
-                <span className="pill-notify-sm absolute -right-1 -top-1">
-                  {unreadNotifications}
+              {org.verification === 'verified' ? (
+                <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
+                  Verified
+                </span>
+              ) : (
+                <span className="hidden items-center rounded-full bg-warning px-2 py-0.5 text-xs font-medium text-warning-ink sm:inline-flex">
+                  Pending review
                 </span>
               )}
-            </Link>
-            {/* Both of these are secondary trips off the dashboard, and on a
+              {/* Two alerts, two jobs: messages are conversations with buyers
+                about their orders; notifications are the site telling the
+                retailer about orders and order activity. */}
+              <Link
+                href="/messages"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
+                aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
+              >
+                <Icon name="chat" size={18} />
+                {unreadMessages > 0 && (
+                  <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
+                )}
+              </Link>
+              <Link
+                href="/notifications"
+                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
+                aria-label={
+                  unreadNotifications > 0
+                    ? `Notifications, ${unreadNotifications} unread`
+                    : 'Notifications'
+                }
+              >
+                <Icon name="bell" size={18} />
+                {unreadNotifications > 0 && (
+                  <span className="pill-notify-sm absolute -right-1 -top-1">
+                    {unreadNotifications}
+                  </span>
+                )}
+              </Link>
+              {/* Both of these are secondary trips off the dashboard, and on a
                 360px phone they were pushing the bar's contents into each
                 other. They stay one tap away in the rail and the scroll
                 strip; here they wait for the room to exist. */}
-            <Link
-              href="/contact?from=partner"
-              className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
-            >
-              Contact us
-            </Link>
-            <Link
-              href="/"
-              className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
-            >
-              Storefront
-            </Link>
-            <form action={logoutAction} className="lg:hidden">
-              <button
-                type="submit"
-                className="whitespace-nowrap rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink"
+              <Link
+                href="/contact?from=partner"
+                className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
               >
-                Sign out
-              </button>
-            </form>
-          </div>
-        </header>
+                Contact us
+              </Link>
+              <Link
+                href="/"
+                className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
+              >
+                Storefront
+              </Link>
+              <form action={logoutAction} className="lg:hidden">
+                <button
+                  type="submit"
+                  className="whitespace-nowrap rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink"
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
+          </header>
 
-        {org.verification !== 'verified' && (
-          <div className="border-b border-warning/40 bg-warning/15 px-4 py-2.5 text-center text-sm text-warning-ink sm:px-6">
-            Your business is awaiting verification. You can add inventory now — listings become
-            discoverable to buyers once an administrator approves you.
-          </div>
-        )}
+          {org.verification !== 'verified' && (
+            <div className="border-b border-warning/40 bg-warning/15 px-4 py-2.5 text-center text-sm text-warning-ink sm:px-6">
+              Your business is awaiting verification. You can add inventory now — listings become
+              discoverable to buyers once an administrator approves you.
+            </div>
+          )}
 
-        <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-6">
-          {/* The day's work, one tap away on a phone: a fixed row of tiles that
+          <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-6">
+            {/* The day's work, one tap away on a phone: a fixed row of tiles that
               always fits, rather than a scroll strip that cut off its own
               items (and sometimes the page you were on). Everything else -
               wallet, team, settings, invites - is in the header menu, and
               messages have their own button in the bar. */}
-          <nav aria-label="Dashboard" className="mb-5 lg:hidden">
-            <ul className="grid grid-cols-4 gap-2">
-              {work
-                .filter((item) => item.href !== '/messages')
-                .map((item) => {
-                  const current = active === item.href
-                  return (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        aria-current={current ? 'page' : undefined}
-                        aria-label={item.short ? item.label : undefined}
-                        className={`flex h-full flex-col items-center justify-center gap-1 rounded-brand border px-1 py-2.5 text-center text-xs font-medium ${
-                          current
-                            ? 'border-brand-deep bg-brand-deep text-white'
-                            : 'border-line bg-surface text-muted'
-                        }`}
-                      >
-                        <Icon name={item.icon} size={18} />
-                        <span className="line-clamp-2 leading-tight">
-                          {item.short ?? item.label}
-                        </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-            </ul>
-          </nav>
-          {children}
-        </main>
+            <nav aria-label="Dashboard" className="mb-5 lg:hidden">
+              <ul className="grid grid-cols-4 gap-2">
+                {work
+                  .filter((item) => item.href !== '/messages')
+                  .map((item) => {
+                    const current = active === item.href
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          aria-current={current ? 'page' : undefined}
+                          aria-label={item.short ? item.label : undefined}
+                          className={`flex h-full flex-col items-center justify-center gap-1 rounded-brand border px-1 py-2.5 text-center text-xs font-medium ${
+                            current
+                              ? 'border-brand-deep bg-brand-deep text-white'
+                              : 'border-line bg-surface text-muted'
+                          }`}
+                        >
+                          <Icon name={item.icon} size={18} />
+                          <span className="line-clamp-2 leading-tight">
+                            {item.short ?? item.label}
+                          </span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+              </ul>
+            </nav>
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   )

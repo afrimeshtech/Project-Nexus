@@ -11,6 +11,7 @@ import {
 import type { Bank, BankAccount } from '@/modules/payouts/service'
 import { FormError, Alert, Field, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 export function TopUpForm({ scope = 'user' }: { scope?: 'user' | 'organisation' }) {
   const [state, formAction, pending] = useActionState<WalletActionState, FormData>(topUpAction, {})
@@ -115,7 +116,12 @@ export function WithdrawForm({
 
         <Field
           label="Amount (₦)"
-          hint="Escrow balances cannot be withdrawn until delivery is confirmed."
+          // FUTURE-ESCROW: the hint returns when escrow is named.
+          hint={
+            ESCROW_SHOWN
+              ? 'Escrow balances cannot be withdrawn until delivery is confirmed.'
+              : undefined
+          }
           htmlFor="wd-amount"
         >
           <input

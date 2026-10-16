@@ -5,6 +5,7 @@ import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { LinkButton } from '@/components/ui'
 import { PILOT_AREAS, pilotAreaFor } from '@/lib/areas'
 import { buyerLocation } from '@/lib/location'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 /** "Jalingo, Wukari, Jimeta and Yola" - town names only, the states are noise in a list. */
 const PILOT_TOWNS = PILOT_AREAS.map((a) => a.label.split(',')[0]).reduce(
@@ -261,33 +262,35 @@ export default async function ShowcasePage() {
               <p className="text-xs text-white/70">4 shops · 320 m away</p>
             </div>
 
-            {/* Card 3 — the one real claim on the page: escrow is a shipped
-                feature (PRODUCT.md), not a roadmap promise. */}
+            {/* Card 3 — the escrow claim. FUTURE-ESCROW: escrow is not named
+                in the MVP, so the card waits for it. */}
             {/* Explicit height again, and shorter still relative to its
                 width than card 2 — the most rectangular card in the stack,
                 landscape rather than square. */}
-            <div
-              className="glass-card-light rise-in flex h-24 w-full items-center gap-3 p-4"
-              style={{ animationDelay: '240ms' }}
-            >
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-success/15 text-success-ink">
-                <Icon name="shield" size={20} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="font-technical text-[11.2px] font-semibold uppercase tracking-[0.1em] text-muted">
-                  Secure payment
-                </p>
-                <p className="mt-0.5 text-xs leading-snug text-ink">
-                  Your money stays in escrow until delivery is confirmed.
-                </p>
-              </div>
-              <Link
-                href="/about"
-                className="shrink-0 text-xs font-semibold text-accent-strong hover:underline"
+            {ESCROW_SHOWN && (
+              <div
+                className="glass-card-light rise-in flex h-24 w-full items-center gap-3 p-4"
+                style={{ animationDelay: '240ms' }}
               >
-                How
-              </Link>
-            </div>
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-success/15 text-success-ink">
+                  <Icon name="shield" size={20} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-technical text-[11.2px] font-semibold uppercase tracking-[0.1em] text-muted">
+                    Secure payment
+                  </p>
+                  <p className="mt-0.5 text-xs leading-snug text-ink">
+                    Your money stays in escrow until delivery is confirmed.
+                  </p>
+                </div>
+                <Link
+                  href="/about"
+                  className="shrink-0 text-xs font-semibold text-accent-strong hover:underline"
+                >
+                  How
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="hidden shrink-0 flex-col items-end gap-4 lg:flex" aria-hidden>
@@ -329,7 +332,11 @@ export default async function ShowcasePage() {
               {
                 icon: 'store' as const,
                 title: 'Pay and collect in store',
-                body: 'Your money sits in escrow until you confirm you have collected your order, so neither side has to trust the other first.',
+                // FUTURE-ESCROW: 'Your money sits in escrow until you confirm you have
+                // collected your order, so neither side has to trust the other first.'
+                body: ESCROW_SHOWN
+                  ? 'Your money sits in escrow until you confirm you have collected your order, so neither side has to trust the other first.'
+                  : 'Pay online in a few taps, then collect your order from the shop when it is ready.',
               },
             ].map((step) => (
               <div key={step.title} className="text-center">

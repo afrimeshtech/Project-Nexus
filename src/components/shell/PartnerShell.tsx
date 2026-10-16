@@ -14,6 +14,7 @@ import { unreadMessageCount } from '@/modules/messaging/service'
 import { unreadCount } from '@/modules/notifications/service'
 import { getBalance } from '@/modules/wallet/service'
 import { WalletStrip } from '@/components/shell/WalletStrip'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
@@ -171,7 +172,8 @@ export async function PartnerShell({
         <WalletStrip
           label="Business wallet"
           available={wallet.available}
-          locked={wallet.locked}
+          // FUTURE-ESCROW: the held amount is not named while escrow is off.
+          locked={ESCROW_SHOWN ? wallet.locked : 0}
           href="/partner/wallet"
           fullWidth
         />

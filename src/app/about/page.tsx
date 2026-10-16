@@ -2,6 +2,7 @@ import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { Card, SectionHeading } from '@/components/ui'
 import { getWeights } from '@/modules/recommendation/service'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'How the network works' }
@@ -90,10 +91,15 @@ export default async function AboutPage() {
                 title: 'One tier at a time',
                 body: 'Consumers buy from retail outlets, and only from retail outlets. The wholesale tiers above them open as the network grows.',
               },
-              {
-                title: 'Money is held in escrow',
-                body: 'Your payment sits in escrow until the order is delivered. Nothing reaches the seller’s spendable balance before that.',
-              },
+              // FUTURE-ESCROW: the escrow promise returns with escrow.
+              ...(ESCROW_SHOWN
+                ? [
+                    {
+                      title: 'Money is held in escrow',
+                      body: 'Your payment sits in escrow until the order is delivered. Nothing reaches the seller’s spendable balance before that.',
+                    },
+                  ]
+                : []),
               {
                 title: 'Ratings require a real purchase',
                 body: 'Only a buyer with a completed order on this platform can rate a seller, once, for that order.',

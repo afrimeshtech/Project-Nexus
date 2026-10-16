@@ -5,6 +5,7 @@ import { checkoutAction, type CartActionState } from '@/app/actions/cart'
 import { FormError, Field, inputClass } from '@/components/ui'
 import { PAYMENT_METHOD_LABEL } from '@/lib/payment-labels'
 import { LAUNCH_FULFILMENT } from '@/lib/launch-fulfilment'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 /**
  * Checkout. Payment methods come from the PRD's launch list (wallet, bank
@@ -146,11 +147,14 @@ export function CheckoutForm({
         {pending ? 'Placing your order…' : 'Place order and pay'}
       </button>
 
-      <p className="text-center text-xs text-muted">
-        {fulfilment === 'pickup'
-          ? 'Your payment is held in escrow and only released to the seller once you confirm you have collected your order.'
-          : 'Your payment is held in escrow and only released to the seller once the order is delivered.'}
-      </p>
+      {/* FUTURE-ESCROW: the payment-protection note returns with escrow. */}
+      {ESCROW_SHOWN && (
+        <p className="text-center text-xs text-muted">
+          {fulfilment === 'pickup'
+            ? 'Your payment is held in escrow and only released to the seller once you confirm you have collected your order.'
+            : 'Your payment is held in escrow and only released to the seller once the order is delivered.'}
+        </p>
+      )}
     </form>
   )
 }

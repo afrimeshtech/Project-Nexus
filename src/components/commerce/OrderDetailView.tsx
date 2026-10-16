@@ -17,6 +17,7 @@ import { orderStatusLabel, orderTimeline, type OrderDetail } from '@/modules/ord
 import { deliveryForOrder, type RiderOption } from '@/modules/logistics/service'
 import { cashbackFor } from '@/lib/money'
 import { CASHBACK_LAUNCHED } from '@/lib/launch-cashback'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { deliveryLaunched } from '@/lib/launch-fulfilment'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
 
@@ -213,13 +214,15 @@ export async function OrderDetailView({
                 />
               </div>
             </dl>
-            {['confirmed', 'preparing', 'dispatched', 'delivered'].includes(order.status) && (
-              <p className="mt-3 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
-                {pickup
-                  ? 'Held in escrow. Released to the seller when the buyer confirms collection.'
-                  : 'Held in escrow. Released to the seller when the buyer confirms delivery.'}
-              </p>
-            )}
+            {/* FUTURE-ESCROW: the held-payment note returns with escrow. */}
+            {ESCROW_SHOWN &&
+              ['confirmed', 'preparing', 'dispatched', 'delivered'].includes(order.status) && (
+                <p className="mt-3 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
+                  {pickup
+                    ? 'Held in escrow. Released to the seller when the buyer confirms collection.'
+                    : 'Held in escrow. Released to the seller when the buyer confirms delivery.'}
+                </p>
+              )}
             {viewer.isBuyer && pendingCashback > 0 && order.status !== 'completed' && (
               <p className="mt-2 rounded-brand bg-accent-soft px-3 py-2 text-xs text-accent-strong">
                 Earn {formatMoney(pendingCashback, order.currency)} cashback when you confirm

@@ -1,5 +1,6 @@
 import { formatMoney } from '@/lib/money'
 import { formatPoints } from '@/lib/points'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { EmptyState } from '@/components/ui'
 import type { StatementLine } from '@/modules/wallet/service'
 
@@ -11,8 +12,10 @@ const TYPE_LABEL: Record<string, string> = {
   settlement: 'Settlement',
   platform_fee: 'Platform fee',
   refund: 'Refund',
-  escrow_hold: 'Held in escrow',
-  escrow_release: 'Released from escrow',
+  // FUTURE-ESCROW: 'Held in escrow' / 'Released from escrow' once escrow is
+  // named. The ledger entries are the same either way; only the wording moves.
+  escrow_hold: ESCROW_SHOWN ? 'Held in escrow' : 'Order payment',
+  escrow_release: ESCROW_SHOWN ? 'Released from escrow' : 'Sale settled',
   cashback: 'Cashback',
   referral_reward: 'Referral reward',
   points_redemption: 'Points converted',

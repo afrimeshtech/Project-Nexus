@@ -34,6 +34,7 @@ import { getBalance } from '@/modules/wallet/service'
 // FUTURE-REWARDS: import { formatPoints } from '@/lib/points'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
 import { RATINGS_LAUNCHED } from '@/lib/launch-ratings'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Dashboard' }
@@ -119,7 +120,12 @@ export default async function PartnerHome({
           <Stat
             label="Wallet available"
             value={formatMoney(wallet.available)}
-            hint={`${formatMoney(wallet.locked)} in escrow`}
+            // FUTURE-ESCROW: `${formatMoney(wallet.locked)} in escrow`
+            hint={
+              ESCROW_SHOWN
+                ? `${formatMoney(wallet.locked)} in escrow`
+                : 'Ready to spend or withdraw'
+            }
           />
           {/* FUTURE-RATINGS: the rating tile returns with rating. */}
           {RATINGS_LAUNCHED && (

@@ -5,6 +5,7 @@ import { Icon, type IconName } from '@/components/Icon'
 import { logoutAction } from '@/app/actions/session'
 import { requireUser, currentOrganisation, ADMIN_ROLES } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { getBalance } from '@/modules/wallet/service'
 import { pointsBalance, rewardsBeneficiary } from '@/modules/rewards/service'
 import { formatPoints } from '@/lib/points'
@@ -85,7 +86,10 @@ export default async function AccountPage() {
             have to make. */}
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <Stat label="Wallet" value={formatMoney(wallet.available)} hint="Available to spend" />
-          <Stat label="In escrow" value={formatMoney(wallet.locked)} hint="Held until delivery" />
+          {/* FUTURE-ESCROW: the held figure returns when escrow is named. */}
+          {ESCROW_SHOWN && (
+            <Stat label="In escrow" value={formatMoney(wallet.locked)} hint="Held until delivery" />
+          )}
           <Stat
             label="Reward points"
             value={formatPoints(points.available)}

@@ -3,6 +3,7 @@ import { ConsumerShell } from '@/components/shell/ConsumerShell'
 import { RegisterBusinessForm } from '@/components/partner/BusinessForm'
 import { Card, SectionHeading } from '@/components/ui'
 import { currentUser, currentOrganisation } from '@/lib/auth'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Register your business' }
@@ -66,7 +67,13 @@ export default async function OnboardingPage() {
             <ul className="mt-2 space-y-1.5 text-sm text-muted">
               <li>· Discovery by buyers close to you</li>
               <li>· Live inventory with reservations, so you never oversell</li>
-              <li>· A wallet with escrow settlement on delivery</li>
+              {/* FUTURE-ESCROW: "A wallet with escrow settlement on delivery". */}
+              <li>
+                ·{' '}
+                {ESCROW_SHOWN
+                  ? 'A wallet with escrow settlement on delivery'
+                  : 'A business wallet for your sales'}
+              </li>
               {/* FUTURE-DASHBOARD: needs the merchant tier to restock from. */}
               {/* <li>· One-tap restocking from the tier above you</li> */}
               <li>· Sales, stock and demand analytics</li>

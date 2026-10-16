@@ -4,6 +4,7 @@ import { TopUpForm, WithdrawForm } from '@/components/commerce/WalletForms'
 import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireOrgCapability } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { getBalance, statement } from '@/modules/wallet/service'
 import { sellerKpis } from '@/modules/analytics/service'
 import { listBankAccounts, listBanks, listPayouts } from '@/modules/payouts/service'
@@ -32,7 +33,12 @@ export default async function PartnerWalletPage() {
         <PageHeader
           breadcrumb={[{ label: 'Dashboard', href: '/partner' }, { label: 'Wallet' }]}
           title="Business wallet"
-          subtitle="Sales settle here. Escrow releases when the buyer confirms delivery."
+          // FUTURE-ESCROW: "Escrow releases when the buyer confirms delivery."
+          subtitle={
+            ESCROW_SHOWN
+              ? 'Sales settle here. Escrow releases when the buyer confirms delivery.'
+              : 'Sales settle here.'
+          }
         />
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 max-lg:[&>:last-child:nth-child(odd)]:col-span-2">
@@ -41,12 +47,19 @@ export default async function PartnerWalletPage() {
             value={formatMoney(wallet.available)}
             hint="Ready to spend or withdraw"
           />
-          <Stat
-            label="In escrow"
-            value={formatMoney(wallet.locked)}
-            hint="Held on orders not yet delivered"
-          />
-          <Stat label="Total balance" value={formatMoney(wallet.balance)} />
+          {/* FUTURE-ESCROW: the held figure, and the total that includes it -
+              shown alone, the total would differ from "Available" by an
+              amount nothing on the page explains. */}
+          {ESCROW_SHOWN && (
+            <>
+              <Stat
+                label="In escrow"
+                value={formatMoney(wallet.locked)}
+                hint="Held on orders not yet delivered"
+              />
+              <Stat label="Total balance" value={formatMoney(wallet.balance)} />
+            </>
+          )}
           <Stat
             label="Lifetime revenue"
             value={formatMoney(kpis.revenue)}

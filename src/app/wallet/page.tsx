@@ -4,6 +4,7 @@ import { TopUpForm, WithdrawForm } from '@/components/commerce/WalletForms'
 import { Card, PageHeader, SectionHeading, Stat } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
+import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { getBalance, statement } from '@/modules/wallet/service'
 import { listBankAccounts, listBanks, listPayouts } from '@/modules/payouts/service'
 import { PayoutHistory } from '@/components/commerce/PayoutHistory'
@@ -32,14 +33,21 @@ export default async function WalletPage() {
           subtitle="One balance for paying, refunds and rewards across the network"
         />
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 max-sm:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat label="Available" value={formatMoney(wallet.available)} />
-          <Stat
-            label="In escrow"
-            value={formatMoney(wallet.locked)}
-            hint="Held on orders not yet delivered"
-          />
-          <Stat label="Total balance" value={formatMoney(wallet.balance)} />
+          {/* FUTURE-ESCROW: the held figure, and the total that includes it -
+              shown alone, the total would differ from "Available" by an
+              amount nothing on the page explains. */}
+          {ESCROW_SHOWN && (
+            <>
+              <Stat
+                label="In escrow"
+                value={formatMoney(wallet.locked)}
+                hint="Held on orders not yet delivered"
+              />
+              <Stat label="Total balance" value={formatMoney(wallet.balance)} />
+            </>
+          )}
         </div>
 
         <div className="grid gap-4 [&>*]:min-w-0 lg:grid-cols-[1fr_20rem]">

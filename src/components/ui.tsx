@@ -549,6 +549,7 @@ export function Stat({
   hint,
   tone = 'neutral',
   icon,
+  href,
 }: {
   label: string
   value: ReactNode
@@ -556,6 +557,12 @@ export function Stat({
   tone?: Tone
   /** Overrides the icon derived from the label. */
   icon?: IconName
+  /**
+   * Makes the whole card a link, with a chevron saying so. A stat card
+   * already lifts on hover, so on a phone - where there is no hover - a card
+   * that leads somewhere has to say so itself, or it reads as broken.
+   */
+  href?: string
 }) {
   // A long figure such as ₦2,600,166.30 is wider than a half-width tile on a
   // 360px phone. It shrinks just enough to fit its own tile - about 0.6em per
@@ -568,14 +575,15 @@ export function Stat({
         }
       : undefined
 
-  return (
-    <div className="stat-card @container p-4 hover:stat-card-hover">
+  const body = (
+    <>
       {/* The eyebrow register, from the type scale rather than three arbitrary
           values that happen to land near it — the token exists precisely so
           stat labels, column headers and eyebrows stay in step. */}
       <p className="flex items-center gap-1.5 font-technical text-eyebrow uppercase text-stat-label">
         <Icon name={icon ?? iconForStat(label)} size={13} />
-        {label}
+        <span className="flex-1">{label}</span>
+        {href && <Icon name="chevron-down" size={14} className="-rotate-90 shrink-0" />}
       </p>
       {/* Tabular figures so a column of numbers lines up, and tight tracking
           so a large figure does not read as loose at display size. */}
@@ -595,8 +603,20 @@ export function Stat({
           {hint}
         </p>
       )}
-    </div>
+    </>
   )
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="stat-card @container block p-4 hover:stat-card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      >
+        {body}
+      </Link>
+    )
+  }
+  return <div className="stat-card @container p-4 hover:stat-card-hover">{body}</div>
 }
 
 // ---------------------------------------------------------------------------

@@ -72,8 +72,10 @@ export default async function AdminLocationsPage({
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {TIERS.map((tier, index) => (
+            // Each tile opens its own tier's breakdown further down the page.
             <Stat
               key={tier.audience}
+              href={`#tier-${tier.audience}`}
               label={AUDIENCE_LABEL[tier.audience]}
               value={summaries[index].actors}
               hint={`${summaries[index].areas} area${
@@ -124,20 +126,22 @@ export default async function AdminLocationsPage({
         </Card>
 
         {TIERS.map((tier) => (
-          <ActivityPanel
-            key={tier.audience}
-            audience={tier.audience}
-            title={`Where ${AUDIENCE_NOUN[tier.audience]} are most active`}
-            subtitle={tier.note}
-            origin={null}
-            originLabel="Network centre"
-            days={days}
-            limit={10}
-            // The console is the one place a single-actor cell is legitimate:
-            // it is exactly the signal an operations lead needs to find a
-            // market with one lonely participant in it.
-            minActors={1}
-          />
+          // A little room above the panel when a tile jumps here.
+          <section key={tier.audience} id={`tier-${tier.audience}`} className="scroll-mt-4">
+            <ActivityPanel
+              audience={tier.audience}
+              title={`Where ${AUDIENCE_NOUN[tier.audience]} are most active`}
+              subtitle={tier.note}
+              origin={null}
+              originLabel="Network centre"
+              days={days}
+              limit={10}
+              // The console is the one place a single-actor cell is legitimate:
+              // it is exactly the signal an operations lead needs to find a
+              // market with one lonely participant in it.
+              minActors={1}
+            />
+          </section>
         ))}
       </div>
     </AdminShell>

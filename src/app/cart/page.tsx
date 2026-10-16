@@ -99,45 +99,57 @@ export default async function CartPage() {
             </Card>
 
             {cart.lines.map((line) => (
-              <Card key={line.inventory_item_id} className="flex items-center gap-3">
-                <ProductThumb name={line.name} imageUrl={line.image_url} size="md" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-ink">{line.name}</p>
-                  <p className="text-xs text-muted">
-                    {formatMoney(line.unit_price)} per {line.pack_size ?? line.unit_of_measure}
-                  </p>
-                  {line.over_stock && (
-                    <Badge tone="danger" className="mt-1">
-                      Only {line.qty_available} available
-                    </Badge>
-                  )}
+              /* Two rows on a phone, one from sm up. On a single row at 360px
+                 the quantity, Update and line total took the whole width:
+                 the product name was squeezed out of sight and the total
+                 ran off the card. The product gets its own row; the
+                 controls and the total share the second. */
+              <Card
+                key={line.inventory_item_id}
+                className="flex flex-col gap-3 sm:flex-row sm:items-center"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <ProductThumb name={line.name} imageUrl={line.image_url} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink">{line.name}</p>
+                    <p className="text-xs text-muted">
+                      {formatMoney(line.unit_price)} per {line.pack_size ?? line.unit_of_measure}
+                    </p>
+                    {line.over_stock && (
+                      <Badge tone="danger" className="mt-1">
+                        Only {line.qty_available} available
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
-                <form action={updateCartQtyAction} className="flex items-center gap-1.5">
-                  <input type="hidden" name="inventoryItemId" value={line.inventory_item_id} />
-                  <label className="sr-only" htmlFor={`qty-${line.inventory_item_id}`}>
-                    Quantity for {line.name}
-                  </label>
-                  <input
-                    id={`qty-${line.inventory_item_id}`}
-                    type="number"
-                    name="qty"
-                    defaultValue={line.qty}
-                    min={0}
-                    max={line.qty_available}
-                    className="w-16 rounded-brand border border-line px-2 py-1.5 text-center text-sm"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-brand border border-line px-2 py-1.5 text-xs font-medium hover:bg-surface-muted"
-                  >
-                    Update
-                  </button>
-                </form>
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <form action={updateCartQtyAction} className="flex items-center gap-1.5">
+                    <input type="hidden" name="inventoryItemId" value={line.inventory_item_id} />
+                    <label className="sr-only" htmlFor={`qty-${line.inventory_item_id}`}>
+                      Quantity for {line.name}
+                    </label>
+                    <input
+                      id={`qty-${line.inventory_item_id}`}
+                      type="number"
+                      name="qty"
+                      defaultValue={line.qty}
+                      min={0}
+                      max={line.qty_available}
+                      className="w-16 rounded-brand border border-line px-2 py-1.5 text-center text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-brand border border-line px-2 py-1.5 text-xs font-medium hover:bg-surface-muted"
+                    >
+                      Update
+                    </button>
+                  </form>
 
-                <p className="w-24 shrink-0 text-right font-semibold tabular-nums text-ink">
-                  {formatMoney(line.line_total)}
-                </p>
+                  <p className="shrink-0 text-right font-semibold tabular-nums text-ink sm:w-24">
+                    {formatMoney(line.line_total)}
+                  </p>
+                </div>
               </Card>
             ))}
           </div>

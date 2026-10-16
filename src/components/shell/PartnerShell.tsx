@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/Icon'
 import { Wordmark } from '@/components/brand/Logo'
+import { HeaderMenu } from '@/components/shell/HeaderMenu'
 import { Thumb, inputWithIconClass } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentOrganisation, currentUser } from '@/lib/auth'
@@ -10,6 +11,7 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // import { ORG_LABEL, supplierTypeFor, type OrgType } from '@/lib/tiers'
 // import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
+import { unreadCount } from '@/modules/notifications/service'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
@@ -50,7 +52,10 @@ export async function PartnerShell({
   const [user, org] = await Promise.all([currentUser(), currentOrganisation()])
   if (!org || !user) return null
 
-  const unreadMessages = await unreadMessageCount(user.id, org.id)
+  const [unreadMessages, unreadNotifications] = await Promise.all([
+    unreadMessageCount(user.id, org.id),
+    unreadCount(user.id),
+  ])
 
   /*
    * FUTURE-DASHBOARD: which tier this organisation restocks from.
@@ -273,10 +278,22 @@ export async function PartnerShell({
           className="bar-depth sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-bar-line bg-bar px-4 sm:px-6"
           style={{ zIndex: 'var(--z-bar)' }}
         >
-          <Link href="/partner" className="flex items-center lg:hidden">
-            <span className="sr-only">AfriMesh partner dashboard</span>
-            <Wordmark size="sm" priority />
-          </Link>
+          {/* On a phone the rail is hidden, so every destination lives in the
+              menu - the same hamburger the storefront uses. */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <HeaderMenu
+              accountLabel={org.name}
+              links={[
+                ...work,
+                ...account,
+                { href: '/', label: 'Storefront', icon: 'store' as const },
+              ]}
+            />
+            <Link href="/partner" className="flex items-center">
+              <span className="sr-only">AfriMesh partner dashboard</span>
+              <Wordmark size="sm" priority />
+            </Link>
+          </div>
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {/* Not `Badge`. Its tones are mixed for a light card — `success`
                 is a #1a6b45 tint under #14603f ink, which on Forest Ground is
@@ -285,7 +302,7 @@ export async function PartnerShell({
                 clears any ground and matches the banner below.
 
                 Hidden below `sm`: at 360px the bar is already carrying the
-                lockup, messages and sign-out, and an unverified retailer is
+                lockup, messages, notifications and sign-out, and an unverified retailer is
                 told so by that full-width banner two lines further down. */}
             {org.verification === 'verified' ? (
               <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
@@ -296,6 +313,9 @@ export async function PartnerShell({
                 Pending review
               </span>
             )}
+            {/* Two alerts, two jobs: messages are conversations with buyers
+                about their orders; notifications are the site telling the
+                retailer about orders and order activity. */}
             <Link
               href="/messages"
               className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
@@ -304,6 +324,22 @@ export async function PartnerShell({
               <Icon name="chat" size={18} />
               {unreadMessages > 0 && (
                 <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
+              )}
+            </Link>
+            <Link
+              href="/notifications"
+              className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
+              aria-label={
+                unreadNotifications > 0
+                  ? `Notifications, ${unreadNotifications} unread`
+                  : 'Notifications'
+              }
+            >
+              <Icon name="bell" size={18} />
+              {unreadNotifications > 0 && (
+                <span className="pill-notify-sm absolute -right-1 -top-1">
+                  {unreadNotifications}
+                </span>
               )}
             </Link>
             {/* Both of these are secondary trips off the dashboard, and on a
@@ -341,47 +377,37 @@ export async function PartnerShell({
         )}
 
         <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-6">
-          {/* The desktop rail splits work (Overview, Orders, Inventory...) from
-              account (Wallet, Settings...) with a divider specifically so the
-              retailer scans one register at a time instead of one flat list.
-              Concatenating both into a single scroll row here threw that
-              grouping away — the one device this shopkeeper actually has was
-              getting the worse version of a pattern already built correctly
-              for a device they don't. A vertical rule between the two groups
-              carries the same distinction into the scroll strip. */}
-          <nav aria-label="Dashboard" className="scroll-x mb-5 lg:hidden">
-            <ul className="flex items-center gap-2">
-              {work.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active === item.href ? 'page' : undefined}
-                    className={`block whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ${
-                      active === item.href
-                        ? 'bg-brand-deep text-white'
-                        : 'border border-line bg-surface text-muted'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-              <li aria-hidden="true" className="h-5 w-px shrink-0 bg-line-soft" />
-              {account.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-current={active === item.href ? 'page' : undefined}
-                    className={`block whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium ${
-                      active === item.href
-                        ? 'bg-brand-deep text-white'
-                        : 'border border-line bg-surface text-muted'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
+          {/* The day's work, one tap away on a phone: a fixed row of tiles that
+              always fits, rather than a scroll strip that cut off its own
+              items (and sometimes the page you were on). Everything else -
+              wallet, team, settings, invites - is in the header menu, and
+              messages have their own button in the bar. */}
+          <nav aria-label="Dashboard" className="mb-5 lg:hidden">
+            <ul className="grid grid-cols-4 gap-2">
+              {work
+                .filter((item) => item.href !== '/messages')
+                .map((item) => {
+                  const current = active === item.href
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        aria-current={current ? 'page' : undefined}
+                        aria-label={item.short ? item.label : undefined}
+                        className={`flex h-full flex-col items-center justify-center gap-1 rounded-brand border px-1 py-2.5 text-center text-xs font-medium ${
+                          current
+                            ? 'border-brand-deep bg-brand-deep text-white'
+                            : 'border-line bg-surface text-muted'
+                        }`}
+                      >
+                        <Icon name={item.icon} size={18} />
+                        <span className="line-clamp-2 leading-tight">
+                          {item.short ?? item.label}
+                        </span>
+                      </Link>
+                    </li>
+                  )
+                })}
             </ul>
           </nav>
           {children}

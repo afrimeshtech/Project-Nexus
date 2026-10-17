@@ -89,7 +89,7 @@ export default async function ShopsPage({
                 id="shop-q"
                 name="q"
                 defaultValue={params.q ?? ''}
-                placeholder="e.g. Grace Stores"
+                placeholder="e.g. Provision store"
                 className="w-full rounded-brand border border-line px-3 py-2 text-sm"
               />
             </div>

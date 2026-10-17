@@ -11,7 +11,7 @@ import { cartCount } from '@/lib/cart'
 import { unreadCount } from '@/modules/notifications/service'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { getBalance } from '@/modules/wallet/service'
-import { WalletStrip } from '@/components/shell/WalletStrip'
+import { WalletPill } from '@/components/shell/WalletStrip'
 import { ADMIN_ROLES } from '@/lib/auth'
 
 /**
@@ -55,9 +55,6 @@ export async function ConsumerShell({
           in it with no visible edge. Text on it is the logo's white. */}
       {/* The bar casts onto the content below it, so the page reads as three
           layers — chrome, content, chrome — rather than three flat bands. */}
-
-      {/* A signed-in shopper's own wallet. A guest has none to show. */}
-      {wallet && <WalletStrip label="Wallet balance" available={wallet.available} href="/wallet" />}
 
       {/* Sits immediately above the header so the observer can tell when the
           header has pinned. One pixel, no visual effect. */}
@@ -158,6 +155,16 @@ export async function ConsumerShell({
                 on the way past. The background change says "this is live"
                 without anything moving. */}
             <nav className="flex items-center gap-2 text-sm">
+              {/* The balance, on a wider screen: just before the icons. On a
+                  phone it moves down to the location row instead (below). A
+                  guest has no wallet to show. */}
+              {wallet && (
+                <WalletPill
+                  available={wallet.available}
+                  href="/wallet"
+                  className="hidden sm:flex"
+                />
+              )}
               <Link
                 href="/messages"
                 className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
@@ -203,8 +210,13 @@ export async function ConsumerShell({
           {/* Where you are is context, not an action — the first thing that can
               be spared when the bar has to earn its height. Mobile only; on a
               wider screen it sits inline in the row above and never moves. */}
-          <div className="mt-3 sm:hidden group-data-[stuck]:hidden">
-            <LocationPicker label={location.label} areas={KNOWN_AREAS} />
+          <div className="mt-3 flex items-center justify-between gap-3 sm:hidden group-data-[stuck]:hidden">
+            <div className="min-w-0">
+              <LocationPicker label={location.label} areas={KNOWN_AREAS} />
+            </div>
+            {/* The wallet balance on a phone: the right end of this row,
+                directly under the messages, notifications and basket icons. */}
+            {wallet && <WalletPill available={wallet.available} href="/wallet" className="flex" />}
           </div>
 
           {search && (

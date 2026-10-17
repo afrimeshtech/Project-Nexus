@@ -13,8 +13,7 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { unreadCount } from '@/modules/notifications/service'
 import { getBalance } from '@/modules/wallet/service'
-import { WalletStrip } from '@/components/shell/WalletStrip'
-import { ESCROW_SHOWN } from '@/lib/launch-escrow'
+import { WalletPill } from '@/components/shell/WalletStrip'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
@@ -166,18 +165,6 @@ export async function PartnerShell({
       <a href="#main" className="skip-link">
         Skip to content
       </a>
-      {/* Above the rail and the bar alike, so it reads as one line across the
-          top of the dashboard at every width. */}
-      {wallet && (
-        <WalletStrip
-          label="Business wallet"
-          available={wallet.available}
-          // FUTURE-ESCROW: the held amount is not named while escrow is off.
-          locked={ESCROW_SHOWN ? wallet.locked : 0}
-          href="/partner/wallet"
-          fullWidth
-        />
-      )}
       <div className="flex flex-1">
         {/*
          * The rail is its own scroll context and does not move with the page:
@@ -295,27 +282,39 @@ export async function PartnerShell({
            * also the one that never said whose product it was.
            */}
           <header
-            className="bar-depth sticky top-0 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-bar-line bg-bar px-4 sm:px-6"
+            className="bar-depth sticky top-0 shrink-0 border-b border-bar-line bg-bar px-4 sm:px-6"
             style={{ zIndex: 'var(--z-bar)' }}
           >
-            {/* On a phone the rail is hidden, so every destination lives in the
+            <div className="flex h-16 items-center justify-between gap-3">
+              {/* On a phone the rail is hidden, so every destination lives in the
               menu - the same hamburger the storefront uses. */}
-            <div className="flex items-center gap-3 lg:hidden">
-              <HeaderMenu
-                accountLabel={org.name}
-                links={[
-                  ...work,
-                  ...account,
-                  { href: '/', label: 'Storefront', icon: 'store' as const },
-                ]}
-              />
-              <Link href="/partner" className="flex items-center">
-                <span className="sr-only">AfriMesh partner dashboard</span>
-                <Wordmark size="sm" priority />
-              </Link>
-            </div>
-            <div className="ml-auto flex items-center gap-2 sm:gap-3">
-              {/* Not `Badge`. Its tones are mixed for a light card — `success`
+              <div className="flex items-center gap-3 lg:hidden">
+                <HeaderMenu
+                  accountLabel={org.name}
+                  links={[
+                    ...work,
+                    ...account,
+                    { href: '/', label: 'Storefront', icon: 'store' as const },
+                  ]}
+                />
+                <Link href="/partner" className="flex items-center">
+                  <span className="sr-only">AfriMesh partner dashboard</span>
+                  <Wordmark size="sm" priority />
+                </Link>
+              </div>
+              <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                {/* The business balance, where there is room: just before the
+                  icons, as on the storefront. Below lg it drops to its own row
+                  under the icons instead (see the end of this header). A sales
+                  rep may not see the business's money, so there is no pill. */}
+                {wallet && (
+                  <WalletPill
+                    available={wallet.available}
+                    href="/partner/wallet"
+                    className="hidden lg:flex"
+                  />
+                )}
+                {/* Not `Badge`. Its tones are mixed for a light card — `success`
                 is a #1a6b45 tint under #14603f ink, which on Forest Ground is
                 green on green and gone. Verified reads as plain bar ink in an
                 outlined chip; pending keeps the solid amber, whose dark ink
@@ -324,69 +323,85 @@ export async function PartnerShell({
                 Hidden below `sm`: at 360px the bar is already carrying the
                 lockup, messages, notifications and sign-out, and an unverified retailer is
                 told so by that full-width banner two lines further down. */}
-              {org.verification === 'verified' ? (
-                <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
-                  Verified
-                </span>
-              ) : (
-                <span className="hidden items-center rounded-full bg-warning px-2 py-0.5 text-xs font-medium text-warning-ink sm:inline-flex">
-                  Pending review
-                </span>
-              )}
-              {/* Two alerts, two jobs: messages are conversations with buyers
-                about their orders; notifications are the site telling the
-                retailer about orders and order activity. */}
-              <Link
-                href="/messages"
-                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
-                aria-label={unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'}
-              >
-                <Icon name="chat" size={18} />
-                {unreadMessages > 0 && (
-                  <span className="pill-notify-sm absolute -right-1 -top-1">{unreadMessages}</span>
-                )}
-              </Link>
-              <Link
-                href="/notifications"
-                className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
-                aria-label={
-                  unreadNotifications > 0
-                    ? `Notifications, ${unreadNotifications} unread`
-                    : 'Notifications'
-                }
-              >
-                <Icon name="bell" size={18} />
-                {unreadNotifications > 0 && (
-                  <span className="pill-notify-sm absolute -right-1 -top-1">
-                    {unreadNotifications}
+                {org.verification === 'verified' ? (
+                  <span className="hidden items-center rounded-full border border-bar-line px-2 py-0.5 text-xs font-medium text-bar-ink sm:inline-flex">
+                    Verified
+                  </span>
+                ) : (
+                  <span className="hidden items-center rounded-full bg-warning px-2 py-0.5 text-xs font-medium text-warning-ink sm:inline-flex">
+                    Pending review
                   </span>
                 )}
-              </Link>
-              {/* Both of these are secondary trips off the dashboard, and on a
+                {/* Two alerts, two jobs: messages are conversations with buyers
+                about their orders; notifications are the site telling the
+                retailer about orders and order activity. */}
+                <Link
+                  href="/messages"
+                  className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
+                  aria-label={
+                    unreadMessages > 0 ? `Messages, ${unreadMessages} unread` : 'Messages'
+                  }
+                >
+                  <Icon name="chat" size={18} />
+                  {unreadMessages > 0 && (
+                    <span className="pill-notify-sm absolute -right-1 -top-1">
+                      {unreadMessages}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/notifications"
+                  className="press relative grid size-11 place-items-center rounded-brand border border-bar-line text-bar-ink transition-colors hover:bg-bar-line/60 active:press-active"
+                  aria-label={
+                    unreadNotifications > 0
+                      ? `Notifications, ${unreadNotifications} unread`
+                      : 'Notifications'
+                  }
+                >
+                  <Icon name="bell" size={18} />
+                  {unreadNotifications > 0 && (
+                    <span className="pill-notify-sm absolute -right-1 -top-1">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+                {/* Both of these are secondary trips off the dashboard, and on a
                 360px phone they were pushing the bar's contents into each
                 other. They stay one tap away in the rail and the scroll
                 strip; here they wait for the room to exist. */}
-              <Link
-                href="/contact?from=partner"
-                className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
-              >
-                Contact us
-              </Link>
-              <Link
-                href="/"
-                className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
-              >
-                Storefront
-              </Link>
-              <form action={logoutAction} className="lg:hidden">
-                <button
-                  type="submit"
-                  className="whitespace-nowrap rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink"
+                <Link
+                  href="/contact?from=partner"
+                  className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
                 >
-                  Sign out
-                </button>
-              </form>
+                  Contact us
+                </Link>
+                <Link
+                  href="/"
+                  className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
+                >
+                  Storefront
+                </Link>
+                <form action={logoutAction} className="lg:hidden">
+                  <button
+                    type="submit"
+                    className="whitespace-nowrap rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              </div>
             </div>
+            {/* Below lg: the second row, like the storefront's location row -
+                whose business this is on the left, its balance at the right end,
+                directly under the messages and notifications icons. */}
+            {wallet && (
+              <div className="-mt-1 flex items-center justify-between gap-3 pb-3 lg:hidden">
+                <span className="min-w-0 truncate text-sm font-medium text-bar-muted">
+                  {org.name}
+                </span>
+                <WalletPill available={wallet.available} href="/partner/wallet" className="flex" />
+              </div>
+            )}
           </header>
 
           {org.verification !== 'verified' && (

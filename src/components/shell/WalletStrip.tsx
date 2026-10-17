@@ -3,58 +3,28 @@ import { Icon } from '@/components/Icon'
 import { formatMoney } from '@/lib/money'
 
 /**
- * The wallet balance, as a thin strip above the header bar.
- *
- * Money is what a shopper checks before they buy and what a retailer checks
- * after they sell, so it is on every page rather than one menu tap away - but
- * as a slim line of its own, so the bar below keeps its room on a phone. It
- * scrolls away with the page; the header underneath is the part that pins.
- *
- * Right-aligned, so the balance sits directly above the bar's own icons
- * (messages, notifications, basket) - the corner where a person already looks
- * for "what is waiting for me". The padding matches each header's, so the
- * chevron lines up with the last icon below it.
- *
- * The whole strip is the link to the wallet. Only the available balance is
- * the headline: escrow is money that is not spendable yet, so it is named as
- * such rather than added in.
+ * The balance as a pill inside the header bar, on both dashboards. On a
+ * phone it sits at the right of the location row, directly under the
+ * messages, notifications and basket icons; on a wider screen, where the
+ * location moves into the top row, it sits just before those icons.
  */
-export function WalletStrip({
-  label,
+export function WalletPill({
   available,
-  locked = 0,
   href,
-  fullWidth = false,
+  className = '',
 }: {
-  label: string
   available: number
-  locked?: number
   href: string
-  /** Edge to edge, for a full-width dashboard; otherwise the storefront column. */
-  fullWidth?: boolean
+  className?: string
 }) {
   return (
     <Link
       href={href}
-      className="block border-b border-bar-line bg-bar text-bar-muted transition-colors hover:text-bar-ink"
+      aria-label={`Wallet balance ${formatMoney(available)}`}
+      className={`press min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-bar-line px-3 text-xs text-bar-ink transition-colors hover:bg-bar-line/60 ${className}`}
     >
-      <div
-        className={`flex w-full items-center justify-end gap-2 py-1.5 text-xs ${
-          fullWidth ? 'px-4 sm:px-6' : 'mx-auto max-w-6xl px-4'
-        }`}
-      >
-        <Icon name="wallet" size={14} className="shrink-0" />
-        <span>{label}</span>
-        <span className="font-technical font-semibold tabular-nums text-bar-ink">
-          {formatMoney(available)}
-        </span>
-        {locked > 0 && (
-          <span className="hidden truncate min-[380px]:inline">
-            · {formatMoney(locked)} in escrow
-          </span>
-        )}
-        <Icon name="chevron-down" size={14} className="shrink-0 -rotate-90" />
-      </div>
+      <Icon name="wallet" size={14} className="shrink-0 text-bar-muted" />
+      <span className="font-technical font-semibold tabular-nums">{formatMoney(available)}</span>
     </Link>
   )
 }

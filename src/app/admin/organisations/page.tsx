@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { AdminShell } from '@/components/shell/AdminShell'
-import { RejectBusinessForm } from '@/components/admin/AdminForms'
+import { MoveBusinessForm, RejectBusinessForm } from '@/components/admin/AdminForms'
 import { SellerThumb } from '@/components/commerce/SellerThumb'
 import { ConfirmSubmitButton } from '@/components/ConfirmSubmitButton'
 import { Badge, Card, EmptyState, PageHeader, Rating } from '@/components/ui'
@@ -156,6 +156,7 @@ export default async function AdminOrganisationsPage({
                     {org.verification !== 'rejected' && (
                       <RejectBusinessForm organisationId={org.id} />
                     )}
+                    <MoveBusinessForm organisationId={org.id} lat={org.lat} lng={org.lng} />
                     <form action={toggleSuspensionAction}>
                       <input type="hidden" name="organisationId" value={org.id} />
                       <input

@@ -6,6 +6,7 @@ import { currentUser, ADMIN_ROLES } from '@/lib/auth'
 import {
   rejectOrganisation,
   setOrganisationStatus,
+  updateOrganisation,
   verifyOrganisation,
 } from '@/modules/organisations/service'
 import { setProductStatus } from '@/modules/catalog/service'
@@ -16,7 +17,7 @@ import { expireStaleReservations } from '@/modules/inventory/service'
 import { setReferralPoints } from '@/modules/rewards/service'
 import { PROGRAMMES, type Programme } from '@/lib/points'
 
-import { parseForm, z, uuid, requiredText } from '@/lib/forms'
+import { parseForm, z, uuid, requiredText, latitude, longitude } from '@/lib/forms'
 
 export interface AdminActionState {
   error?: string
@@ -41,6 +42,12 @@ const moderateSchema = z.object({
 })
 
 const alertSchema = z.object({ alertId: uuid('alert') })
+
+const moveSchema = z.object({
+  organisationId: uuid('business'),
+  lat: latitude,
+  lng: longitude,
+})
 
 const weightScopeSchema = z.enum(['consumer', 'outlet', 'merchant']).catch('consumer')
 
@@ -95,6 +102,28 @@ export async function toggleSuspensionAction(formData: FormData) {
 
   await setOrganisationStatus(parsed.data.organisationId, parsed.data.status)
   revalidatePath('/admin/organisations')
+}
+
+/**
+ * Moves a shop. A retailer's location is locked at registration - buyers are
+ * matched by distance - so relocating one is an administrator's call, for a
+ * shop that has genuinely moved premises. The shop's listings move with it.
+ */
+export async function moveOrganisationAction(
+  _prev: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  await requireMutatingAdmin()
+  const parsed = parseForm(moveSchema, formData)
+  if (!parsed.ok) return { error: parsed.error }
+  const { organisationId, lat, lng } = parsed.data
+  if (lat < 4 || lat > 14 || lng < 2.5 || lng > 14.8) {
+    return { error: 'That point is outside Nigeria.' }
+  }
+
+  await updateOrganisation(organisationId, { lat, lng })
+  revalidatePath('/admin/organisations')
+  return { notice: `Moved to ${lat.toFixed(5)}, ${lng.toFixed(5)}.` }
 }
 
 export async function moderateProductAction(formData: FormData) {

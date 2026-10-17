@@ -2,12 +2,83 @@
 
 import { useActionState, useState } from 'react'
 import {
+  moveOrganisationAction,
   rejectOrganisationAction,
   updateReferralPointsAction,
   updateWeightsAction,
   type AdminActionState,
 } from '@/app/actions/admin'
 import { FormError, Alert, inputClass } from '@/components/ui'
+
+/**
+ * Relocating a shop. Coordinates are typed here on purpose: this is the one
+ * place they may be, by an administrator, for a shop that has really moved -
+ * usually pasted as "lat, lng" straight from a map.
+ */
+export function MoveBusinessForm({
+  organisationId,
+  lat,
+  lng,
+}: {
+  organisationId: string
+  lat: number
+  lng: number
+}) {
+  const [state, formAction, pending] = useActionState<AdminActionState, FormData>(
+    moveOrganisationAction,
+    {},
+  )
+  const [open, setOpen] = useState(false)
+  const [point, setPoint] = useState(`${lat}, ${lng}`)
+  const [latText, lngText] = point.split(',').map((part) => part.trim())
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
+      >
+        Move location
+      </button>
+    )
+  }
+
+  return (
+    <form action={formAction} className="w-full space-y-2">
+      <input type="hidden" name="organisationId" value={organisationId} />
+      <input type="hidden" name="lat" value={latText ?? ''} />
+      <input type="hidden" name="lng" value={lngText ?? ''} />
+      <label className="block text-xs text-muted">
+        New position as &ldquo;latitude, longitude&rdquo;. The shop and all its listings move.
+        <input
+          value={point}
+          onChange={(e) => setPoint(e.target.value)}
+          className={`${inputClass} mt-1`}
+          required
+        />
+      </label>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-brand bg-brand-deep px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+        >
+          {pending ? 'Moving...' : 'Move shop'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-brand border border-line px-3 py-1.5 text-xs font-medium"
+        >
+          Close
+        </button>
+      </div>
+      <FormError>{state.error}</FormError>
+      {state.notice && <Alert tone="success">{state.notice}</Alert>}
+    </form>
+  )
+}
 
 export function RejectBusinessForm({ organisationId }: { organisationId: string }) {
   const [state, formAction, pending] = useActionState<AdminActionState, FormData>(

@@ -31,7 +31,7 @@ export default async function EventsPage({
         <PageHeader
           breadcrumb={[{ label: 'Admin', href: '/admin' }, { label: 'Events' }]}
           title="Event log"
-          subtitle="Append-only. Every meaningful state change in the platform, in order."
+          subtitle="Append-only. Every meaningful state change in the platform, in order. Open any entry for its full details."
         />
 
         <Card>
@@ -77,15 +77,30 @@ export default async function EventsPage({
                     <th className="px-3 py-3 font-medium">Event</th>
                     <th className="px-3 py-3 font-medium">Aggregate</th>
                     <th className="px-3 py-3 font-medium">Payload</th>
-                    <th className="px-4 py-3 font-medium">When</th>
+                    <th className="px-3 py-3 font-medium">When</th>
+                    <th className="px-4 py-3 font-medium">
+                      <span className="sr-only">Details</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {events.map((event) => (
-                    <tr key={event.id} className="border-b border-line-soft last:border-0">
-                      <td className="px-4 py-2.5 font-technical text-xs text-muted">{event.id}</td>
+                    <tr
+                      key={event.id}
+                      className="border-b border-line-soft last:border-0 hover:bg-surface-muted"
+                    >
+                      <td className="px-4 py-2.5 font-technical text-xs">
+                        <Link
+                          href={`/admin/events/${event.id}`}
+                          className="text-muted hover:text-accent-strong"
+                        >
+                          {event.id}
+                        </Link>
+                      </td>
                       <td className="px-3 py-2.5">
-                        <Badge tone="neutral">{event.event_type}</Badge>
+                        <Link href={`/admin/events/${event.id}`}>
+                          <Badge tone="neutral">{event.event_type}</Badge>
+                        </Link>
                       </td>
                       <td className="px-3 py-2.5 font-technical text-xs text-muted">
                         {event.aggregate_type}
@@ -96,8 +111,16 @@ export default async function EventsPage({
                           {JSON.stringify(event.payload)}
                         </code>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 font-technical text-xs text-muted">
+                      <td className="whitespace-nowrap px-3 py-2.5 font-technical text-xs text-muted">
                         {new Date(event.occurred_at).toLocaleString('en-NG')}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                        <Link
+                          href={`/admin/events/${event.id}`}
+                          className="text-xs font-semibold text-accent-strong hover:underline"
+                        >
+                          Details &rsaquo;
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -107,19 +130,28 @@ export default async function EventsPage({
 
             <ul className="space-y-2 p-4 sm:hidden">
               {events.map((event) => (
-                <li key={event.id} className="rounded-brand border border-line-soft p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <Badge tone="neutral">{event.event_type}</Badge>
-                    <span className="font-technical text-xs text-muted">
-                      {new Date(event.occurred_at).toLocaleString('en-NG')}
+                <li key={event.id}>
+                  <Link
+                    href={`/admin/events/${event.id}`}
+                    className="block rounded-brand border border-line-soft p-3 hover:bg-surface-muted"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <Badge tone="neutral">{event.event_type}</Badge>
+                      <span className="font-technical text-xs text-muted">
+                        {new Date(event.occurred_at).toLocaleString('en-NG')}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 font-technical text-xs text-muted">
+                      {event.aggregate_type} · {String(event.aggregate_id).slice(0, 8)}… ·{' '}
+                      {event.id}
+                    </p>
+                    <code className="mt-1 block truncate font-technical text-xs text-muted">
+                      {JSON.stringify(event.payload)}
+                    </code>
+                    <span className="mt-1.5 block text-xs font-semibold text-accent-strong">
+                      View details &rsaquo;
                     </span>
-                  </div>
-                  <p className="mt-1.5 font-technical text-xs text-muted">
-                    {event.aggregate_type} · {String(event.aggregate_id).slice(0, 8)}… · {event.id}
-                  </p>
-                  <code className="mt-1 block truncate font-technical text-xs text-muted">
-                    {JSON.stringify(event.payload)}
-                  </code>
+                  </Link>
                 </li>
               ))}
             </ul>

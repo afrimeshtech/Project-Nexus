@@ -10,6 +10,8 @@ import {
 } from '@/app/actions/onboarding'
 import { FormError, Alert, Field, inputClass } from '@/components/ui'
 import { MapPreview } from '@/components/partner/MapPreview'
+import { PinPicker, type PinPosition } from '@/components/partner/PinPicker'
+import { haversineKm } from '@/lib/geo'
 
 /**
  * FUTURE-DASHBOARD: only the retail outlet tier is offered at launch.
@@ -52,11 +54,16 @@ const TYPES = [
 
 /** A GPS fix rougher than this could put the shop on the wrong street. */
 const MAX_GPS_ACCURACY_M = 150
+/** Street level: a hand-placed pin is only accepted once zoomed in this far. */
+const MIN_PIN_ZOOM = 16
+/** A hand-placed pin must stay this close to the town the address found. */
+const MAX_PIN_DRIFT_KM = 25
 
 interface Spot {
   lat: number
   lng: number
-  source: 'gps' | 'address'
+  /** 'pin' is a hand-placed pin, for an address the map only knows by town. */
+  source: 'gps' | 'address' | 'pin'
   /** What was found - an accuracy for GPS, the matched place for an address. */
   detail: string
   /** Whether it is precise enough to lock a shop to. */
@@ -72,7 +79,9 @@ interface Spot {
  * at registration, from one of two trustworthy sources: the device's GPS
  * while standing in the shop, or the shop's street address looked up on the
  * map. Either way the retailer sees the pin before locking it, and raw
- * coordinates are never typed. After registration it does not move - only
+ * coordinates are never typed. Where the map only knows the town, not the
+ * street, the retailer drags a pin from the town onto their shop instead -
+ * accepted once zoomed to street level and still near that town. After registration it does not move - only
  * an administrator can relocate a shop.
  */
 function ShopLocationLock({
@@ -90,6 +99,9 @@ function ShopLocationLock({
 }) {
   const [mode, setMode] = useState<'gps' | 'address'>('gps')
   const [candidate, setCandidate] = useState<Spot | null>(null)
+  // A town- or area-level match: the pin starts here and the retailer moves it.
+  const [anchor, setAnchor] = useState<{ lat: number; lng: number; label: string } | null>(null)
+  const [pin, setPin] = useState<PinPosition | null>(null)
   const [status, setStatus] = useState<string | null>(null)
   const [busy, startLookup] = useTransition()
 
@@ -126,6 +138,8 @@ function ShopLocationLock({
 
   const lookUp = () => {
     setCandidate(null)
+    setAnchor(null)
+    setPin(null)
     setStatus('Looking the address up on the map...')
     startLookup(async () => {
       const res = await geocodeShopAddressAction({ address, city, state })
@@ -134,17 +148,18 @@ function ShopLocationLock({
         return
       }
       const { precision } = res.result
-      const lockable = precision === 'exact' || precision === 'street'
-      setCandidate({
-        lat: res.result.lat,
-        lng: res.result.lng,
-        source: 'address',
-        detail: res.result.label,
-        lockable,
-        problem: lockable
-          ? undefined
-          : 'The map only knows this area, not your street, so a pin here could be far from the shop. Use GPS while you are in the shop instead.',
-      })
+      if (precision === 'exact' || precision === 'street') {
+        setCandidate({
+          lat: res.result.lat,
+          lng: res.result.lng,
+          source: 'address',
+          detail: res.result.label,
+          lockable: true,
+        })
+      } else {
+        // Only the town or area is known: hand the retailer a pin to place.
+        setAnchor({ lat: res.result.lat, lng: res.result.lng, label: res.result.label })
+      }
       setStatus(null)
     })
   }
@@ -162,6 +177,8 @@ function ShopLocationLock({
             onClick={() => {
               setLocked(null)
               setCandidate(null)
+              setAnchor(null)
+              setPin(null)
             }}
             className="rounded-brand border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
           >
@@ -182,6 +199,8 @@ function ShopLocationLock({
       onClick={() => {
         setMode(value)
         setCandidate(null)
+        setAnchor(null)
+        setPin(null)
         setStatus(null)
       }}
       className={`flex-1 rounded-brand px-3 py-2 text-xs font-medium ${
@@ -226,6 +245,15 @@ function ShopLocationLock({
 
         {status && <p className="text-xs text-muted">{status}</p>}
 
+        {anchor && (
+          <PinPlacement
+            anchor={anchor}
+            pin={pin}
+            setPin={setPin}
+            onLock={(spot) => setLocked(spot)}
+          />
+        )}
+
         {candidate && (
           <div className="space-y-2">
             <MapPreview lat={candidate.lat} lng={candidate.lng} label="Proposed shop location" />
@@ -246,6 +274,64 @@ function ShopLocationLock({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Placing the pin by hand, for an address the map knows only by town. The
+ * pin starts on the town; the retailer zooms in and drags or taps it onto
+ * their shop. It locks only at street level and within reach of that town,
+ * so a careless tap cannot put a Jimeta shop in another state.
+ */
+function PinPlacement({
+  anchor,
+  pin,
+  setPin,
+  onLock,
+}: {
+  anchor: { lat: number; lng: number; label: string }
+  pin: PinPosition | null
+  setPin: (pin: PinPosition) => void
+  onLock: (spot: Spot) => void
+}) {
+  const drift = pin ? haversineKm(anchor, pin) : 0
+  const problem = !pin
+    ? null
+    : drift > MAX_PIN_DRIFT_KM
+      ? `That is ${Math.round(drift)} km from ${anchor.label.split(',')[0]}. Check the address, or use GPS in the shop.`
+      : pin.zoom < MIN_PIN_ZOOM
+        ? 'Zoom in to street level (pinch, or the + button), then put the pin on your shop.'
+        : null
+
+  return (
+    <div className="space-y-2">
+      <p className="rounded-brand bg-warning/15 px-3 py-2 text-xs text-warning-ink">
+        The map knows this town but not your street. Drag the pin, or tap the map, to put it exactly
+        on your shop.
+      </p>
+      <PinPicker lat={anchor.lat} lng={anchor.lng} onChange={setPin} />
+      {problem ? (
+        <p className="text-xs text-muted">{problem}</p>
+      ) : (
+        pin && (
+          <button
+            type="button"
+            onClick={() =>
+              onLock({
+                lat: pin.lat,
+                lng: pin.lng,
+                source: 'pin',
+                detail: `Pin placed by hand near ${anchor.label.split(',')[0]}`,
+                lockable: true,
+              })
+            }
+            className="w-full rounded-brand bg-brand-deep px-3 py-2 text-sm font-semibold text-white"
+          >
+            Lock this location
+          </button>
+        )
+      )}
     </div>
   )
 }

@@ -41,7 +41,8 @@ const registerBusinessSchema = z.object({
   // before the business can be submitted - never typed as raw numbers.
   lat: latitude,
   lng: longitude,
-  locationSource: z.enum(['gps', 'address'], {
+  // 'pin': placed by hand on the map, where the address was only known by town.
+  locationSource: z.enum(['gps', 'address', 'pin'], {
     message: 'Lock your shop location before submitting.',
   }),
 })

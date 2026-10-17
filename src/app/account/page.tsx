@@ -7,8 +7,8 @@ import { requireUser, currentOrganisation, ADMIN_ROLES } from '@/lib/auth'
 import { formatMoney } from '@/lib/money'
 import { ESCROW_SHOWN } from '@/lib/launch-escrow'
 import { getBalance } from '@/modules/wallet/service'
-import { pointsBalance, rewardsBeneficiary } from '@/modules/rewards/service'
-import { formatPoints } from '@/lib/points'
+// FUTURE-REWARDS: import { pointsBalance, rewardsBeneficiary } from '@/modules/rewards/service'
+// FUTURE-REWARDS: import { formatPoints } from '@/lib/points'
 import { consumerKpis } from '@/modules/analytics/service'
 
 export const dynamic = 'force-dynamic'
@@ -16,13 +16,13 @@ export const metadata = { title: 'Account' }
 
 export default async function AccountPage() {
   const user = await requireUser('/account')
-  const [org, wallet, kpis, beneficiary] = await Promise.all([
+  // FUTURE-REWARDS: `beneficiary` and `points` fed the reward points tile:
+  //   rewardsBeneficiary(user.id), then pointsBalance(beneficiary.type, beneficiary.id)
+  const [org, wallet, kpis] = await Promise.all([
     currentOrganisation(),
     getBalance('user', user.id),
     consumerKpis(user.id),
-    rewardsBeneficiary(user.id),
   ])
-  const points = await pointsBalance(beneficiary.type, beneficiary.id)
 
   /* Typed as IconName rather than left to infer `string`: these are keys into
      the icon set, and the whole reason they once rendered as the words "box"
@@ -84,18 +84,20 @@ export default async function AccountPage() {
             leaves the reader to work out whether it is spendable, owed, or
             lifetime volume — and on a wallet that is not a guess anyone should
             have to make. */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 max-sm:[&>:last-child:nth-child(odd)]:col-span-2">
           <Stat label="Wallet" value={formatMoney(wallet.available)} hint="Available to spend" />
           {/* FUTURE-ESCROW: the held figure returns when escrow is named. */}
           {ESCROW_SHOWN && (
             <Stat label="In escrow" value={formatMoney(wallet.locked)} hint="Held until delivery" />
           )}
+          {/* FUTURE-REWARDS: the reward points tile, restored with rewards.
           <Stat
             label="Reward points"
             value={formatPoints(points.available)}
             hint={`Worth ${formatMoney(points.redeemableValue)}`}
             icon="star-filled"
           />
+          */}
           <Stat label="Orders" value={kpis.orders} hint="Placed all time" />
           <Stat
             label="Saved items"

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { currentUser, currentOrganisation, organisationFor } from '@/lib/auth'
 import { registerOrganisation, updateOrganisation } from '@/modules/organisations/service'
 import type { OrgType } from '@/lib/tiers'
+import { geocodeShopAddress, type GeocodePrecision } from '@/lib/geocode'
 
 import {
   parseForm,
@@ -22,6 +23,12 @@ export interface OnboardingState {
   notice?: string
 }
 
+/**
+ * Nigeria's bounding box, with a little margin. A locked shop location
+ * outside it is a typo or a VPN, not a Nigerian shop.
+ */
+const inNigeria = (lat: number, lng: number) => lat >= 4 && lat <= 14 && lng >= 2.5 && lng <= 14.8
+
 const registerBusinessSchema = z.object({
   name: requiredText('Your business name', 160),
   type: orgType,
@@ -30,8 +37,13 @@ const registerBusinessSchema = z.object({
   city: optionalText(80),
   state: optionalText(80),
   phone: phone.optional().or(z.literal('')),
+  // The location is locked in the form, from GPS or a looked-up address,
+  // before the business can be submitted - never typed as raw numbers.
   lat: latitude,
   lng: longitude,
+  locationSource: z.enum(['gps', 'address'], {
+    message: 'Lock your shop location before submitting.',
+  }),
 })
 
 const updateBusinessSchema = z.object({
@@ -40,8 +52,8 @@ const updateBusinessSchema = z.object({
   city: optionalText(80),
   state: optionalText(80),
   phone: phone.optional().or(z.literal('')),
-  lat: latitude.optional(),
-  lng: longitude.optional(),
+  // No lat/lng: a shop's location is locked at registration. Only an
+  // administrator can move it (moveOrganisationAction).
   deliveryRadiusKm: z.coerce.number().min(1).max(2000).optional(),
   avgDispatchMinutes: z.coerce.number().int().min(5).max(10_080).optional(),
 })
@@ -59,6 +71,9 @@ export async function registerBusinessAction(
   const parsed = parseForm(registerBusinessSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
   const input = parsed.data
+  if (!inNigeria(input.lat, input.lng)) {
+    return { error: 'That location is outside Nigeria. Lock the location of the shop itself.' }
+  }
 
   try {
     await registerOrganisation({
@@ -100,12 +115,56 @@ export async function updateBusinessAction(
     city: patch.city,
     state: patch.state,
     phone: patch.phone || null,
-    lat: patch.lat,
-    lng: patch.lng,
     deliveryRadiusKm: patch.deliveryRadiusKm,
     avgDispatchMinutes: patch.avgDispatchMinutes,
   })
 
   revalidatePath('/partner/settings')
   return { notice: 'Business details updated.' }
+}
+
+export interface GeocodeState {
+  result?: { lat: number; lng: number; label: string; precision: GeocodePrecision }
+  error?: string
+}
+
+const geocodeSchema = z.object({
+  address: requiredText('The street address', 300),
+  city: requiredText('The city or town', 80),
+  state: requiredText('The state', 80),
+})
+
+/**
+ * Looks a shop address up on the map, for the "find by address" way of
+ * locking a location. Signed-in users only - it calls a public service on
+ * our behalf, and it should not be an open proxy to it.
+ */
+export async function geocodeShopAddressAction(input: {
+  address: string
+  city: string
+  state: string
+}): Promise<GeocodeState> {
+  const user = await currentUser()
+  if (!user) return { error: 'Sign in to look up an address.' }
+
+  const parsed = geocodeSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: 'Fill in the street address, city and state first.' }
+  }
+  try {
+    const result = await geocodeShopAddress({
+      street: parsed.data.address,
+      city: parsed.data.city,
+      state: parsed.data.state,
+    })
+    if (!result || !inNigeria(result.lat, result.lng)) {
+      return {
+        error: 'We could not find that address on the map. Check it, or use GPS in your shop.',
+      }
+    }
+    return { result }
+  } catch (err) {
+    console.error('[onboarding] geocoding failed', err)
+    return { error: 'The map lookup is not responding. Try again, or use GPS in your shop.' }
+  }
 }

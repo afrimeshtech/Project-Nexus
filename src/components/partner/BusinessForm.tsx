@@ -1,12 +1,15 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import Link from 'next/link'
+import { useActionState, useState, useTransition } from 'react'
 import {
+  geocodeShopAddressAction,
   registerBusinessAction,
   updateBusinessAction,
   type OnboardingState,
 } from '@/app/actions/onboarding'
 import { FormError, Alert, Field, inputClass } from '@/components/ui'
+import { MapPreview } from '@/components/partner/MapPreview'
 
 /**
  * FUTURE-DASHBOARD: only the retail outlet tier is offered at launch.
@@ -47,65 +50,218 @@ const TYPES = [
   // },
 ] as const
 
-/** Location capture. Distance decides who finds you, so it is not optional. */
-function LocationField({
-  lat,
-  lng,
-  setLat,
-  setLng,
+/** A GPS fix rougher than this could put the shop on the wrong street. */
+const MAX_GPS_ACCURACY_M = 150
+
+interface Spot {
+  lat: number
+  lng: number
+  source: 'gps' | 'address'
+  /** What was found - an accuracy for GPS, the matched place for an address. */
+  detail: string
+  /** Whether it is precise enough to lock a shop to. */
+  lockable: boolean
+  /** Why not, when it is not. */
+  problem?: string
+}
+
+/**
+ * Locking the shop's location.
+ *
+ * Distance decides which buyers find a shop, so the location is pinned once,
+ * at registration, from one of two trustworthy sources: the device's GPS
+ * while standing in the shop, or the shop's street address looked up on the
+ * map. Either way the retailer sees the pin before locking it, and raw
+ * coordinates are never typed. After registration it does not move - only
+ * an administrator can relocate a shop.
+ */
+function ShopLocationLock({
+  address,
+  city,
+  state,
+  locked,
+  setLocked,
 }: {
-  lat: string
-  lng: string
-  setLat: (v: string) => void
-  setLng: (v: string) => void
+  address: string
+  city: string
+  state: string
+  locked: Spot | null
+  setLocked: (spot: Spot | null) => void
 }) {
+  const [mode, setMode] = useState<'gps' | 'address'>('gps')
+  const [candidate, setCandidate] = useState<Spot | null>(null)
   const [status, setStatus] = useState<string | null>(null)
+  const [busy, startLookup] = useTransition()
+
+  const locate = () => {
+    if (!('geolocation' in navigator)) {
+      setStatus('This device cannot share its location. Find the shop by address instead.')
+      return
+    }
+    setCandidate(null)
+    setStatus('Finding your position. Stand inside or right outside the shop.')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const accuracy = Math.round(pos.coords.accuracy)
+        const lockable = accuracy <= MAX_GPS_ACCURACY_M
+        setCandidate({
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6)),
+          source: 'gps',
+          detail: `GPS, accurate to about ${accuracy} m`,
+          lockable,
+          problem: lockable
+            ? undefined
+            : `The GPS fix is too rough (about ${accuracy} m). Step outside or near a window, wait a moment, and try again.`,
+        })
+        setStatus(null)
+      },
+      () =>
+        setStatus(
+          'Location permission was refused. Allow it in your browser, or find the shop by address.',
+        ),
+      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
+    )
+  }
+
+  const lookUp = () => {
+    setCandidate(null)
+    setStatus('Looking the address up on the map...')
+    startLookup(async () => {
+      const res = await geocodeShopAddressAction({ address, city, state })
+      if (!res.result) {
+        setStatus(res.error ?? 'We could not find that address.')
+        return
+      }
+      const { precision } = res.result
+      const lockable = precision === 'exact' || precision === 'street'
+      setCandidate({
+        lat: res.result.lat,
+        lng: res.result.lng,
+        source: 'address',
+        detail: res.result.label,
+        lockable,
+        problem: lockable
+          ? undefined
+          : 'The map only knows this area, not your street, so a pin here could be far from the shop. Use GPS while you are in the shop instead.',
+      })
+      setStatus(null)
+    })
+  }
+
+  if (locked) {
+    return (
+      <div>
+        <span className="mb-1.5 block text-sm font-medium text-ink">Shop location</span>
+        <div className="space-y-2 rounded-brand border border-success/40 bg-success/10 p-3">
+          <p className="text-sm font-medium text-success-ink">Location locked</p>
+          <MapPreview lat={locked.lat} lng={locked.lng} label="Your locked shop location" />
+          <p className="text-xs text-muted">{locked.detail}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setLocked(null)
+              setCandidate(null)
+            }}
+            className="rounded-brand border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
+          >
+            Change before submitting
+          </button>
+        </div>
+        <input type="hidden" name="lat" value={locked.lat} />
+        <input type="hidden" name="lng" value={locked.lng} />
+        <input type="hidden" name="locationSource" value={locked.source} />
+      </div>
+    )
+  }
+
+  const tab = (value: 'gps' | 'address', label: string) => (
+    <button
+      type="button"
+      aria-pressed={mode === value}
+      onClick={() => {
+        setMode(value)
+        setCandidate(null)
+        setStatus(null)
+      }}
+      className={`flex-1 rounded-brand px-3 py-2 text-xs font-medium ${
+        mode === value ? 'bg-surface text-ink shadow-subtle' : 'text-muted hover:text-ink'
+      }`}
+    >
+      {label}
+    </button>
+  )
 
   return (
     <div>
-      <span className="mb-1.5 block text-sm font-medium text-ink">Business location</span>
-      <div className="flex gap-2">
-        <input
-          name="lat"
-          value={lat}
-          onChange={(e) => setLat(e.target.value)}
-          placeholder="Latitude"
-          className={inputClass}
-          required
-        />
-        <input
-          name="lng"
-          value={lng}
-          onChange={(e) => setLng(e.target.value)}
-          placeholder="Longitude"
-          className={inputClass}
-          required
-        />
+      <span className="mb-1 block text-sm font-medium text-ink">Lock your shop location</span>
+      <p className="mb-2 text-xs text-muted">
+        Buyers are matched to your shop by distance, so this is fixed once you register. Only
+        AfriMesh can move it later.
+      </p>
+      <div className="flex gap-1 rounded-brand bg-surface-muted p-1">
+        {tab('gps', 'Use my phone GPS')}
+        {tab('address', 'Find by address')}
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          if (!('geolocation' in navigator)) {
-            setStatus('This device cannot share a location — enter the coordinates manually.')
-            return
-          }
-          setStatus('Locating…')
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              setLat(pos.coords.latitude.toFixed(6))
-              setLng(pos.coords.longitude.toFixed(6))
-              setStatus('Location captured.')
-            },
-            () => setStatus('Permission denied — enter the coordinates manually.'),
-          )
-        }}
-        className="mt-2 rounded-brand border border-line px-3 py-1.5 text-xs font-medium hover:bg-surface-muted"
-      >
-        Use my current location
-      </button>
+
+      <div className="mt-2 space-y-2">
+        {mode === 'gps' ? (
+          <button
+            type="button"
+            onClick={locate}
+            className="w-full rounded-brand border border-line px-3 py-2 text-sm font-medium hover:bg-surface-muted"
+          >
+            Get my position (I am at the shop)
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={lookUp}
+            disabled={busy}
+            className="w-full rounded-brand border border-line px-3 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-60"
+          >
+            {busy ? 'Looking up...' : 'Find the address above on the map'}
+          </button>
+        )}
+
+        {status && <p className="text-xs text-muted">{status}</p>}
+
+        {candidate && (
+          <div className="space-y-2">
+            <MapPreview lat={candidate.lat} lng={candidate.lng} label="Proposed shop location" />
+            <p className="text-xs text-muted">{candidate.detail}</p>
+            {candidate.lockable ? (
+              <button
+                type="button"
+                onClick={() => setLocked(candidate)}
+                className="w-full rounded-brand bg-brand-deep px-3 py-2 text-sm font-semibold text-white"
+              >
+                Lock this location
+              </button>
+            ) : (
+              <p className="rounded-brand bg-warning/15 px-3 py-2 text-xs text-warning-ink">
+                {candidate.problem}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** The location after registration: shown, never edited by the retailer. */
+function LockedLocation({ lat, lng }: { lat: number; lng: number }) {
+  return (
+    <div>
+      <span className="mb-1.5 block text-sm font-medium text-ink">Shop location</span>
+      <MapPreview lat={lat} lng={lng} label="Your shop location" />
       <p className="mt-1 text-xs text-muted">
-        {status ??
-          'Buyers are matched to you by distance, so this must be where you actually trade.'}
+        Locked at registration, because buyers are matched to you by distance. Moved premises?{' '}
+        <Link href="/contact?from=partner" className="font-medium text-accent-strong underline">
+          Contact us to move your shop
+        </Link>
+        .
       </p>
     </div>
   )
@@ -117,8 +273,10 @@ export function RegisterBusinessForm() {
     {},
   )
   const [type, setType] = useState<string>('outlet')
-  const [lat, setLat] = useState('')
-  const [lng, setLng] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('')
+  const [locked, setLocked] = useState<Spot | null>(null)
 
   return (
     <form action={formAction} className="space-y-4">
@@ -172,16 +330,40 @@ export function RegisterBusinessForm() {
         />
       </Field>
 
-      <Field label="Street address" htmlFor="biz-address">
-        <input id="biz-address" name="address" className={inputClass} />
+      <Field label="Shop street address" htmlFor="biz-address">
+        <input
+          id="biz-address"
+          name="address"
+          className={inputClass}
+          placeholder="e.g. 14 Mubi Road"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          required
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="City" htmlFor="biz-city">
-          <input id="biz-city" name="city" className={inputClass} defaultValue="Lagos" />
+        <Field label="City or town" htmlFor="biz-city">
+          <input
+            id="biz-city"
+            name="city"
+            className={inputClass}
+            placeholder="e.g. Jimeta"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            required
+          />
         </Field>
         <Field label="State" htmlFor="biz-state">
-          <input id="biz-state" name="state" className={inputClass} defaultValue="Lagos" />
+          <input
+            id="biz-state"
+            name="state"
+            className={inputClass}
+            placeholder="e.g. Adamawa"
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            required
+          />
         </Field>
       </div>
 
@@ -189,15 +371,24 @@ export function RegisterBusinessForm() {
         <input id="biz-phone" name="phone" type="tel" className={inputClass} />
       </Field>
 
-      <LocationField lat={lat} lng={lng} setLat={setLat} setLng={setLng} />
+      <ShopLocationLock
+        address={address}
+        city={city}
+        state={region}
+        locked={locked}
+        setLocked={setLocked}
+      />
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !locked}
         className="w-full rounded-brand bg-accent-500 px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-600 disabled:opacity-60"
       >
         {pending ? 'Submitting…' : 'Submit for verification'}
       </button>
+      {!locked && (
+        <p className="-mt-2 text-center text-xs text-muted">Lock your shop location to submit.</p>
+      )}
 
       <p className="text-xs text-muted">
         You can add inventory straight away. Your listings become discoverable to buyers once a
@@ -226,9 +417,6 @@ export function EditBusinessForm({
     updateBusinessAction,
     {},
   )
-  const [lat, setLat] = useState(String(org.lat))
-  const [lng, setLng] = useState(String(org.lng))
-
   return (
     <form action={formAction} className="space-y-4">
       <FormError>{state.error}</FormError>
@@ -262,7 +450,7 @@ export function EditBusinessForm({
         <input id="edit-phone" name="phone" type="tel" className={inputClass} />
       </Field>
 
-      <LocationField lat={lat} lng={lng} setLat={setLat} setLng={setLng} />
+      <LockedLocation lat={org.lat} lng={org.lng} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Delivery radius (km)" hint="How far you will serve" htmlFor="edit-radius">

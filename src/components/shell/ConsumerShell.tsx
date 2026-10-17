@@ -10,6 +10,7 @@ import { buyerLocation, KNOWN_AREAS } from '@/lib/location'
 import { cartCount } from '@/lib/cart'
 import { unreadCount } from '@/modules/notifications/service'
 import { unreadMessageCount } from '@/modules/messaging/service'
+import { unreadSupportForUser } from '@/modules/support/service'
 import { getBalance } from '@/modules/wallet/service'
 import { WalletPill } from '@/components/shell/WalletStrip'
 import { ADMIN_ROLES } from '@/lib/auth'
@@ -32,13 +33,14 @@ export async function ConsumerShell({
     buyerLocation(),
     cartCount(),
   ])
-  const [unread, unreadMessages, wallet] = user
+  const [unread, unreadMessages, wallet, unreadSupport] = user
     ? await Promise.all([
         unreadCount(user.id),
         unreadMessageCount(user.id, org?.id ?? null),
         getBalance('user', user.id),
+        unreadSupportForUser(user.id),
       ])
-    : [0, 0, null]
+    : [0, 0, null, 0]
   const isAdmin = user ? ADMIN_ROLES.includes(user.role) : false
   // FUTURE-DASHBOARD: delivery partner.
   // const isRider = user?.role === 'delivery_partner'
@@ -121,7 +123,13 @@ export async function ConsumerShell({
                     ? [{ href: '/admin', label: 'Platform console', icon: 'settings' as const }]
                     : []),
                   { href: '/about', label: 'How the network works', icon: 'info' as const },
-                  { href: '/contact?from=consumer', label: 'Contact us', icon: 'mail' as const },
+                  {
+                    href: '/contact?from=consumer',
+                    label: 'Contact us',
+                    icon: 'mail' as const,
+                    // Unread replies from AfriMesh support.
+                    badge: unreadSupport,
+                  },
                   ...(org
                     ? []
                     : [

@@ -12,6 +12,7 @@ import { ORG_LABEL, type OrgType } from '@/lib/tiers'
 // import { cartCount } from '@/lib/cart'
 import { unreadMessageCount } from '@/modules/messaging/service'
 import { unreadCount } from '@/modules/notifications/service'
+import { unreadSupportForUser } from '@/modules/support/service'
 import { getBalance } from '@/modules/wallet/service'
 import { WalletPill } from '@/components/shell/WalletStrip'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
@@ -57,10 +58,11 @@ export async function PartnerShell({
   // A sales rep may not see the business's money (`funds`), so the balance is
   // not even read for one.
   const seesFunds = can(org.member_role, 'funds')
-  const [unreadMessages, unreadNotifications, wallet] = await Promise.all([
+  const [unreadMessages, unreadNotifications, wallet, unreadSupport] = await Promise.all([
     unreadMessageCount(user.id, org.id),
     unreadCount(user.id),
     seesFunds ? getBalance('organisation', org.id) : null,
+    unreadSupportForUser(user.id),
   ])
 
   /*
@@ -157,7 +159,8 @@ export async function PartnerShell({
     ...(allowed('settings')
       ? [{ href: '/partner/settings', label: 'Settings', icon: 'settings' as const }]
       : []),
-    { href: '/contact?from=partner', label: 'Contact us', icon: 'mail' },
+    // A two-way line to AfriMesh support, inside the dashboard.
+    { href: '/partner/support', label: 'Contact AfriMesh', icon: 'mail', badge: unreadSupport },
   ]
 
   return (
@@ -370,7 +373,7 @@ export async function PartnerShell({
                 other. They stay one tap away in the rail and the scroll
                 strip; here they wait for the room to exist. */}
                 <Link
-                  href="/contact?from=partner"
+                  href="/partner/support"
                   className="hidden rounded-brand px-3 py-1.5 text-sm font-medium text-bar-muted hover:bg-bar-line/60 hover:text-bar-ink sm:block"
                 >
                   Contact us

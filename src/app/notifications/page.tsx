@@ -57,9 +57,11 @@ export default async function NotificationsPage() {
                               ? 'scooter'
                               : n.category === 'message'
                                 ? 'chat'
-                                : n.category === 'reward'
-                                  ? 'wallet'
-                                  : 'bell'
+                                : n.category === 'support'
+                                  ? 'mail'
+                                  : n.category === 'reward'
+                                    ? 'wallet'
+                                    : 'bell'
                       }
                       size={20}
                     />
@@ -78,8 +80,21 @@ export default async function NotificationsPage() {
                 </Card>
               )
 
-              return n.reference_type === 'order' && n.reference_id ? (
-                <Link key={n.id} href={`/orders/${n.reference_id}`} className="block">
+              // Where tapping the notification goes: the order, or the support
+              // conversation in whichever shell it belongs to.
+              const href = !n.reference_id
+                ? null
+                : n.reference_type === 'order'
+                  ? `/orders/${n.reference_id}`
+                  : n.reference_type === 'support'
+                    ? `/contact/${n.reference_id}`
+                    : n.reference_type === 'support_partner'
+                      ? `/partner/support/${n.reference_id}`
+                      : n.reference_type === 'support_admin'
+                        ? `/admin/support/${n.reference_id}`
+                        : null
+              return href ? (
+                <Link key={n.id} href={href} className="block">
                   {body}
                 </Link>
               ) : (

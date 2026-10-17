@@ -795,6 +795,35 @@ CREATE TABLE contact_messages (
 
 CREATE INDEX contact_messages_created_idx ON contact_messages (created_at DESC);
 
+-- Support inbox (migration 003). A signed-in shopper or retailer opens a
+-- thread from "Contact us"; AfriMesh administrators reply from the console.
+-- contact_messages above stays for signed-out visitors, who leave an email.
+CREATE TABLE support_threads (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  organisation_id UUID REFERENCES organisations(id) ON DELETE SET NULL,
+  source          TEXT NOT NULL CHECK (source IN ('consumer', 'partner')),
+  subject         TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed')),
+  last_message_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX support_threads_user_idx   ON support_threads (user_id, last_message_at DESC);
+CREATE INDEX support_threads_status_idx ON support_threads (status, last_message_at DESC);
+
+CREATE TABLE support_messages (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  thread_id      UUID NOT NULL REFERENCES support_threads(id) ON DELETE CASCADE,
+  sender_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  sender_side    TEXT NOT NULL CHECK (sender_side IN ('member', 'admin')),
+  body           TEXT NOT NULL,
+  read_at        TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX support_messages_thread_idx ON support_messages (thread_id, created_at);
+
 -- ---------------------------------------------------------------------------
 -- MODULE: analytics / demand intelligence (Inventory doc §9)
 -- ---------------------------------------------------------------------------

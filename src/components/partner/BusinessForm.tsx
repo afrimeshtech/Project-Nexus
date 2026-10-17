@@ -344,7 +344,7 @@ function LockedLocation({ lat, lng }: { lat: number; lng: number }) {
       <MapPreview lat={lat} lng={lng} label="Your shop location" />
       <p className="mt-1 text-xs text-muted">
         Locked at registration, because buyers are matched to you by distance. Moved premises?{' '}
-        <Link href="/contact?from=partner" className="font-medium text-accent-strong underline">
+        <Link href="/partner/support" className="font-medium text-accent-strong underline">
           Contact us to move your shop
         </Link>
         .

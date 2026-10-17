@@ -5,10 +5,12 @@ import { Badge } from '@/components/ui'
 import { logoutAction } from '@/app/actions/session'
 import { currentUser } from '@/lib/auth'
 import { RANKING_LAUNCHED } from '@/lib/launch-ranking'
+import { unreadSupportForAdmin } from '@/modules/support/service'
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: '/admin', label: 'Overview', icon: 'chart' },
   { href: '/admin/organisations', label: 'Businesses', icon: 'store' },
+  { href: '/admin/support', label: 'Support inbox', icon: 'mail' },
   { href: '/admin/products', label: 'Catalogue', icon: 'tag' },
   { href: '/admin/locations', label: 'Demand map', icon: 'pin' },
   // FUTURE-RANKING: the weights console, once the weights order anything.
@@ -32,6 +34,8 @@ export async function AdminShell({
   const user = await currentUser()
   if (!user) return null
   const readOnly = user.role === 'auditor'
+  // Member messages nobody on the team has read yet.
+  const unreadSupport = await unreadSupportForAdmin()
 
   return (
     <div className="min-h-screen bg-page">
@@ -84,7 +88,10 @@ export async function AdminShell({
                   }`}
                 >
                   <Icon name={item.icon} size={18} />
-                  {item.label}
+                  <span className="flex-1">{item.label}</span>
+                  {item.href === '/admin/support' && unreadSupport > 0 && (
+                    <span className="pill-notify-sm">{unreadSupport}</span>
+                  )}
                 </Link>
               </li>
             ))}
@@ -105,6 +112,7 @@ export async function AdminShell({
                     }`}
                   >
                     {item.label}
+                    {item.href === '/admin/support' && unreadSupport > 0 && ` (${unreadSupport})`}
                   </Link>
                 </li>
               ))}

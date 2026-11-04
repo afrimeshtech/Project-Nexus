@@ -48,7 +48,7 @@ export default async function HealthPage() {
       label: 'No stranded reservations',
       ok: health.expiredReservations === 0,
       value: `${health.expiredReservations} expired`,
-      target: 'released automatically on sweep',
+      target: 'released automatically within a minute of expiry',
     },
     {
       label: 'Risk queue clear',

@@ -356,10 +356,17 @@ export async function releaseReservations(
   tx?: Sql,
 ): Promise<number> {
   const run = async (db: Sql) => {
+    // Claim the holds before touching stock. The scheduled sweep, the order
+    // page's opportunistic sweep and a buyer's cancel can all reach the same
+    // order at once; with a SELECT-then-UPDATE each of them saw the holds as
+    // 'held' and put the units back again. The conditional UPDATE row-locks
+    // each hold, so a racing release re-checks `status = 'held'`, matches
+    // nothing, and restores no stock.
     const held = await db.query<{ id: string; inventory_item_id: string; qty: number }>(
-      `SELECT id, inventory_item_id, qty FROM stock_reservations
-        WHERE order_id = $1 AND status = 'held'`,
-      [orderId],
+      `UPDATE stock_reservations SET status = $2, resolved_at = now()
+        WHERE order_id = $1 AND status = 'held'
+        RETURNING id, inventory_item_id, qty`,
+      [orderId, reason],
     )
 
     for (const r of held) {
@@ -371,10 +378,6 @@ export async function releaseReservations(
           WHERE id = $1
           RETURNING *`,
         [r.inventory_item_id, r.qty],
-      )
-      await db.query(
-        `UPDATE stock_reservations SET status = $2, resolved_at = now() WHERE id = $1`,
-        [r.id, reason],
       )
       if (item) {
         await writeLedger(db, {

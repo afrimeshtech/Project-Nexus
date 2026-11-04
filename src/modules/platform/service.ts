@@ -233,7 +233,11 @@ export async function systemHealth(): Promise<HealthReport> {
          FROM search_queries)                                                       AS slow_share,
       (SELECT COUNT(*)::int FROM notifications WHERE status <> 'sent')              AS queued_notifications,
       (SELECT COUNT(*)::int FROM stock_reservations WHERE status = 'held')          AS held_reservations,
-      (SELECT COUNT(*)::int FROM stock_reservations WHERE status = 'expired')       AS expired_reservations,
+      -- Stranded = still holding stock after its payment window closed. Not
+      -- status = 'expired': that is what the sweep sets once it has released a
+      -- hold, so counting it made the check fail harder every time it ran.
+      (SELECT COUNT(*)::int FROM stock_reservations
+        WHERE status = 'held' AND expires_at < now())                               AS expired_reservations,
       (SELECT COUNT(*)::int FROM fraud_alerts WHERE resolved = FALSE)               AS open_alerts
     `,
   )

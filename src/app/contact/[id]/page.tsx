@@ -5,6 +5,7 @@ import { SupportConversation } from '@/components/support/SupportViews'
 import { Badge, Card, PageHeader } from '@/components/ui'
 import { requireUser } from '@/lib/auth'
 import { readSupportThread, supportThreadFor } from '@/modules/support/service'
+import { markReadForReference } from '@/modules/notifications/service'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Conversation with AfriMesh' }
@@ -15,6 +16,7 @@ export default async function ContactThreadPage({ params }: { params: Promise<{ 
   const user = await requireUser(`/contact/${id}`)
   const thread = await supportThreadFor(id, { userId: user.id, isAdmin: false })
   if (!thread) notFound()
+  await markReadForReference(user.id, 'support', id)
   if (thread.source === 'partner') redirect(`/partner/support/${id}`)
 
   const messages = await readSupportThread(thread, 'member')

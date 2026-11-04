@@ -7,6 +7,7 @@ import { Badge, Card, PageHeader } from '@/components/ui'
 import { requireRole, ADMIN_ROLES } from '@/lib/auth'
 import { getSql } from '@/db/client'
 import { readSupportThread, supportThreadFor } from '@/modules/support/service'
+import { markReadForReference } from '@/modules/notifications/service'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Support conversation' }
@@ -21,6 +22,7 @@ export default async function AdminSupportThreadPage({
   const admin = await requireRole(ADMIN_ROLES, `/admin/support/${id}`)
   const thread = await supportThreadFor(id, { userId: admin.id, isAdmin: true })
   if (!thread) notFound()
+  await markReadForReference(admin.id, 'support_admin', id)
   const readOnly = admin.role === 'auditor'
 
   // An auditor reading the thread must not mark it read for the team.

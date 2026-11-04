@@ -4,6 +4,7 @@ import { OrderDetailView } from '@/components/commerce/OrderDetailView'
 import { requireUser, currentOrganisation } from '@/lib/auth'
 import { can } from '@/lib/org-access'
 import { getOrder } from '@/modules/orders/service'
+import { markReadForReference } from '@/modules/notifications/service'
 import { expireStaleReservations } from '@/modules/inventory/service'
 
 export const dynamic = 'force-dynamic'
@@ -30,6 +31,10 @@ export default async function OrderDetailPage({
   const isBuyer = order.buyer_user_id === user.id
   const isSeller = org?.id === order.seller_org_id
   if (!isBuyer && !isSeller) notFound()
+
+  // Opening the order is acting on its notifications - clear them before the
+  // shell renders, so the bell stops counting an order the user is looking at.
+  await markReadForReference(user.id, 'order', order.id)
 
   return (
     <ConsumerShell search={false}>

@@ -147,6 +147,36 @@ export async function unreadCount(userId: string): Promise<number> {
   return row?.count ?? 0
 }
 
+/**
+ * The user has opened the thing these notifications point at (an order, a
+ * support conversation), so they have been acted on. Before this only "Mark
+ * all read" cleared anything, and the bell kept counting an order the buyer
+ * had already opened from it.
+ */
+export async function markReadForReference(
+  userId: string,
+  referenceType: string,
+  referenceId: string,
+): Promise<void> {
+  const sql = await getSql()
+  await sql.query(
+    `UPDATE notifications SET read_at = now()
+      WHERE user_id = $1 AND reference_type = $2 AND reference_id = $3 AND read_at IS NULL`,
+    [userId, referenceType, referenceId],
+  )
+}
+
+/** Mark specific notifications read - scoped to the user, so ids can't reach anyone else's. */
+export async function markRead(userId: string, ids: string[]): Promise<void> {
+  if (!ids.length) return
+  const sql = await getSql()
+  await sql.query(
+    `UPDATE notifications SET read_at = now()
+      WHERE user_id = $1 AND id = ANY($2::uuid[]) AND read_at IS NULL`,
+    [userId, ids],
+  )
+}
+
 export async function markAllRead(userId: string): Promise<void> {
   const sql = await getSql()
   await sql.query(

@@ -15,6 +15,7 @@ import { unreadCount } from '@/modules/notifications/service'
 import { unreadSupportForUser } from '@/modules/support/service'
 import { getBalance } from '@/modules/wallet/service'
 import { WalletPill } from '@/components/shell/WalletStrip'
+import { OrderAlerts } from '@/components/shell/OrderAlerts'
 // FUTURE-DEMAND-MAP: import { audienceForSeller } from '@/modules/territory/service'
 
 type NavItem = {
@@ -335,6 +336,9 @@ export async function PartnerShell({
                     Pending review
                   </span>
                 )}
+                {/* Rings when a buyer pays for an order. Only for members who
+                handle orders - the route refuses anyone else anyway. */}
+                {can(org.member_role, 'orders') && <OrderAlerts organisationId={org.id} />}
                 {/* Two alerts, two jobs: messages are conversations with buyers
                 about their orders; notifications are the site telling the
                 retailer about orders and order activity. */}

@@ -9,6 +9,7 @@ import { unreadSupportForAdmin } from '@/modules/support/service'
 
 const NAV: { href: string; label: string; icon: IconName }[] = [
   { href: '/admin', label: 'Overview', icon: 'chart' },
+  { href: '/admin/revenue', label: 'Revenue', icon: 'wallet' },
   { href: '/admin/organisations', label: 'Businesses', icon: 'store' },
   { href: '/admin/support', label: 'Support inbox', icon: 'mail' },
   { href: '/admin/products', label: 'Catalogue', icon: 'tag' },

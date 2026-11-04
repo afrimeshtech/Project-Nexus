@@ -10,6 +10,7 @@ import { verifyIntegrity } from '@/modules/wallet/service'
 import { listAlerts } from '@/modules/platform/service'
 import { trendingSearches } from '@/modules/search/service'
 import { logisticsOverview } from '@/modules/logistics/service'
+import { heldForMerchants, reconcile, revenueOverview } from '@/modules/revenue/service'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Platform console' }
@@ -21,14 +22,18 @@ export const metadata = { title: 'Platform console' }
 export default async function AdminHome() {
   await requireRole(ADMIN_ROLES, '/admin')
 
-  const [kpis, series, integrity, alerts, trending, logistics] = await Promise.all([
-    platformKpis(),
-    gmvSeries(14),
-    verifyIntegrity(),
-    listAlerts(),
-    trendingSearches(8),
-    logisticsOverview(),
-  ])
+  const [kpis, series, integrity, alerts, trending, logistics, revenue, recon, held] =
+    await Promise.all([
+      platformKpis(),
+      gmvSeries(14),
+      verifyIntegrity(),
+      listAlerts(),
+      trendingSearches(8),
+      logisticsOverview(),
+      revenueOverview(),
+      reconcile(),
+      heldForMerchants(),
+    ])
 
   return (
     <AdminShell active="/admin">
@@ -58,27 +63,127 @@ export default async function AdminHome() {
           </Alert>
         )}
 
+        {/* Three scoreboards, never added together: what trades through the
+            network, what AfriMesh earns from it, and whether that pays for
+            itself. GMV is not revenue - most of it belongs to sellers. */}
         <section>
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">Commerce</h2>
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
+            Commerce performance
+          </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <Stat
               label="GMV"
               value={formatMoney(kpis.gmv)}
-              hint="Paid orders, all tiers"
+              hint={
+                revenue.hasLivePayments
+                  ? 'Paid orders, all tiers, net of refunds'
+                  : 'Paid orders, net of refunds · test-mode payments'
+              }
               href="#gmv"
             />
-            <Stat label="Average order value" value={formatMoney(kpis.aov)} />
+            {/* Same basis as GMV, so GMV / paid orders = AOV on screen. */}
             <Stat
-              label="Orders (30 days)"
+              label="Paid orders"
+              value={kpis.paid_orders}
+              hint={`${kpis.unpaid_orders} placed but not paid`}
               href="/admin/events?type=order.placed"
-              value={kpis.orders_30d}
-              hint={`${kpis.orders_total} all time`}
+            />
+            <Stat
+              label="Average order value"
+              value={formatMoney(kpis.aov)}
+              hint="GMV ÷ paid orders"
             />
             <Stat
               label="Fulfilment rate"
               href="/admin/events?type=order.completed"
               value={`${Number(kpis.fulfilment_rate).toFixed(1)}%`}
               tone={Number(kpis.fulfilment_rate) < 90 ? 'danger' : 'brand'}
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
+            Platform monetisation
+          </h2>
+          {/* Real money only. Test activity is shown as a hint, never as the
+              figure, so a demo cannot be read as earnings. */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <Stat
+              label="Revenue earned"
+              value={formatMoney(revenue.live.revenue_earned)}
+              hint={
+                revenue.hasLivePayments
+                  ? `${revenue.live.completed_orders} completed orders`
+                  : `Test mode · ${formatMoney(revenue.test.revenue_earned)} simulated`
+              }
+              href="/admin/revenue"
+              tone={revenue.hasLivePayments ? 'brand' : 'neutral'}
+            />
+            <Stat
+              label="Commission pending"
+              value={formatMoney(revenue.live.commission_pending)}
+              hint={
+                revenue.hasLivePayments
+                  ? 'Paid orders not yet completed'
+                  : `${formatMoney(revenue.test.commission_pending)} simulated`
+              }
+              href="/admin/revenue"
+              icon="clock"
+            />
+            <Stat
+              label="Commission reversed"
+              value={formatMoney(revenue.live.commission_reversed)}
+              hint={
+                revenue.hasLivePayments
+                  ? 'Handed back on refunds'
+                  : `${formatMoney(revenue.test.commission_reversed)} simulated`
+              }
+              href="/admin/revenue"
+              icon="refresh"
+            />
+            <Stat
+              label="Subscription revenue"
+              value="—"
+              hint="Not offered yet"
+              href="/admin/revenue"
+              icon="star"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wide text-muted">
+            Financial health
+          </h2>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <Stat
+              label="Held for merchants"
+              value={formatMoney(held.escrow + held.available)}
+              hint="Their money - not income"
+              href="/admin/revenue"
+              icon="wallet"
+            />
+            <Stat
+              label="Rewards paid from revenue"
+              value={formatMoney(recon.rewardsPaid)}
+              hint="Cashback and redeemed points"
+              href="/admin/revenue"
+              icon="star"
+            />
+            <Stat
+              label="Net operating result"
+              value="—"
+              hint="Expenses and gateway fees not tracked yet"
+              href="/admin/revenue"
+            />
+            <Stat
+              label="Revenue ledger"
+              value={recon.difference === 0 ? 'Agrees' : formatMoney(recon.difference)}
+              hint={recon.difference === 0 ? 'Orders match the ledger' : 'Unexplained difference'}
+              tone={recon.difference === 0 ? 'brand' : 'danger'}
+              href="/admin/revenue"
+              icon="list"
             />
           </div>
         </section>

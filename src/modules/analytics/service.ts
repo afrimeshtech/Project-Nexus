@@ -24,6 +24,10 @@ export interface PlatformKpis {
   pending_verifications: number
   gmv: number
   aov: number
+  /** Orders on the same basis as GMV and AOV: paid, and not since refunded. */
+  paid_orders: number
+  /** Placed but never paid - abandoned at checkout, or cancelled before paying. */
+  unpaid_orders: number
   orders_total: number
   orders_30d: number
   payment_success_rate: number
@@ -47,11 +51,19 @@ export async function platformKpis(): Promise<PlatformKpis> {
       (SELECT COUNT(*)::int FROM organisations WHERE type='warehouse' AND status='active') AS active_warehouses,
       (SELECT COUNT(*)::int FROM organisations WHERE verification='pending')               AS pending_verifications,
 
-      -- GMV counts money that actually changed hands.
+      -- GMV counts money that actually changed hands. A refund sets
+      -- payment_status to 'refunded', so refunded orders drop out; an order
+      -- that was never paid never reaches 'succeeded'. GMV, AOV and
+      -- paid_orders share this one basis, so GMV / paid_orders = AOV. The
+      -- dashboard once showed AOV beside a count of *all* orders, and the
+      -- three figures could not be reconciled (25 paid vs 28 placed).
       (SELECT COALESCE(SUM(total),0)::bigint FROM orders
         WHERE payment_status = 'succeeded')                                              AS gmv,
       (SELECT COALESCE(ROUND(AVG(total)),0)::bigint FROM orders
         WHERE payment_status = 'succeeded')                                              AS aov,
+      (SELECT COUNT(*)::int FROM orders WHERE payment_status = 'succeeded')              AS paid_orders,
+      (SELECT COUNT(*)::int FROM orders
+        WHERE payment_status IN ('pending', 'failed'))                                   AS unpaid_orders,
       (SELECT COUNT(*)::int FROM orders)                                                 AS orders_total,
       (SELECT COUNT(*)::int FROM orders WHERE placed_at > now() - interval '30 days')     AS orders_30d,
 
@@ -79,13 +91,13 @@ export async function platformKpis(): Promise<PlatformKpis> {
   return row!
 }
 
-/** GMV and order count per day - the platform trend chart. */
+/** GMV and paid-order count per day - the platform trend chart, on GMV's basis. */
 export async function gmvSeries(days = 14) {
   const sql = await getSql()
   return sql.query<{ day: string; gmv: number; orders: number }>(
     `SELECT to_char(d.day, 'Mon DD') AS day,
             COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'succeeded'), 0)::bigint AS gmv,
-            COUNT(o.id)::int AS orders
+            COUNT(o.id) FILTER (WHERE o.payment_status = 'succeeded')::int AS orders
        FROM generate_series(CURRENT_DATE - ($1::int - 1), CURRENT_DATE, interval '1 day') AS d(day)
        LEFT JOIN orders o ON o.placed_at::date = d.day::date
       GROUP BY d.day

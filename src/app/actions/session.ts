@@ -52,6 +52,23 @@ export interface FormState {
    * is created.
    */
   registration?: Record<string, string>
+  /**
+   * The phone or email as typed, handed back on a failed attempt. React resets
+   * a form once its action finishes, which blanked the field and made someone
+   * who mistyped their password type their email again. The form uses this as
+   * the field's default, so the reset restores it. Never the password.
+   */
+  identifier?: string
+}
+
+// What was typed in the phone-or-email field, to hand back on a failed
+// attempt (FormState.identifier). Lenient on purpose and never fails: it only
+// refills a field the person can see, and the real checks are the schemas
+// below.
+const echoSchema = z.object({ identifier: z.string().trim().max(200).catch('') })
+function typedIdentifier(formData: FormData): string {
+  const echoed = parseForm(echoSchema, formData)
+  return echoed.ok ? (echoed.data.identifier ?? '') : ''
 }
 
 const passwordLoginSchema = z.object({
@@ -154,7 +171,8 @@ export async function loginWithPasswordAction(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = parseForm(passwordLoginSchema, formData)
-  if (!parsed.ok) return { error: parsed.error }
+  const typed = typedIdentifier(formData)
+  if (!parsed.ok) return { error: parsed.error, identifier: typed }
 
   try {
     const meta = await sessionMeta()
@@ -162,9 +180,9 @@ export async function loginWithPasswordAction(
     const token = await createSession(user.id, meta)
     await setSessionCookie(token)
   } catch (err) {
-    if (err instanceof AuthError) return { error: err.message }
+    if (err instanceof AuthError) return { error: err.message, identifier: typed }
     console.error('[auth] login failed', err)
-    return { error: 'We could not sign you in. Please try again.' }
+    return { error: 'We could not sign you in. Please try again.', identifier: typed }
   }
   // `next` is validated to be a relative path, so this cannot be turned into
   // an open redirect by crafting ?next=https://…
@@ -173,7 +191,8 @@ export async function loginWithPasswordAction(
 
 export async function requestOtpAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(otpRequestSchema, formData)
-  if (!parsed.ok) return { error: parsed.error }
+  const typed = typedIdentifier(formData)
+  if (!parsed.ok) return { error: parsed.error, identifier: typed }
   const identifier = parsed.data.identifier
 
   try {
@@ -186,9 +205,9 @@ export async function requestOtpAction(_prev: FormState, formData: FormData): Pr
       destination: result.destination,
     }
   } catch (err) {
-    if (err instanceof OtpDeliveryError) return { error: err.message }
+    if (err instanceof OtpDeliveryError) return { error: err.message, identifier: typed }
     console.error('[auth] otp request failed', err)
-    return { error: 'We could not send that code. Please try again.' }
+    return { error: 'We could not send that code. Please try again.', identifier: typed }
   }
 }
 

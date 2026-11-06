@@ -117,6 +117,8 @@ function PasswordLogin({ next }: { next: string }) {
         <input
           id="identifier"
           name="identifier"
+          // Restored after a failed attempt - see FormState.identifier.
+          defaultValue={state.identifier}
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
@@ -181,6 +183,7 @@ function OtpLogin({ next, referralCode = '' }: { next: string; referralCode?: st
             <input
               id="otp-identifier"
               name="identifier"
+              defaultValue={requestState.identifier}
               autoComplete="username"
               autoCapitalize="none"
               autoCorrect="off"

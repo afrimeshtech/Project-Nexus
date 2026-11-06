@@ -113,10 +113,84 @@ The seeded `afrimesh` password no longer works on the live site.
 | Watch the logs | `docker compose logs -f app` |
 | Is it healthy? | `curl -s https://afrimeshcommerce.com/api/health?ready` |
 | Restart | `docker compose restart app` |
-| Restore a backup | `gunzip -c ~/backups/afrimesh-DATE.sql.gz \| docker compose exec -T db psql -U afrimesh afrimesh` (into an empty database) |
+| Prove the backup restores | from the laptop: `GNUPGHOME=~/.afrimesh-backup-key deploy/restore-test.sh` |
+| Restore for real | see **Backups → Restoring** below |
 
-Backups stay on the same server. Copy one off now and then (`scp` it to your
-laptop) so a lost server is not lost data.
+## Backups
+
+Every night at 02:30 `backup.sh` dumps the database, compresses it, **encrypts
+it** and keeps 14 days in `~/backups` - then sends a copy **off the server**
+to an Oracle Object Storage bucket. A run that cannot do all of that ends with
+a `FAILED:` line in `~/backups/backup.log`.
+
+**Encryption.** The server holds only the backup *public* key, so it can
+encrypt a backup but never decrypt one: someone who breaks into the server
+cannot read old backups. The private key is on the laptop in
+`~/.afrimesh-backup-key` (`afrimesh-backup-PRIVATE.asc`). Keep a second copy
+of that file in a password manager. **Without it no backup can ever be
+restored.**
+
+**Off-site.** The bucket is written using the VM's own identity (an Oracle
+"instance principal"), so no access key is stored on the server. The policy
+lets the server *add* backups and nothing else, so a compromised server cannot
+delete the off-site copies.
+
+### One-time setup
+
+1. **Bucket** - Oracle console → Storage → Buckets → *Create bucket*:
+   name `afrimesh-backups`, Standard tier, in the root compartment. Leave it
+   private. Note the **namespace** shown on the bucket page.
+2. **Dynamic group** - Identity & Security → Domains → *Default* → Dynamic
+   groups → *Create*: name `afrimesh-backup`, rule
+   `instance.id = '<the VM's OCID>'`.
+3. **Policy** - Identity & Security → Policies (root compartment) → *Create*,
+   name `afrimesh-backup`, with these two statements:
+
+   ```
+   Allow dynamic-group 'Default'/'afrimesh-backup' to read buckets in tenancy where target.bucket.name = 'afrimesh-backups'
+   Allow dynamic-group 'Default'/'afrimesh-backup' to manage objects in tenancy where all {target.bucket.name = 'afrimesh-backups', any {request.permission = 'OBJECT_CREATE', request.permission = 'OBJECT_INSPECT'}}
+   ```
+4. **rclone** on the server (Ubuntu's package is too old for Oracle's
+   instance-principal sign-in). The release is pinned and checked against its
+   published checksum:
+
+   ```sh
+   V=v1.68.2; cd "$(mktemp -d)"
+   curl -fsSLO https://github.com/rclone/rclone/releases/download/$V/rclone-$V-linux-arm64.zip
+   curl -fsSLO https://github.com/rclone/rclone/releases/download/$V/SHA256SUMS
+   grep " rclone-$V-linux-arm64.zip$" SHA256SUMS | sha256sum -c -
+   python3 -m zipfile -e rclone-$V-linux-arm64.zip .
+   sudo install -m 0755 rclone-$V-linux-arm64/rclone /usr/local/bin/rclone
+   ```
+5. **rclone remote** - no secrets in it:
+
+   ```sh
+   rclone config create oos oracleobjectstorage provider=instance_principal_auth \
+     namespace=<namespace> compartment=<tenancy OCID> region=uk-london-1
+   ```
+6. **Settings** in `deploy/.env`:
+
+   ```
+   BACKUP_GPG_RECIPIENT=<backup key fingerprint>
+   BACKUP_REMOTE=oos:afrimesh-backups
+   ```
+
+   then run `./backup.sh` once and check its last line says `off-site copy`.
+
+### Restoring
+
+On the laptop, decrypt the backup you want (from `~/backups` on the server, or
+from the bucket if the server is gone) and load it into an **empty** database:
+
+```sh
+GNUPGHOME=~/.afrimesh-backup-key gpg --decrypt afrimesh-<time>.sql.gz.gpg \
+  | ssh -i ~/.ssh/afrimesh.key ubuntu@<server> \
+      'cd ~/afrimesh/deploy && gunzip | docker compose exec -T db psql -U afrimesh afrimesh'
+```
+
+The database is recoverable to the last nightly backup: up to 24 hours of
+activity can be lost (the recovery point). Run `restore-test.sh` after any
+change to the backup setup, and monthly otherwise.
 
 ## What is on and off
 

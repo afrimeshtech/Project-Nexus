@@ -157,8 +157,9 @@ export async function loginWithPasswordAction(
   if (!parsed.ok) return { error: parsed.error }
 
   try {
-    const user = await authenticateWithPassword(parsed.data.identifier, parsed.data.password)
-    const token = await createSession(user.id, await sessionMeta())
+    const meta = await sessionMeta()
+    const user = await authenticateWithPassword(parsed.data.identifier, parsed.data.password, meta)
+    const token = await createSession(user.id, meta)
     await setSessionCookie(token)
   } catch (err) {
     if (err instanceof AuthError) return { error: err.message }
@@ -176,7 +177,7 @@ export async function requestOtpAction(_prev: FormState, formData: FormData): Pr
   const identifier = parsed.data.identifier
 
   try {
-    const result = await requestOtp(identifier, 'login')
+    const result = await requestOtp(identifier, 'login', await sessionMeta())
     return {
       notice: isEmail(identifier)
         ? `We emailed a 6-digit code to ${result.destination}.`
@@ -235,7 +236,7 @@ export async function registerAction(prev: FormState, formData: FormData): Promi
   try {
     if (emailAddress && !details.code) {
       await assertContactAvailable({ phone: details.phone || null, email: emailAddress })
-      const result = await requestOtp(emailAddress, 'register')
+      const result = await requestOtp(emailAddress, 'register', await sessionMeta())
       return {
         notice: `We emailed a 6-digit code to ${result.destination}. Enter it to finish creating your account.`,
         devCode: result.devCode,

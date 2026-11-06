@@ -62,6 +62,25 @@ const SESSION_DAYS = 30
 const OTP_TTL_MINUTES = 10
 const OTP_MAX_ATTEMPTS = 5
 
+// Brute-force limits (Security & Trust Framework §B: rate-limit login,
+// registration and recovery). Counted from what is already recorded - failed
+// sign-ins in the event log, issued codes in otp_codes - so there is no
+// separate counter to drift, and the audit trail is the evidence.
+const THROTTLE_WINDOW = '15 minutes'
+/** Wrong passwords for one account before it refuses passwords for a while. */
+const LOGIN_FAILURES_PER_ACCOUNT = 5
+/** Wrong passwords from one address, across any accounts it tries. */
+const LOGIN_FAILURES_PER_IP = 20
+/** Codes sent to one address. Each code allows OTP_MAX_ATTEMPTS guesses. */
+const OTPS_PER_DESTINATION = 3
+/** Codes requested from one address in an hour, to any destinations. */
+const OTPS_PER_IP_PER_HOUR = 10
+
+/** Where a request came from, for throttling and the audit trail. */
+export interface RequestMeta {
+  ip?: string
+}
+
 // ---------------------------------------------------------------------------
 // Password hashing
 // ---------------------------------------------------------------------------
@@ -164,10 +183,31 @@ export async function registerUser(input: RegisterInput): Promise<User> {
 export async function authenticateWithPassword(
   identifier: string,
   password: string,
+  meta: RequestMeta = {},
 ): Promise<User> {
   const sql = await getSql()
   const phone = normalisePhone(identifier)
   const email = identifier.trim().toLowerCase()
+  const key = otpDestination(identifier)
+
+  // Checked before the password, so a locked account cannot be probed: a right
+  // guess during the lockout is refused the same as a wrong one. Email codes
+  // still work, which is what stops an attacker locking a real person out.
+  const recent = await sql.one<{ by_account: number; by_ip: number }>(
+    `SELECT COUNT(*) FILTER (WHERE aggregate_id = $1)::int AS by_account,
+            COUNT(*) FILTER (WHERE $2::text IS NOT NULL AND payload->>'ip' = $2)::int AS by_ip
+       FROM event_log
+      WHERE event_type = $3 AND occurred_at > now() - $4::interval`,
+    [key, meta.ip ?? null, EVENT.LoginFailed, THROTTLE_WINDOW],
+  )
+  if (
+    (recent?.by_account ?? 0) >= LOGIN_FAILURES_PER_ACCOUNT ||
+    (recent?.by_ip ?? 0) >= LOGIN_FAILURES_PER_IP
+  ) {
+    throw new AuthError(
+      'Too many sign-in attempts. Wait 15 minutes and try again, or sign in with an email code instead.',
+    )
+  }
 
   const row = await sql.one<User & { password_hash: string | null }>(
     `SELECT * FROM users WHERE email = $1 OR phone = $2 LIMIT 1`,
@@ -179,7 +219,16 @@ export async function authenticateWithPassword(
   const stored = row?.password_hash ?? 'scrypt$00$00'
   const ok = await verifyPassword(password, stored)
 
-  if (!row || !ok) throw new AuthError('Those credentials did not match our records')
+  if (!row || !ok) {
+    await publish({
+      type: EVENT.LoginFailed,
+      aggregateType: 'login',
+      aggregateId: key,
+      actorUserId: row?.id ?? null,
+      payload: { ip: meta.ip ?? null, reason: row ? 'wrong_password' : 'unknown_account' },
+    })
+    throw new AuthError('Those credentials did not match our records')
+  }
   if (row.status === 'suspended') throw new AuthError('This account has been suspended')
 
   await touchLogin(row.id)
@@ -194,10 +243,32 @@ export async function authenticateWithPassword(
 export async function requestOtp(
   destination: string,
   purpose: 'login' | 'register' | 'reset' = 'login',
+  meta: RequestMeta = {},
 ): Promise<{ sent: true; destination: string; devCode?: string }> {
   const sql = await getSql()
   const dest = otpDestination(destination)
   const channel = isEmail(dest) ? 'email' : 'sms'
+
+  // Without these, asking for a fresh code reset the five-guess limit, so a
+  // six-digit code could be worked through one batch at a time - and anyone
+  // could fill a stranger's inbox, at our cost per email.
+  const issued = await sql.one<{ to_dest: number; from_ip: number }>(
+    `SELECT
+       (SELECT COUNT(*) FROM otp_codes
+         WHERE destination = $1 AND created_at > now() - $2::interval)::int AS to_dest,
+       (SELECT COUNT(*) FROM event_log
+         WHERE event_type = $3 AND occurred_at > now() - interval '1 hour'
+           AND $4::text IS NOT NULL AND payload->>'ip' = $4)::int AS from_ip`,
+    [dest, THROTTLE_WINDOW, EVENT.OtpIssued, meta.ip ?? null],
+  )
+  if ((issued?.to_dest ?? 0) >= OTPS_PER_DESTINATION) {
+    throw new OtpDeliveryError(
+      'We have already sent you several codes. Use the latest one, or wait 15 minutes before asking for another.',
+    )
+  }
+  if ((issued?.from_ip ?? 0) >= OTPS_PER_IP_PER_HOUR) {
+    throw new OtpDeliveryError('Too many codes have been requested. Please try again later.')
+  }
   const emailLive = channel === 'email' && emailTransport() === 'resend'
 
   // A code shown on screen is only acceptable on a developer's machine. On a
@@ -236,7 +307,7 @@ export async function requestOtp(
     type: EVENT.OtpIssued,
     aggregateType: 'otp',
     aggregateId: dest,
-    payload: { purpose, channel },
+    payload: { purpose, channel, ip: meta.ip ?? null },
   })
 
   const devMode =

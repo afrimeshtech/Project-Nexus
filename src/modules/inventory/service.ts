@@ -657,6 +657,10 @@ export async function inventoryLedger(itemId: string, limit = 50) {
 }
 
 /** Batch & expiry tracking (Inventory doc §7). */
+// FUTURE-PRODUCTDNA (Phase 3): a seller's batch number here is the same
+// batch a manufacturer registers in productdna.product_batches. Matching the
+// two - by the product's ProductDNA link and the batch reference - is what
+// lets a scan say where a unit has been. Commerce keeps owning this record.
 export async function addBatch(
   itemId: string,
   batch: {

@@ -20,6 +20,9 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
     : []),
   { href: '/admin/rewards', label: 'Referral programme', icon: 'star-filled' },
   { href: '/admin/fraud', label: 'Risk & fraud', icon: 'shield' },
+  // FUTURE-PRODUCTDNA: manufacturer verification, the identity registry and
+  // product risk alerts (modules/productdna). Add once that console exists:
+  // ...(PRODUCTDNA_LAUNCHED ? [{ href: '/admin/productdna', label: 'ProductDNA', icon: 'shield' as const }] : []),
   { href: '/admin/events', label: 'Event log', icon: 'list' },
   { href: '/admin/health', label: 'System health', icon: 'pulse' },
 ]

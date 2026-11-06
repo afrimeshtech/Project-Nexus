@@ -13,6 +13,29 @@ import { LAUNCH_FULFILMENT } from '@/lib/launch-fulfilment'
  * boundary is explicit and the failure message is one a person can act on.
  */
 
+/*
+ * Fallback wording for the problems a schema did not word itself. Any
+ * `message` set on a schema still wins - this only replaces zod's defaults,
+ * which a person would otherwise read verbatim from parseForm. zod 4's are
+ * written for developers ("Invalid input: expected string, received
+ * undefined" where zod 3 said "Required"), and its length messages were never
+ * friendly in either version.
+ */
+z.config({
+  customError: (issue) => {
+    if (issue.code === 'invalid_type' && issue.input === undefined) {
+      return 'Please fill in all the required fields.'
+    }
+    if (issue.code === 'too_big' && issue.origin === 'string') {
+      return `That is too long - keep it to ${issue.maximum} characters or fewer.`
+    }
+    if (issue.code === 'too_small' && issue.origin === 'string') {
+      return `That is too short - use at least ${issue.minimum} characters.`
+    }
+    return undefined
+  },
+})
+
 export type ParseResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 /**
@@ -45,7 +68,11 @@ export function parseForm<S extends z.ZodType>(
 // than as type descriptions ("Enter your full name", not "Expected string").
 // ---------------------------------------------------------------------------
 
-export const uuid = (label: string) => z.string().uuid({ message: `That ${label} is not valid.` })
+// z.guid(), not z.uuid(): zod 4's uuid() enforces the RFC version and variant
+// bits and would start refusing ids zod 3 accepted. The shape check is what
+// keeps a crafted value from reaching the database as a cast error; whether
+// the id exists is the database's call.
+export const uuid = (label: string) => z.guid({ message: `That ${label} is not valid.` })
 
 export const requiredText = (label: string, max = 200) =>
   z

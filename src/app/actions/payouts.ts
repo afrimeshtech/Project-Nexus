@@ -111,9 +111,10 @@ export async function removeBankAccountAction(
   if (!parsed.ok) return { error: parsed.error }
   const owner = await ownerFor(parsed.data.scope)
   if ('error' in owner) return { error: owner.error }
+  const user = await currentUser()
 
   try {
-    await removeBankAccount(owner, parsed.data.accountId)
+    await removeBankAccount(owner, parsed.data.accountId, user!.id)
   } catch (err) {
     if (err instanceof PayoutError) return { error: err.message }
     console.error('[payouts] removing bank account failed', err)

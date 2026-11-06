@@ -19,6 +19,9 @@ export const EVENT = {
   UserRegistered: 'user.registered',
   UserLoggedIn: 'user.logged_in',
   OtpIssued: 'otp.issued',
+  // A wrong password, keyed by the identifier typed. Also what sign-in
+  // throttling counts, so the audit trail and the lockout cannot disagree.
+  LoginFailed: 'user.login_failed',
 
   // organisations
   OrganisationRegistered: 'organisation.registered',
@@ -26,6 +29,10 @@ export const EVENT = {
   OrganisationRejected: 'organisation.rejected',
   MemberAdded: 'organisation.member_added',
   MemberRemoved: 'organisation.member_removed',
+  // Administrative changes to a business (Security & Trust Framework §E).
+  OrganisationSuspended: 'organisation.suspended',
+  OrganisationReinstated: 'organisation.reinstated',
+  OrganisationMoved: 'organisation.location_changed',
 
   // catalog
   ProductCreated: 'product.created',
@@ -40,6 +47,7 @@ export const EVENT = {
   StockReturned: 'StockReturned',
   StockAdjusted: 'StockAdjusted',
   LowStock: 'inventory.low_stock',
+  PriceChanged: 'inventory.price_changed',
 
   // orders
   OrderPlaced: 'order.placed',
@@ -58,6 +66,9 @@ export const EVENT = {
   PayoutRequested: 'payout.requested',
   PayoutPaid: 'payout.paid',
   PayoutFailed: 'payout.failed',
+  // Where a business's money goes - the change the framework names first.
+  PayoutAccountAdded: 'payout.account_added',
+  PayoutAccountRemoved: 'payout.account_removed',
   SettlementPaid: 'settlement.paid',
   RiderPaid: 'rider.paid',
   CashbackEarned: 'cashback.earned',
@@ -88,6 +99,11 @@ export const EVENT = {
 
   // risk
   FraudSignal: 'fraud.signal',
+  FraudAlertResolved: 'fraud.alert_resolved',
+
+  // platform configuration, changed from the admin console
+  RankingWeightsChanged: 'platform.ranking_weights_changed',
+  ReferralPointsChanged: 'platform.referral_points_changed',
 } as const
 
 export type EventType = (typeof EVENT)[keyof typeof EVENT]

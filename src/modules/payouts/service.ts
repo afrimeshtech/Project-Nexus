@@ -349,16 +349,85 @@ export async function addBankAccount(
     ],
   )
   if (!account) throw new Error('Failed to save bank account')
+  await recordAccountChange(sql, owner, actorUserId, {
+    type: EVENT.PayoutAccountAdded,
+    account,
+    title: 'Bank account added',
+    body: `${account.account_name} at ${account.bank_name} (${maskAccount(account.account_number)}) can now receive withdrawals. If this was not you, contact AfriMesh support at once.`,
+  })
   return account
 }
 
-export async function removeBankAccount(owner: PayoutOwner, accountId: string): Promise<void> {
+export async function removeBankAccount(
+  owner: PayoutOwner,
+  accountId: string,
+  actorUserId: string,
+): Promise<void> {
   const sql = await getSql()
-  const removed = await sql.one<{ id: string }>(
-    `DELETE FROM bank_accounts WHERE id = $1 AND owner_type = $2 AND owner_id = $3 RETURNING id`,
+  const removed = await sql.one<BankAccount>(
+    `DELETE FROM bank_accounts WHERE id = $1 AND owner_type = $2 AND owner_id = $3 RETURNING *`,
     [accountId, owner.type, owner.id],
   )
   if (!removed) throw new PayoutError('That bank account was not found.')
+  await recordAccountChange(sql, owner, actorUserId, {
+    type: EVENT.PayoutAccountRemoved,
+    account: removed,
+    title: 'Bank account removed',
+    body: `${removed.account_name} at ${removed.bank_name} (${maskAccount(removed.account_number)}) was removed from your withdrawal accounts.`,
+  })
+}
+
+/** Only the last four digits leave this module - in the log and in the message. */
+function maskAccount(accountNumber: string): string {
+  return `••••${accountNumber.slice(-4)}`
+}
+
+/**
+ * Where a business's money goes is the change the Security & Trust Framework
+ * names first: audit it, and tell the account holder, so a change they did
+ * not make cannot pass unnoticed. For a business the owner is told, whoever
+ * made the change.
+ */
+async function recordAccountChange(
+  sql: Sql,
+  owner: PayoutOwner,
+  actorUserId: string,
+  change: {
+    type: typeof EVENT.PayoutAccountAdded | typeof EVENT.PayoutAccountRemoved
+    account: BankAccount
+    title: string
+    body: string
+  },
+) {
+  await publish(
+    {
+      type: change.type,
+      aggregateType: owner.type,
+      aggregateId: owner.id,
+      actorUserId,
+      payload: {
+        accountId: change.account.id,
+        bank: change.account.bank_name,
+        accountNumber: maskAccount(change.account.account_number),
+      },
+    },
+    sql,
+  )
+  const holder =
+    owner.type === 'user'
+      ? owner.id
+      : (
+          await sql.one<{ owner_user_id: string | null }>(
+            `SELECT owner_user_id FROM organisations WHERE id = $1`,
+            [owner.id],
+          )
+        )?.owner_user_id
+  if (holder) {
+    await queueNotification(
+      { userId: holder, title: change.title, body: change.body, category: 'account' },
+      sql,
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------

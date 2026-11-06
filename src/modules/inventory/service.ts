@@ -260,9 +260,16 @@ export async function updatePricing(
     minOrderQty?: number
     isListed?: boolean
   },
+  actorUserId?: string | null,
 ): Promise<void> {
   const sql = await getSql()
-  await sql.query(
+  type Prices = { retail_price: number | null; wholesale_price: number | null; promo_price: number | null }
+  const before = await sql.one<Prices & { organisation_id: string; product_id: string }>(
+    `SELECT retail_price, wholesale_price, promo_price, organisation_id, product_id
+       FROM inventory_items WHERE id = $1`,
+    [itemId],
+  )
+  const after = await sql.one<Prices>(
     `UPDATE inventory_items SET
        retail_price    = COALESCE($2, retail_price),
        wholesale_price = COALESCE($3, wholesale_price),
@@ -270,7 +277,8 @@ export async function updatePricing(
        min_order_qty   = COALESCE($5, min_order_qty),
        is_listed       = COALESCE($6, is_listed),
        updated_at      = now()
-     WHERE id = $1`,
+     WHERE id = $1
+     RETURNING retail_price, wholesale_price, promo_price`,
     [
       itemId,
       prices.retailPrice ?? null,
@@ -280,6 +288,27 @@ export async function updatePricing(
       prices.isListed ?? null,
     ],
   )
+
+  // A price is what a buyer pays, so a change to one is audited (Security &
+  // Trust Framework §E) - only when a price actually moved, not on every save.
+  const keys = ['retail_price', 'wholesale_price', 'promo_price'] as const
+  if (before && after && keys.some((k) => Number(before[k] ?? 0) !== Number(after[k] ?? 0))) {
+    await publish(
+      {
+        type: EVENT.PriceChanged,
+        aggregateType: 'inventory_item',
+        aggregateId: itemId,
+        actorUserId: actorUserId ?? null,
+        payload: {
+          organisationId: before.organisation_id,
+          productId: before.product_id,
+          from: Object.fromEntries(keys.map((k) => [k, before[k]])),
+          to: Object.fromEntries(keys.map((k) => [k, after[k]])),
+        },
+      },
+      sql,
+    )
+  }
 }
 
 // ---------------------------------------------------------------------------

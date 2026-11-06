@@ -140,7 +140,7 @@ export async function updatePricingAction(
   _prev: InventoryActionState,
   formData: FormData,
 ): Promise<InventoryActionState> {
-  const { org } = await requireOwnedOrg()
+  const { org, user } = await requireOwnedOrg()
   const parsed = parseForm(pricingSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
 
@@ -158,7 +158,7 @@ export async function updatePricingAction(
     promoPrice: promo ? toMinor(promo) : null,
     minOrderQty: Math.max(1, minOrderQty),
     isListed,
-  })
+  }, user.id)
 
   revalidatePath('/partner/inventory')
   revalidatePath(`/partner/inventory/${itemId}`)

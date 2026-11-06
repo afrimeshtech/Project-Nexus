@@ -956,6 +956,37 @@ CREATE TABLE event_log (
 CREATE INDEX event_log_type_idx      ON event_log (event_type, occurred_at DESC);
 CREATE INDEX event_log_aggregate_idx ON event_log (aggregate_type, aggregate_id);
 
+-- Append-only, enforced here rather than by convention (migration 004 has
+-- the reasoning). The one update allowed is ON DELETE SET NULL clearing an
+-- erased user's id; every other column must be untouched.
+CREATE FUNCTION event_log_append_only() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'UPDATE'
+     AND NEW.id = OLD.id
+     AND NEW.event_type = OLD.event_type
+     AND NEW.aggregate_type = OLD.aggregate_type
+     AND NEW.aggregate_id = OLD.aggregate_id
+     AND NEW.payload = OLD.payload
+     AND NEW.occurred_at = OLD.occurred_at
+     AND OLD.actor_user_id IS NOT NULL
+     AND NEW.actor_user_id IS NULL
+  THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'event_log is append-only: % is not allowed', TG_OP
+    USING ERRCODE = 'insufficient_privilege';
+END
+$$;
+
+CREATE TRIGGER event_log_no_rewrite
+  BEFORE UPDATE OR DELETE ON event_log
+  FOR EACH ROW EXECUTE FUNCTION event_log_append_only();
+
+CREATE TRIGGER event_log_no_truncate
+  BEFORE TRUNCATE ON event_log
+  FOR EACH STATEMENT EXECUTE FUNCTION event_log_append_only();
+
 -- Recommendation weights live in data, not code: "Weights should be
 -- configurable without changing application code" (SAD).
 CREATE TABLE ranking_weights (

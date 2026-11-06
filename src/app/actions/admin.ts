@@ -16,6 +16,8 @@ import { retryPending } from '@/modules/notifications/service'
 import { expireStaleReservations } from '@/modules/inventory/service'
 import { setReferralPoints } from '@/modules/rewards/service'
 import { PROGRAMMES, type Programme } from '@/lib/points'
+import { publish, EVENT } from '@/modules/events/service'
+import { getSql } from '@/db/client'
 
 import { parseForm, z, uuid, requiredText, latitude, longitude } from '@/lib/forms'
 
@@ -96,11 +98,19 @@ export async function rejectOrganisationAction(
 }
 
 export async function toggleSuspensionAction(formData: FormData) {
-  await requireMutatingAdmin()
+  const admin = await requireMutatingAdmin()
   const parsed = parseForm(suspensionSchema, formData)
   if (!parsed.ok) return
 
   await setOrganisationStatus(parsed.data.organisationId, parsed.data.status)
+  await publish({
+    type:
+      parsed.data.status === 'suspended' ? EVENT.OrganisationSuspended : EVENT.OrganisationReinstated,
+    aggregateType: 'organisation',
+    aggregateId: parsed.data.organisationId,
+    actorUserId: admin.id,
+    payload: { status: parsed.data.status },
+  })
   revalidatePath('/admin/organisations')
 }
 
@@ -113,7 +123,7 @@ export async function moveOrganisationAction(
   _prev: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
-  await requireMutatingAdmin()
+  const admin = await requireMutatingAdmin()
   const parsed = parseForm(moveSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
   const { organisationId, lat, lng } = parsed.data
@@ -121,7 +131,20 @@ export async function moveOrganisationAction(
     return { error: 'That point is outside Nigeria.' }
   }
 
+  // Where it was, for the audit trail: the location is locked for a reason.
+  const sql = await getSql()
+  const before = await sql.one<{ lat: number; lng: number }>(
+    `SELECT lat, lng FROM organisations WHERE id = $1`,
+    [organisationId],
+  )
   await updateOrganisation(organisationId, { lat, lng })
+  await publish({
+    type: EVENT.OrganisationMoved,
+    aggregateType: 'organisation',
+    aggregateId: organisationId,
+    actorUserId: admin.id,
+    payload: { from: before ? { lat: before.lat, lng: before.lng } : null, to: { lat, lng } },
+  })
   revalidatePath('/admin/organisations')
   return { notice: `Moved to ${lat.toFixed(5)}, ${lng.toFixed(5)}.` }
 }
@@ -143,7 +166,7 @@ export async function updateWeightsAction(
   _prev: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
-  await requireMutatingAdmin()
+  const admin = await requireMutatingAdmin()
   const scope = weightScopeSchema.parse(formData.get('scope')) as RankingScope
 
   // The weight field names are dynamic (one per ranking factor), so this is
@@ -156,6 +179,7 @@ export async function updateWeightsAction(
     .max(999.99, { message: 'must be 999.99 or less' })
 
   let written = 0
+  const weights: Record<string, number> = {}
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith('weight_')) continue
     const factor = key.slice(7)
@@ -164,8 +188,16 @@ export async function updateWeightsAction(
       return { error: `“${factor}” ${result.error.issues[0]?.message ?? 'is not valid'}.` }
     }
     await setWeight(scope, factor, result.data)
+    weights[factor] = result.data
     written++
   }
+  await publish({
+    type: EVENT.RankingWeightsChanged,
+    aggregateType: 'ranking',
+    aggregateId: scope,
+    actorUserId: admin.id,
+    payload: { scope, weights },
+  })
 
   revalidatePath('/admin/ranking')
   revalidatePath('/about')
@@ -194,7 +226,7 @@ export async function updateReferralPointsAction(
   _prev: AdminActionState,
   formData: FormData,
 ): Promise<AdminActionState> {
-  await requireMutatingAdmin()
+  const admin = await requireMutatingAdmin()
 
   const parsed = parseForm(referralPointsSchema, formData)
   if (!parsed.ok) return { error: parsed.error }
@@ -204,6 +236,13 @@ export async function updateReferralPointsAction(
     values[programme] = parsed.data[`points_${programme}`] as number
   }
   await setReferralPoints(values)
+  await publish({
+    type: EVENT.ReferralPointsChanged,
+    aggregateType: 'referral_programme',
+    aggregateId: 'awards',
+    actorUserId: admin.id,
+    payload: { values },
+  })
 
   revalidatePath('/admin/rewards')
   revalidatePath('/rewards')
@@ -212,11 +251,17 @@ export async function updateReferralPointsAction(
 }
 
 export async function resolveAlertAction(formData: FormData) {
-  await requireMutatingAdmin()
+  const admin = await requireMutatingAdmin()
   const parsed = parseForm(alertSchema, formData)
   if (!parsed.ok) return
 
   await resolveAlert(parsed.data.alertId)
+  await publish({
+    type: EVENT.FraudAlertResolved,
+    aggregateType: 'fraud_alert',
+    aggregateId: parsed.data.alertId,
+    actorUserId: admin.id,
+  })
   revalidatePath('/admin/fraud')
 }
 

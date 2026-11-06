@@ -8,4 +8,12 @@ export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
   const { startReservationSweeper } = await import('@/modules/inventory/sweeper')
   startReservationSweeper()
+
+  // FUTURE-PRODUCTDNA: the Commerce Integration Gateway. Not even imported
+  // until launch, so a dormant ProductDNA costs the running site nothing.
+  const { PRODUCTDNA_LAUNCHED } = await import('@/lib/launch-productdna')
+  if (PRODUCTDNA_LAUNCHED) {
+    const { startProductDnaGateway } = await import('@/modules/productdna/gateway')
+    startProductDnaGateway()
+  }
 }

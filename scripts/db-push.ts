@@ -45,13 +45,22 @@ async function main() {
 
   if (RESET) {
     // Already gated at the top of main(), before any connection was opened.
-    console.log('> dropping schema public')
-    await sql.exec('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;')
+    console.log('> dropping schemas public and productdna')
+    // productdna first: it is its own domain (src/db/productdna.sql) and is
+    // not swept away with public.
+    await sql.exec(
+      'DROP SCHEMA IF EXISTS productdna CASCADE; DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;',
+    )
   }
 
   const ddl = readFileSync(new URL('../src/db/schema.sql', import.meta.url), 'utf8')
   console.log('> applying schema.sql')
   await sql.exec(ddl)
+
+  // ProductDNA's own schema - dormant, see src/lib/launch-productdna.ts.
+  const productdna = readFileSync(new URL('../src/db/productdna.sql', import.meta.url), 'utf8')
+  console.log('> applying productdna.sql')
+  await sql.exec(productdna)
 
   const tables = await sql.query<{ table_name: string }>(
     `SELECT table_name FROM information_schema.tables

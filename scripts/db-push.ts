@@ -62,6 +62,12 @@ async function main() {
   console.log('> applying productdna.sql')
   await sql.exec(productdna)
 
+  // AfriMesh Circular - a Commerce module, so its tables live in public and
+  // go with it on a reset. Dormant, see src/lib/launch-circular.ts.
+  const circular = readFileSync(new URL('../src/db/circular.sql', import.meta.url), 'utf8')
+  console.log('> applying circular.sql')
+  await sql.exec(circular)
+
   const tables = await sql.query<{ table_name: string }>(
     `SELECT table_name FROM information_schema.tables
      WHERE table_schema = 'public' AND table_type = 'BASE TABLE'

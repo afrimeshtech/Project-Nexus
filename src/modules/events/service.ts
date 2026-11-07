@@ -101,6 +101,16 @@ export const EVENT = {
   FraudSignal: 'fraud.signal',
   FraudAlertResolved: 'fraud.alert_resolved',
 
+  // AfriMesh Circular - dormant (src/lib/launch-circular.ts). These are what
+  // the Africa Commerce Graph consumes (Circular spec §12, test 11): they
+  // carry ids and quantities, never copies of business records.
+  CircularListingPublished: 'circular.listing_published',
+  CircularListingStatusChanged: 'circular.listing_status_changed',
+  CircularQuantityReserved: 'circular.quantity_reserved',
+  CircularRequirementPosted: 'circular.requirement_posted',
+  CircularEnquirySent: 'circular.enquiry_sent',
+  CircularCapabilityGranted: 'circular.capability_granted',
+
   // platform configuration, changed from the admin console
   RankingWeightsChanged: 'platform.ranking_weights_changed',
   ReferralPointsChanged: 'platform.referral_points_changed',

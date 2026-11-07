@@ -23,6 +23,9 @@ const NAV: { href: string; label: string; icon: IconName }[] = [
   // FUTURE-PRODUCTDNA: manufacturer verification, the identity registry and
   // product risk alerts (modules/productdna). Add once that console exists:
   // ...(PRODUCTDNA_LAUNCHED ? [{ href: '/admin/productdna', label: 'ProductDNA', icon: 'shield' as const }] : []),
+  // FUTURE-CIRCULAR: verifying businesses' Circular roles, the material
+  // taxonomy and the match weights (platform_settings circular.match_weights).
+  // ...(CIRCULAR_LAUNCHED ? [{ href: '/admin/circular', label: 'Circular', icon: 'refresh' as const }] : []),
   { href: '/admin/events', label: 'Event log', icon: 'list' },
   { href: '/admin/health', label: 'System health', icon: 'pulse' },
 ]

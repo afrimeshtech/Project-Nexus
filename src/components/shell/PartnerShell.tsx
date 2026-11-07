@@ -157,6 +157,12 @@ export async function PartnerShell({
     // ...(allowed('api')
     //   ? [{ href: '/partner/api', label: 'API access', icon: 'lock' as const }]
     //   : []),
+    // FUTURE-CIRCULAR: the business's materials desk - listing surplus and
+    // recyclable materials, posting requirements, matches and enquiries
+    // (modules/circular). Add once those screens exist:
+    // ...(CIRCULAR_LAUNCHED && allowed('circular')
+    //   ? [{ href: '/partner/circular', label: 'Materials (Circular)', icon: 'refresh' as const }]
+    //   : []),
     ...(allowed('settings')
       ? [{ href: '/partner/settings', label: 'Settings', icon: 'settings' as const }]
       : []),

@@ -86,6 +86,13 @@ export function riderFeeFor(deliveryFee: number): number {
  *
  * Pickup-fulfilment orders get no job: nobody is carrying anything.
  */
+// FUTURE-CIRCULAR (Phase 4): a delivery belongs to an order today
+// (deliveries.order_id is NOT NULL), so a Circular transaction cannot have
+// one yet. The specification wants Circular to reuse these records, not keep
+// its own (§11). Decide then: make order_id nullable and add a
+// circular_transaction_id with a CHECK that exactly one is set, or wrap a
+// Circular deal in an order. circular_transactions.delivery_id is ready
+// either way.
 export async function requestDelivery(
   tx: Sql,
   order: {

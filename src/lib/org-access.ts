@@ -36,6 +36,9 @@ export type OrgCapability =
   | 'sourcing'
   /** Adding and removing sales reps. */
   | 'team'
+// FUTURE-CIRCULAR: | 'circular' - listing materials and making enquiries
+// for the business on AfriMesh Circular. Decide at launch whether sales reps
+// get it (add to SALES_REP) or it stays the owner's, like 'sourcing'.
 
 const SALES_REP: ReadonlySet<OrgCapability> = new Set([
   'inventory',

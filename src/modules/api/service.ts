@@ -36,6 +36,7 @@ export const API_SCOPES = [
   'orders:write',
   'logistics:read',
   'analytics:read',
+  // FUTURE-CIRCULAR: 'circular:read', 'circular:write', with SCOPE_LABELs.
   // FUTURE-PRODUCTDNA: 'productdna:read', 'productdna:write' - add with the
   // ProductDNA endpoints, and a SCOPE_LABEL for each, so keys can be issued.
 ] as const
